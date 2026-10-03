@@ -16,6 +16,8 @@
 (package
  (name tickweave)
  (synopsis "Databento trade streamer and GQH UART test driver")
+ (authors "Tickweave team")
+ (maintainers "Tickweave team")
  (depends
   (ocaml (>= 5.2))
   (dune (>= 3.17))
