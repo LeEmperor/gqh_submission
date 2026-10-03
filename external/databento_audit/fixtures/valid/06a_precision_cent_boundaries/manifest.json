@@ -1,0 +1,30 @@
+{
+  "name": "06a_precision_cent_boundaries",
+  "kind": "valid_session",
+  "description": "Default one-cent quantum: zero price, fractional remainders that must floor, and the largest accepted wire price 65535 (655359999999 nanodollars).",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": {
+    "trades": "trades.csv",
+    "expected_requests": "expected_requests.csv"
+  },
+  "expected_valid": true,
+  "expected_input_records": 8,
+  "expected_requests": 4,
+  "expected_incomplete_symbols": [],
+  "expected_error": null,
+  "notes": [
+    "first rejected value 655360000000 is expected_failure/wire_out_of_range"
+  ]
+}

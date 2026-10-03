@@ -3,3 +3,8 @@
  (libraries core core.command core_unix.command_unix core_unix.sys_unix
   core_unix.filename_unix hardcaml jane_rope hardcaml_gqh)
  (preprocess (pps ppx_jane)))
+
+(executable
+ (name stream)
+ (public_name tickweave-stream)
+ (libraries tickweave unix))

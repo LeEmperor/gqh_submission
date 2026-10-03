@@ -1,0 +1,3 @@
+# Preserve fixture bytes, including intentional CRLF and malformed CSV inputs.
+external/databento_audit/fixtures/** -text whitespace=cr-at-eol
+tools/test_data_factory/fixtures/** -text

@@ -1,0 +1,30 @@
+{
+  "name": "06b_precision_above_2_53",
+  "kind": "valid_session",
+  "description": "Prices above 2^53 with quantum 2^48 nanodollars. 9223372036854775806 must give 32767; a float conversion rounds it to 2^63 and gives 32768.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "281474976710656",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": {
+    "trades": "trades.csv",
+    "expected_requests": "expected_requests.csv"
+  },
+  "expected_valid": true,
+  "expected_input_records": 6,
+  "expected_requests": 3,
+  "expected_incomplete_symbols": [],
+  "expected_error": null,
+  "notes": [
+    "65536 * 2^48 overflows int64, so the uint16 limit is unreachable at this quantum"
+  ]
+}

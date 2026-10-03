@@ -1,0 +1,28 @@
+{
+  "name": "02_faster_symbol_a",
+  "kind": "valid_session",
+  "description": "AAPL trades 2-5 times before each MSFT trade; each request uses the last AAPL price.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": 42,
+    "pairs": null,
+    "rng": "splitmix64 seeded with seed xor fnv1a64(name)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": {
+    "trades": "trades.csv",
+    "expected_requests": "expected_requests.csv"
+  },
+  "expected_valid": true,
+  "expected_input_records": 52,
+  "expected_requests": 12,
+  "expected_incomplete_symbols": [],
+  "expected_error": null,
+  "notes": []
+}

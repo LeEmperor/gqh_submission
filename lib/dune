@@ -1,0 +1,4 @@
+(library
+ (name tickweave)
+ (public_name tickweave)
+ (libraries unix yojson core_unix))

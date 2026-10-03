@@ -1,0 +1,163 @@
+{
+  "generator": "databento_audit generate",
+  "seed": 42,
+  "pairs": 100,
+  "note": "Synthetic local fixtures. expected_failure entries are malformed on purpose and are not trading sessions. Not hardware results.",
+  "fixtures": [
+    {
+      "name": "01_alternating",
+      "kind": "valid_session",
+      "manifest": "valid/01_alternating/manifest.json"
+    },
+    {
+      "name": "02_faster_symbol_a",
+      "kind": "valid_session",
+      "manifest": "valid/02_faster_symbol_a/manifest.json"
+    },
+    {
+      "name": "03_faster_symbol_b_reversed_first",
+      "kind": "valid_session",
+      "manifest": "valid/03_faster_symbol_b_reversed_first/manifest.json"
+    },
+    {
+      "name": "04_unrelated_symbol_interleaved",
+      "kind": "valid_session",
+      "manifest": "valid/04_unrelated_symbol_interleaved/manifest.json"
+    },
+    {
+      "name": "05_late_second_symbol_trailing",
+      "kind": "valid_session",
+      "manifest": "valid/05_late_second_symbol_trailing/manifest.json"
+    },
+    {
+      "name": "05b_single_symbol_only",
+      "kind": "valid_session",
+      "manifest": "valid/05b_single_symbol_only/manifest.json"
+    },
+    {
+      "name": "06a_precision_cent_boundaries",
+      "kind": "valid_session",
+      "manifest": "valid/06a_precision_cent_boundaries/manifest.json"
+    },
+    {
+      "name": "06b_precision_above_2_53",
+      "kind": "valid_session",
+      "manifest": "valid/06b_precision_above_2_53/manifest.json"
+    },
+    {
+      "name": "07_quoted_crlf_long_timestamps",
+      "kind": "valid_session",
+      "manifest": "valid/07_quoted_crlf_long_timestamps/manifest.json"
+    },
+    {
+      "name": "08_header_only",
+      "kind": "valid_session",
+      "manifest": "valid/08_header_only/manifest.json"
+    },
+    {
+      "name": "09_extra_columns_reordered",
+      "kind": "valid_session",
+      "manifest": "valid/09_extra_columns_reordered/manifest.json"
+    },
+    {
+      "name": "empty_file",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/empty_file/manifest.json"
+    },
+    {
+      "name": "missing_header",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/missing_header/manifest.json"
+    },
+    {
+      "name": "missing_price_column",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/missing_price_column/manifest.json"
+    },
+    {
+      "name": "duplicate_header",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/duplicate_header/manifest.json"
+    },
+    {
+      "name": "field_count_extra",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/field_count_extra/manifest.json"
+    },
+    {
+      "name": "field_count_short",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/field_count_short/manifest.json"
+    },
+    {
+      "name": "blank_line",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/blank_line/manifest.json"
+    },
+    {
+      "name": "truncated_quote",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/truncated_quote/manifest.json"
+    },
+    {
+      "name": "malformed_quote",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/malformed_quote/manifest.json"
+    },
+    {
+      "name": "bare_carriage_return",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/bare_carriage_return/manifest.json"
+    },
+    {
+      "name": "line_too_long",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/line_too_long/manifest.json"
+    },
+    {
+      "name": "invalid_number",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/invalid_number/manifest.json"
+    },
+    {
+      "name": "missing_price",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/missing_price/manifest.json"
+    },
+    {
+      "name": "negative_price",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/negative_price/manifest.json"
+    },
+    {
+      "name": "negative_price_unrelated_symbol",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/negative_price_unrelated_symbol/manifest.json"
+    },
+    {
+      "name": "undefined_price",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/undefined_price/manifest.json"
+    },
+    {
+      "name": "int64_overflow",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/int64_overflow/manifest.json"
+    },
+    {
+      "name": "wire_out_of_range",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/wire_out_of_range/manifest.json"
+    },
+    {
+      "name": "invalid_timestamp",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/invalid_timestamp/manifest.json"
+    },
+    {
+      "name": "empty_symbol",
+      "kind": "expected_failure",
+      "manifest": "expected_failure/empty_symbol/manifest.json"
+    }
+  ]
+}

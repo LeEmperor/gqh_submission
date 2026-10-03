@@ -1,6 +1,7 @@
 # Dune / OCaml
 _build/
 _opam/
+*.install
 *.merlin
 *.cmi
 *.cmo
@@ -11,6 +12,8 @@ _opam/
 # Python and editors
 __pycache__/
 *.py[cod]
+.env
+.env.*
 .venv/
 .vscode/
 .idea/

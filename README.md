@@ -19,6 +19,12 @@ correctness, then optimize measured LUT count and UART round-trip latency.
   source and saved build artifacts for the correct device.
 - **[Archive](archive/README.md)** — superseded Tickweave proposals and the
   architecture discussion that led to the current plan.
+- **[Data streamer documentation](DATAFACTORY_README.md)** — build, test, and
+  operation instructions for the imported datafactory workstream.
+- **[Replay runner](test/runner/README.md)** — Python replay-and-measure runner
+  imported from the runner feature branch.
+- **[270 MHz PLL project](Hackathon/)** — Gowin project and generated PLL
+  artifacts imported from the Nano20k PLL branch.
 
 ## Current status
 

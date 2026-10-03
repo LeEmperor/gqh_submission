@@ -1,0 +1,32 @@
+{
+  "name": "wire_out_of_range",
+  "kind": "expected_failure",
+  "description": "EXPECTED FAILURE, not a valid trading session. 655360000000 nanodollars is wire 65536, the first rejected value at one cent.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": { "trades": "trades.csv", "expected_requests": null },
+  "expected_valid": false,
+  "expected_input_records": 0,
+  "expected_requests": 0,
+  "expected_incomplete_symbols": [],
+  "expected_error": {
+    "category": "wire_out_of_range",
+    "line": 2,
+    "field": "price",
+    "value": "655360000000"
+  },
+  "notes": [
+    "expected_input_records and expected_requests count what was accepted before the failure"
+  ]
+}
