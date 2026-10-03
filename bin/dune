@@ -7,4 +7,5 @@
 (executable
  (name stream)
  (public_name tickweave-stream)
+ (package tickweave)
  (libraries tickweave unix))
