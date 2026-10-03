@@ -20,6 +20,7 @@ __pycache__/
 *~
 *.swp
 .DS_Store
+*.gprj.user
 # Transient IDE build directories. Keep selected reports under results/ and
 # the selected final .fs under bitstream/; neither is blanket ignored.
 gowin/**/impl/

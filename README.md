@@ -25,6 +25,8 @@ correctness, then optimize measured LUT count and UART round-trip latency.
   imported from the runner feature branch.
 - **[270 MHz PLL project](Hackathon/)** — Gowin project and generated PLL
   artifacts imported from the Nano20k PLL branch.
+- **[Root-level Gowin projects](gowin/README.md#root-level-project-files)** —
+  separate engine, UART diagnostic, and PLL test projects with canonical paths.
 
 ## Current status
 

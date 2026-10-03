@@ -12,7 +12,7 @@ module top (
 
 );
 
-    // Expected PLL output: 400 MHz
+    // Expected PLL output: 270 MHz
     wire clk_270m;
 
     Gowin_rPLL pll_inst (
@@ -20,8 +20,8 @@ module top (
         .clkin (sys_clk)
     );
 
-    // Using a counter here to ensure that the actual GPIO toggles at
-    // 25MHz so that the DAD board can actually sample it properly
+    // Divide the PLL output so that the actual GPIO toggles slowly enough for
+    // external measurement.
     // You can just use this clock directly, or regenerate the IP yourself
     // Only 4 bits needed.
     // counter[3] toggles every 8 input clock cycles.
@@ -34,11 +34,12 @@ module top (
             counter <= counter + 1'b1;
     end
 
-    // 400 MHz / 16 = 25 MHz output
+    // 270 MHz / 16 = 16.875 MHz output
     assign clk_test = counter[3];
 
     // Optional visible status
     assign led0_n = ~counter[3];
     assign led1_n = 1'b1;
+    assign uart_tx_o = 1'b1;
 
 endmodule

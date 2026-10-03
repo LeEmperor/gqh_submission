@@ -1,5 +1,28 @@
 # Manual Gowin handoff
 
+## Root-level project files
+
+The repository contains three independent Gowin project files at its root. Open
+the project matching the experiment you intend to run; do not combine their
+constraints or top modules into one build.
+
+| Project | Top module | Purpose |
+| --- | --- | --- |
+| `gqh_engine.gprj` | `gqh_update_engine` | Standalone engine synthesis/timing experiment. It has no board pin constraints and cannot be programmed as a complete board design. |
+| `gqh_transport.gprj` | `gqh_transport_top` | Six-port, 27 MHz board diagnostic with UART request/response transport. It returns NONE actions and is not the final competition design. |
+| `gqh_pll_test.gprj` | `top` | Independent 270 MHz Gowin rPLL and divided-clock output experiment. It uses the PLL branch's CST because that file additionally assigns `clk_test` to pin 73. |
+
+All paths in these files are relative to the repository root. Gowin may create
+matching `.gprj.user` files and implementation output directories when a project
+is opened; those are machine-local IDE state/build products and should not be
+committed as source changes.
+
+For each project, confirm the displayed part is
+**GW2AR-LV18QN88C8/I7** before synthesis. Confirm the listed top module manually
+if the IDE does not infer it. The PLL test consumes the committed vendor IP RTL;
+its `.ipc` and `.mod` provenance files remain under
+`Hackathon/src/gowin_rpll/`.
+
 Create a new project in the Gowin IDE. The old `viv25_proj/test_proj1` is only
 a part/tool reference; its build results do not verify this generated design.
 Its saved P&R report names **V1.9.11.03 Education**. Record the version you
