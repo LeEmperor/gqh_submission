@@ -13,3 +13,11 @@
   (ppx_hardcaml (= v0.18~preview.130.106+341))
   (ppx_jane (= v0.18~preview.130.106+341))
   (jane_rope (= v0.18~preview.130.106+341))))
+(package
+ (name tickweave)
+ (synopsis "Databento trade streamer and GQH UART test driver")
+ (depends
+  (ocaml (>= 5.2))
+  (dune (>= 3.17))
+  (yojson (>= 2.0))
+  (core_unix (>= v0.17))))
