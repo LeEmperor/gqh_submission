@@ -1,6 +1,6 @@
 # Hardware track: main plan of attack
 
-Updated: October 2, 2026. **This is the active team plan.**
+Updated: October 3, 2026. **This is the active team plan.**
 
 ## 1. Objective and priorities
 
@@ -24,6 +24,11 @@ helping verification, measurement, or reproducibility.
   here, including its source.
 - The user reports that organizers emphasized latency/LUTs and give no extra
   feature credit. Treat those as the optimization priorities after correctness.
+- **Clocking clarification, October 3:** the user reports that the competition
+  permits the FPGA PLL and faster internal clocks. Treat 27 MHz as the board's
+  input reference, not a mandated processing frequency. Source: user report in
+  the planning conversation; no written organizer clarification has been added
+  to the repository. This does not change the specified 115200-baud UART.
 - The written score is capped; an uncapped ranking or tie-break rule has not
   been confirmed.
 
@@ -51,7 +56,7 @@ organizers distinguish designs already at full written score.
 | `viv25_proj/test_proj1/src/blinky.v` | A six-LED counter in Verilog; starting point for device/tool bring-up. |
 | `viv25_proj/test_proj1/test_proj1.gprj` | Gowin project for `GW2AR-LV18QN88C8/I7`. |
 | Blinky `.cst`, `.sdc`, and `impl/` | Saved synthesis/P&R reports and `.fs` exist; report names Gowin V1.9.11.03 Education. These establish saved build evidence, not verified board operation. |
-| Competition implementation | Hardcaml build/generator and minimal heartbeat top are locally verified; UART and moving-average engine remain pending. |
+| Competition implementation | Hardcaml foundation and UART/protocol transport sources exist; REQUEST_RESPONSE_PLAN.md records local A–E verification. Transport board checks and algorithm packages F–G remain pending. PLL support is planned, not implemented or validated. |
 | Organizer inputs | All three files are available in the sibling `../GQH-Hardware-Track-Submission/` checkout; exact paths and reviewed behavior below. Copy pinned inputs into the team project during integration. |
 | Results | No competition correctness or latency/LUT measurements yet. Blinky resource counts are not a competition baseline. |
 
@@ -122,7 +127,9 @@ against a board during this review.
 
 ### Board and wire protocol
 
-- Tang Nano 20K, `GW2AR-LV18QN88C8/I7`, onboard **27 MHz** clock.
+- Tang Nano 20K, `GW2AR-LV18QN88C8/I7`, onboard **27 MHz input reference** at
+  `sys_clk`. Internal processing may use a PLL-derived clock; retain the direct
+  27 MHz configuration as the initial baseline and fallback.
 - Use the organizer-supplied `.cst`. Required port names are `sys_clk`,
   `reset_btn`, `uart_rx_i`, `uart_tx_o`, `led0_n`, and `led1_n`.
   Keep optional ports; unused active-low LEDs are driven high.
@@ -199,11 +206,107 @@ UART TX ← paced response sequencer ← echoed fields + slot actions
 
 | Boundary | Responsibility |
 | --- | --- |
-| Board top | Fixed ports, startup/reset behavior, 27 MHz clock, RX synchronization. |
+| Board top | Fixed ports, 27 MHz reference input, selectable direct/PLL internal clock, lock-aware startup/reset, RX synchronization into the selected domain. |
 | UART RX/TX | Byte-level receive-valid and transmit-ready/busy interfaces; correct framing and tunable TX idle gap. |
 | Packet controller | Capture one complete request, dispatch the two slots, emit exactly one ordered response. |
 | Update engine | Consume item ID/price and session/warm-up context; return the action after updating that item's state. |
 | History/state | Item-indexed storage; explicit memory read latency and write semantics. |
+
+### Clocking decision: configurable frequency, one processing domain
+
+The new permission adds an optimization axis; it does not require replacing the
+shared sequential engine with a deeply pipelined design. Keep the correctness
+path moving at 27 MHz while preparing an independently validated PLL option.
+
+```text
+sys_clk (27 MHz reference)
+    → build-time choice: direct connection OR Gowin PLL
+    → core_clk → RX synchronizer, UART, protocol, engine, memory, status logic
+```
+
+Use one selected internal clock for the first PLL experiment. Selection is at
+build time, not a combinational runtime clock mux. UART baud remains 115200 by
+changing its timer divisors. Do not introduce a slow-UART/fast-engine split
+unless measurements justify the extra crossings, handshakes and reset complexity.
+If that split is later chosen, it needs explicit related-clock timing or CDC
+design; a two-flop synchronizer on each payload bit is not a coherent bus transfer.
+
+[Sipeed's board documentation](https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html)
+confirms the FPGA has two PLLs and a 27 MHz board clock. Use the **internal FPGA
+PLL**; changing the separate board clock-generator/BL616 configuration is not
+part of this plan. Select the exact-device PLL IP using the installed Gowin
+tools and verify legal input, VCO, divider, output and speed-grade limits.
+PLL output capability alone does not establish the design's achievable frequency.
+
+Implement the following before enabling a PLL build:
+
+1. Separate `reference_clock_hz` from the selected `core_clock_hz`. One build
+   configuration must determine the PLL parameters, actual output frequency,
+   timing constraints and all time-based counters. Record requested and actual
+   frequency if they differ. Preserve the current direct-clock target.
+2. Derive UART bit/half-bit counts, heartbeat and extra TX idle counts from the
+   **actual** core clock. Specify TX gaps in physical time and document rounding;
+   holding the same cycle count at a higher clock silently shortens the gap.
+   Audit counter widths and reject inconsistent configuration. Current UART
+   defaults are fixed at 234 clocks/bit and need this integration work.
+3. Encapsulate the vendor PLL in a small board-clock wrapper. Include every
+   required generated IP source/configuration in the reproducible manual Gowin
+   handoff. A simulation-only PLL model must never substitute for hardware RTL.
+4. Hold functional logic reset while the PLL is unlocked; assert reset on lock
+   loss and release synchronously in `core_clk` after qualified lock. Keep the
+   PLL's own reset independent of the functional reset so waiting for lock does
+   not keep the PLL itself in reset. TX must stay idle high during startup or
+   loss of lock, even if core clock edges stop; synchronous-only clearing is
+   insufficient for that case. Reinitialize control/scalar state on recovery.
+5. Keep the physical 27 MHz input constraint and constrain/verify the derived
+   clock relationship using the installed Gowin flow. Check whether PLL clocks
+   are derived automatically before adding explicit generated-clock constraints;
+   avoid duplicate clocks. Review setup/hold, recovery/removal, clock routing,
+   memory timing and unconstrained paths. Do not hide failures with blanket
+   false paths or change the input constraint to pretend the oscillator is faster.
+6. Test direct and PLL configurations, startup, reset, delayed lock and lock
+   loss. Functional simulation with an ideal core clock validates logic, not
+   analog PLL lock/jitter or routed timing. Require Gowin and board evidence
+   before making a PLL build the selected competition build.
+
+### Pipeline depth, sharing, and frequency: optimize elapsed time and LUTs
+
+For a fixed implementation, processing latency is approximately `L / f`, where
+`L` is the measured cycles from complete-request acceptance to response-ready
+and `f` is the implemented core frequency. Include memory, dispatch and handshake
+cycles; count warm-up, steady-state and session-start paths separately.
+End-to-end latency also includes UART reception/transmission, intentional gaps
+and host/USB overhead. Only part of that latency scales with `f`.
+
+Pipelining can increase achievable frequency and throughput while **increasing
+cycle latency**. A change improves core latency only if `L_new / f_new` is lower.
+The official stop-and-wait stream gives little reason to pursue one new request
+per clock. Feedback through each item's window/sum also imposes dependencies.
+Keep valid/ready boundaries insensitive to engine latency; do not add fixed-cycle
+assumptions to the controller or tests. Existing engine result handshakes support
+different internal schedules without changing the wire protocol.
+
+Illustrative arithmetic only, **not measured designs or validated PLL settings**:
+
+| Request processing cycles | Core frequency | Processing time |
+| --- | --- | --- |
+| 20 | 27 MHz | 0.741 µs |
+| 20 | 54 MHz | 0.370 µs |
+| 20 | 108 MHz | 0.185 µs |
+| 40 | 108 MHz | 0.370 µs |
+| 100 | 108 MHz | 0.926 µs |
+
+Even the illustrative 20-cycle 27→108 MHz change saves only about 0.556 µs,
+around 0.04% of the nominal 1.39 ms UART wire time. Do not predict a fourfold
+improvement in the judged round trip from a fourfold clock increase.
+
+Higher frequency can instead provide budget for **more resource sharing**:
+more cycles using less arithmetic hardware may retain low elapsed latency and
+reduce LUTs. Compare shared add/subtract, a shorter combinational schedule, and
+register cuts at measured critical paths. Explicitly selecting one shared
+operator may be necessary; sequential source statements do not prove sharing.
+Pipeline registers consume FFs and can add enables/muxes, routing and LUT cost;
+faster UART timers may also need wider counters. Measure the whole top.
 
 ### Datapath and storage decisions
 
@@ -290,6 +393,21 @@ mapping/collision behavior, clock/timing review, startup initialization, reset
 polarity and board operation all need new saved evidence under results/.
 No block-RAM mapping or new Gowin/tool version is claimed from the old reports.
 
+### Clocking follow-up (October 3, 2026)
+
+Add the optional clocking work package **P** described in
+[REQUEST_RESPONSE_PLAN.md](REQUEST_RESPONSE_PLAN.md). Parameter/configuration
+work and a separate PLL transport experiment may proceed alongside engine work,
+with one owner for shared board/generator files. They must not block F/G's
+27 MHz correctness baseline. Preserve the already recorded A–E local evidence;
+new clock settings require new timing/transport evidence.
+
+Every PLL candidate repeats the relevant Gate 0 startup/clock/timing checks,
+Gate 1 UART checks and Gate 2 full correctness checks. Gate 3 records its actual
+frequency, pipeline/schedule and cycle latency. Gate 4 compares that candidate
+against the baseline under the same host setup. No gate is satisfied by a higher
+reported frequency alone.
+
 ### Verification required at Gate 2
 
 - Exact byte order, echoed index/IDs, reserved zeros, response count, and no
@@ -314,21 +432,41 @@ their `PORT` setting. Retain each local robust-test CSV.
 2. **Arithmetic/control:** measure shared subtract/add hardware against simpler
    expressions; muxes, intermediate registers, and FSM logic can erase savings.
    Try a second item engine only to answer a specific synthesis question.
-3. **Packet/UART overhead:** inspect widths, redundant buffers/state, and timer
+3. **Clock/schedule experiments:** first try the unchanged engine at one modest
+   legal PLL frequency; 54 MHz is a candidate, not a validated setting. Keep
+   UART baud and physical idle gaps equivalent. If useful and time permits,
+   consider 81/108 MHz after exact-device PLL and timing checks. At a fixed
+   frequency compare cycle schedules/resource sharing; add a pipeline register
+   only to address a measured critical path or specific area/latency hypothesis.
+   Record failures and stop frequency escalation when gains are immaterial.
+4. **Packet/UART overhead:** inspect widths, redundant buffers/state, and timer
    costs. Share timers only where RX/TX/control overlap permits it safely.
-4. **TX pacing:** sweep idle gaps on hardware and select the lowest reliably
+5. **TX pacing:** sweep idle gaps on hardware and select the lowest reliably
    passing setting with margin. Compare repeated runs under the same host setup.
-5. **Further scheduling changes:** consider overlap/early computation only if
+6. **Further scheduling changes:** consider overlap/early computation only if
    measurements justify complexity, preserving the full-request-before-TX rule.
 
+This list groups experiments; it does not make PLL exploration a prerequisite
+for TX pacing or finishing correctness. With the October 4 freeze approaching,
+prefer a complete verified build over an unfinished frequency/pipeline redesign.
+
 For every candidate record source revision (and any dirty diff), tool versions,
-build settings, total **synthesis LUT** usage, registers/BRAM, timing outcome,
-TX gap, host/USB setup, test cases, mismatches/timeouts, and latency results.
+build settings, actual core frequency and PLL configuration, pipeline/schedule,
+request processing cycles and nanoseconds, total **synthesis LUT** usage,
+registers/BRAM/PLL usage, routed timing margin, UART divisor/actual baud,
+TX gap in cycles and microseconds, host/USB setup, test cases,
+mismatches/timeouts, and latency results.
 Keep the reports and CSVs with the candidate's bitstream identity/hash. Gowin's
 P&R `Logic` aggregate includes categories such as ALU and is not automatically
 the scoring metric: use the synthesis report's total LUT line specified by the
 guide. Distinguish microsecond FPGA processing time from full host round-trip
 latency and measurement noise.
+
+Compare repeated host measurements with their variation, not just one average.
+When latency differences are below the observed variation, select using reliable
+correctness, lower LUT cost and timing margin; do not claim a measured speedup.
+The reference 542-LUT score cap still applies, and clock frequency/throughput
+have no separately confirmed scoring credit.
 
 ## 7. Team work split and repository shape
 
@@ -390,6 +528,7 @@ submission link is [gqhacks.devpost.com](https://gqhacks.devpost.com).
 | Custom-test coverage beyond supplied scripts | Gate 2; warm-up field checks, full-range prices, and repeated sessions. |
 | Ranking beyond capped written scores | Before trading reliability/time for marginal optimization. |
 | Hardcaml memory mapping and startup initialization | Gate 0 experiments, then Gate 2 board verification. |
+| PLL configuration and useful frequency/schedule | User reports PLL use is permitted; package P validates the hardware option, then Gate 4 measures benefit. Written clarification can be attached when available; 115200 baud remains fixed. |
 | Reliable minimum TX gap | Gate 4 on the actual board/host, with repeated runs. |
 | Named owners and public submission repository | Assign now; confirm the final project identity before freeze. |
 

@@ -1,7 +1,8 @@
 # FPGA Request–Response Architecture and Implementation Plan
 
 Status: packages A–E implemented and locally verified; transport board checks
-and algorithm packages F–G remain pending. Updated: October 2, 2026.
+and algorithm packages F–G remain pending. PLL package P is planned, not
+implemented or validated. Updated: October 3, 2026.
 
 ## 1. Purpose and authority
 
@@ -49,7 +50,9 @@ subdirectories under `src/`, board reset/heartbeat/top, a history-memory probe,
 
 ## 3. Frozen external behavior
 
-- Device: Tang Nano 20K, `GW2AR-LV18QN88C8/I7`; clock: 27 MHz.
+- Device: Tang Nano 20K, `GW2AR-LV18QN88C8/I7`; reference input: 27 MHz.
+  The October 3 user-reported clarification permits internal PLL clocks; see
+  PLAN.md for source, clocking policy and measurement requirements.
 - Ports: `sys_clk`, `reset_btn`, `uart_rx_i`, `uart_tx_o`, `led0_n`, `led1_n`.
 - UART: 115200 baud, eight data bits, no parity, one stop bit; bits LSB first.
 - Multi-byte protocol fields are big-endian.
@@ -92,10 +95,16 @@ modules; create files when implementing their responsibility.
 
 ## 5. Shared interface contracts
 
-All internal logic runs on `sys_clk`. Timers generate enables, not new clocks.
-Internal reset is active high, using the existing board reset-release circuit.
-The board synchronizes RX through two registers; `Uart.Rx` receives that
-synchronized signal. Initialize/reset the synchronizer to UART idle high.
+All functional logic runs on one selected `core_clk`: directly connected to
+`sys_clk` in the existing 27 MHz baseline, or supplied by a validated Gowin PLL
+in an optional build. Timers generate enables, not fabric clocks. Clock selection
+is at build time; do not introduce a runtime logic mux or split UART/engine
+domains in the initial PLL experiment. The external `sys_clk` remains 27 MHz.
+Internal reset is active high. The PLL variant needs lock-aware assertion and
+synchronous release in `core_clk`, extending the existing reset scheme; see
+package P. The board synchronizes RX through two registers in the selected
+domain. `Uart.Rx` receives that synchronized signal. Initialize/reset the
+synchronizer to UART idle high.
 
 For every valid/ready interface, a transfer occurs on a rising clock edge with
 both asserted. Producers hold valid and payload stable until acceptance.
@@ -189,12 +198,17 @@ recovery needs an explicit later decision and tests.
 
 At 27 MHz and 115200 baud, a bit is 234.375 system clocks. Start with a build-time
 integer divisor of 234 clocks (approximately +0.16% baud error), configurable
-for simulation. Use independent RX/TX counters and test timing mismatch.
+for simulation. This remains the baseline. Package P derives the divisor from
+the actual selected core frequency and 115200 baud, reports the resulting baud
+error, and scales heartbeat/idle-gap counts to preserve physical durations.
+Never reuse 234 at a higher clock. Use independent RX/TX counters and test timing
+mismatch. The engine/controller interfaces must tolerate changed cycle latency.
 
 RX sequence:
 
 1. Observe idle high, then a falling edge on synchronized RX.
-2. Check the candidate start bit near its center, approximately 117 clocks later.
+2. Check the candidate start bit near its center, half the configured bit period
+   later (approximately 117 clocks in the baseline).
    Reject a false start without publishing a byte.
 3. Sample d0 through d7 at full-bit intervals; assemble the byte LSB first.
 4. Sample the stop position high, then publish the complete byte; otherwise
@@ -339,10 +353,61 @@ transport regressions. Then hand off official board-test commands to the user.
 
 **Depends on:** G and saved correctness/resource/latency evidence.
 
-Evaluate one change at a time: memory mapping, arithmetic/control area, TX gap,
-then early prefetch/field-level computation if useful. Preserve a known-good
+Evaluate one change at a time: memory mapping, arithmetic/control area,
+clock/schedule tradeoffs after P, TX gap, then early prefetch/field-level
+computation if useful. P is required only for PLL experiments, not other H work.
+First compare the unchanged engine at a modest legal PLL frequency with the
+27 MHz baseline, holding physical UART timing constant. Then compare sharing
+or pipeline changes at fixed frequency. Optimize measured cycles/frequency and
+whole-top LUTs, not Fmax or initiation interval alone. Preserve a known-good
 baseline and report actual synthesis LUTs plus complete measured latency results.
 Bit/nibble-level UART outputs are not part of packages A–G.
+
+### P — Optional board clock configuration and PLL validation
+
+**Depends on:** A–E transport foundation (locally complete). May proceed alongside
+F without changing its functional contract. **Owns:** agreed clock configuration,
+board clock/reset wrapper and PLL IP assets, dedicated clock tests, plus shared
+generator/constraints/handoff changes coordinated with the integration owner.
+
+This is a new package, not a reason to reopen completed A–E functionality or
+delay the complete 27 MHz F/G baseline. Implement in two reviewable steps:
+
+1. **P1: configuration seam.** Separate reference/core frequency; derive UART,
+   heartbeat and gap settings from actual core frequency, with rounding and
+   width checks. Keep gap configuration in physical time at the build boundary.
+   Preserve direct-clock target behavior and tests. One configuration must drive
+   both RTL timing and the associated clock constraints; reject inconsistent
+   PLL-frequency/divisor combinations. No PLL implementation required for P1.
+2. **P2: optional PLL target.** Generate/select exact-device Gowin PLL IP and
+   preserve its sources/configuration in the repo. Add a separate PLL transport
+   target with an explicit source manifest, leaving existing targets intact.
+   Keep all functional logic in one core domain. Implement reset during unlock,
+   qualified synchronous release after lock, lock-loss recovery and idle-high TX
+   even when clock edges stop. Do not hold the PLL itself in reset through its
+   own not-locked condition. Document generated-clock constraints and verify
+   the routed clock reports. An initial 54 MHz candidate is provisional until
+   legal IP settings, timing and board behavior are established.
+
+**Local acceptance:** all direct-clock regressions pass; configured UART timing
+and physical gap/heartbeat durations are checked at representative frequencies;
+independent serial stimulus remains at nominal 115200 baud rather than copying
+the DUT's divisor. Simulate delayed lock, reset and stopped-clock lock loss with
+an explicit model. Core tests may bypass analog PLL behavior but must identify
+that limitation. Emitted hardware must include the real PLL instance and required
+wrapper definitions; use vendor simulation models or explicitly declared vendor
+primitive boundaries for local elaboration. Do not mistake generic Yosys/Icarus
+blackbox acceptance for validated PLL hardware.
+
+**Gowin/board acceptance:** user runs synthesis/P&R for the actual part; save IP
+settings, actual frequency, derived-clock/setup/hold reports, resource counts,
+startup/relock checks and repeated custom transport results. Only then enable
+the PLL option for the full competition design and rerun full correctness.
+No new board verification is implied by adding this plan.
+
+**Handoff:** exact generator command, actual clock/baud/gap values, complete
+Gowin input list, test outcomes and remaining hardware evidence. Claim P1/local
+P2/board P2 separately so another agent can continue without guessing status.
 
 ### Scheduling and shared-file rules
 
@@ -351,6 +416,9 @@ A → B ─┐
   → C ─┼→ E ─┐
   → D ─┘     ├→ G → H
   → F ───────┘
+
+A–E → P1 → P2 → H's PLL experiments
+                  (full-design use also requires G and renewed correctness)
 ```
 
 Packages may run one at a time. If multiple agents are explicitly assigned in
@@ -428,6 +496,9 @@ alone do not establish success; full robust success requires 84/84 packets,
 - [ ] G: complete serial system locally verified and RTL generated.
 - [ ] G board follow-up: official tests and custom session/boundary tests pass.
 - [ ] Baseline synthesis/timing/latency evidence saved.
+- [ ] P1: clock-derived configuration implemented; direct-clock regressions pass.
+- [ ] P2 local: optional PLL integration and lock/reset simulations pass.
+- [ ] P2 board: legal PLL settings, timing/startup and transport evidence saved.
 - [ ] H: each chosen optimization independently measured and regression-tested.
 
 Local A–E handoff (October 2): typed payloads live in `src/protocol/types.ml`;
@@ -456,3 +527,8 @@ Next eligible package: **F**, then **G** once the engine is independently
 verified. The NONE-action transport is diagnostic only. Manual transport board
 follow-up can proceed independently using `gowin/README.md` and the custom host
 checker; it does not establish an official algorithm PASS.
+
+October 3 clocking amendment: **P1/P2** may also be assigned to a separate owner
+with coordinated shared-file edits. Keep F/G progressing at 27 MHz. Frequencies,
+PLL support and pipeline experiments described here are planned options, not
+changes already made to the current direct-clock implementation.
