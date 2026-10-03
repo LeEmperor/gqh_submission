@@ -1,0 +1,35 @@
+Running: /usr/bin/python3 -m unittest discover -s /home/wayne/devel/jane/gqh_submission/tools/test_data_factory -p test_factory.py -v
+test_all_scenarios_wire_answers_csv_and_metadata (test_factory.FactoryTests.test_all_scenarios_wire_answers_csv_and_metadata) ... ok
+test_boundary_prices_and_reset_fixture (test_factory.FactoryTests.test_boundary_prices_and_reset_fixture) ... ok
+test_constant_and_alternating_fixtures_hand_checked (test_factory.FactoryTests.test_constant_and_alternating_fixtures_hand_checked) ... ok
+test_existing_output_is_preserved (test_factory.FactoryTests.test_existing_output_is_preserved) ... ok
+test_invalid_settings_do_not_leave_output (test_factory.FactoryTests.test_invalid_settings_do_not_leave_output) ... ok
+test_ramp_moves_each_item_in_both_directions (test_factory.FactoryTests.test_ramp_moves_each_item_in_both_directions) ... ok
+test_random_seed_changes_prices (test_factory.FactoryTests.test_random_seed_changes_prices) ... ok
+test_repeated_session_clears_prior_nonzero_actions (test_factory.FactoryTests.test_repeated_session_clears_prior_nonzero_actions) ... ok
+test_same_settings_are_byte_identical (test_factory.FactoryTests.test_same_settings_are_byte_identical) ... ok
+test_verifier_catches_changed_action_even_with_updated_hash (test_factory.FactoryTests.test_verifier_catches_changed_action_even_with_updated_hash) ... ok
+test_accepts_hand_checked_complete_response (test_factory.OfflineLogCheckerTests.test_accepts_hand_checked_complete_response) ... ok
+test_rejects_seven_byte_response (test_factory.OfflineLogCheckerTests.test_rejects_seven_byte_response) ... ok
+test_rejects_timeout_with_empty_response (test_factory.OfflineLogCheckerTests.test_rejects_timeout_with_empty_response) ... ok
+test_rejects_wrong_action (test_factory.OfflineLogCheckerTests.test_rejects_wrong_action) ... ok
+test_constant_and_swapped_answers (test_factory.ProtocolAndModelTests.test_constant_and_swapped_answers) ... ok
+test_floor_average_equal_is_not_a_crossing (test_factory.ProtocolAndModelTests.test_floor_average_equal_is_not_a_crossing) ... ok
+test_hand_checked_big_endian_bytes (test_factory.ProtocolAndModelTests.test_hand_checked_big_endian_bytes) ... ok
+test_hand_checked_crossings_and_held_actions (test_factory.ProtocolAndModelTests.test_hand_checked_crossings_and_held_actions) ... ok
+test_model_rejects_skipped_index_without_consuming_packet (test_factory.ProtocolAndModelTests.test_model_rejects_skipped_index_without_consuming_packet) ... ok
+test_rejects_invalid_fields_and_requests (test_factory.ProtocolAndModelTests.test_rejects_invalid_fields_and_requests) ... ok
+test_seeded_random_against_complete_history_oracle (test_factory.ProtocolAndModelTests.test_seeded_random_against_complete_history_oracle) ... ok
+test_session_zero_resets_prices_and_actions (test_factory.ProtocolAndModelTests.test_session_zero_resets_prices_and_actions) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.081s
+
+OK
+Running: /usr/bin/python3 /home/wayne/devel/jane/gqh_submission/tools/test_data_factory/factory.py --verify-dir /home/wayne/devel/jane/gqh_submission/tools/test_data_factory/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+Running: /usr/bin/python3 /home/wayne/devel/jane/gqh_submission/tools/test_data_factory/factory.py --output-dir /tmp/tickweave-fixture-check-93ycfslt/fixtures --scenario all --seed 42 --packets 100
+Generated /tmp/tickweave-fixture-check-93ycfslt/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+PASS: saved fixtures reproduce byte for byte
+PASS: all requested fixture checks completed

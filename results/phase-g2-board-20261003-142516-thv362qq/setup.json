@@ -1,0 +1,12 @@
+{
+  "repository": "/home/wayne/devel/jane/gqh_submission",
+  "port": "/dev/ttyUSB1",
+  "baud": 115200,
+  "prepared_at": "2026-10-03T14:25:16.509252-07:00",
+  "inputs_sha256": {
+    "rtl/gqh_competition_top.v": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+    "constraints/19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+    "constraints/tang_nano_20k.sdc": "b7e2d8d942dd52547d289668ebf1393175ebbf80b8b7bdaff2c544a365292a2a"
+  },
+  "note": "Preparation only; synthesis, programming and board tests are manual."
+}

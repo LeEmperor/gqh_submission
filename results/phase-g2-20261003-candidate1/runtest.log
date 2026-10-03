@@ -1,0 +1,131 @@
+PASS: heartbeat/reset/idle and RAM latency/collision
+PASS: independent RX/TX timing, packet handshakes/faults, serial round trips
+Generated /tmp/build_531b42_dune/gqh-hdl-b8pa3yfc/gqh_top.v (top module gqh_top)
+Generated /tmp/build_531b42_dune/gqh-hdl-b8pa3yfc/gqh_top.v (top module gqh_top)
+PASS: emitted RTL initialization, async assertion, synchronized release, idle
+/home/wayne/devel/jane/gqh_submission/_build/default/test/bringup_tb.v:30: $finish called at 86000 (1ps)
+Generated /tmp/build_531b42_dune/gqh-hdl-b8pa3yfc/history_probe.v (top module history_probe)
+Generated /tmp/build_531b42_dune/gqh-hdl-b8pa3yfc/history_probe.v (top module history_probe)
+PASS: emitted RAM read/write, latency and read-first collision
+/home/wayne/devel/jane/gqh_submission/_build/default/test/history_tb.v:34: $finish called at 676000 (1ps)
+PASS: official checksums, deterministic deliverables, exact ports, complete HDL elaboration
+PASS mocks: nine reset stages, 361 responses, 728 commands, 24 clear pulses, 50 earliest-result commands; random stalls/latency and held offers
+PASS real engine: 4669 records, 9338 commands, 30 session clears
+latency session_start: publication E0+10; earliest response transfer E0+11
+latency warmup: publication E0+8; earliest response transfer E0+9
+latency steady: publication E0+8; earliest response transfer E0+9
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+{
+  "records": 4214,
+  "supplied": 800,
+  "additional": 3414,
+  "trace_sha256": "f566d5328efef3dbf704e1583be3140d7353d4148ffe0dcb3c3e36305b371d77",
+  "packet_coverage": {
+    "action_0": 1106,
+    "action_1": 3541,
+    "action_2": 3781,
+    "held_0": 562,
+    "held_1": 1814,
+    "held_2": 2048,
+    "maximum_prices": 122,
+    "previous_equals_old_average": 640,
+    "price_equals_new_average": 631,
+    "sessions": 17,
+    "steady_packets": 3942,
+    "swapped_packets": 2071,
+    "truncation": 7255,
+    "warmup_packets": 272,
+    "warmup_swaps": 130,
+    "wraps": 261,
+    "zero_prices": 147
+  },
+  "real_reset_offsets": 13,
+  "post_reset_replay_records": 455,
+  "total_real_completed_records": 4669,
+  "gqh_transaction_controller_sha256": "c432ce45b344a84cfd07af8c632e1c5d2e29267b9a48e425dde491693bf342e7",
+  "gqh_transaction_test_sha256": "5f8460036bef0efd1de32eb20baad47d435fc48d632afaf39c15bae577687833",
+  "gqh_byte_test_sha256": "1d154a54f4107f34180af53d46170386228d31d5b17caf02a8b2ee4fdf981ebd"
+}
+PASS G1: mocks, independent oracle/real engine, byte composition, deterministic RTL, Yosys and Icarus elaboration
+PASS: TX all bytes, 15 timing configurations, exact durations, stalls, idle and reset boundaries
+Generated /tmp/build_531b42_dune/gqh-transport-cjacum5l/gqh_transport_top.v (top module gqh_transport_top)
+Generated /tmp/build_531b42_dune/gqh-transport-cjacum5l/gqh_transport_top.v (top module gqh_transport_top)
+PASS: emitted transport RTL serial round trips, reset and faults
+/home/wayne/devel/jane/gqh_submission/_build/default/test/transport/transport_tb.v:95: $finish called at 3065960000 (1ps)
+PASS: transport deterministic RTL, six ports and full hierarchy
+PASS: pinned unchanged oracle/factory/fixture source hashes
+Running: /usr/bin/python3 -m unittest discover -s /home/wayne/devel/jane/gqh_submission/_build/default/test/engine/oracle -p test_factory.py -v
+Running: /usr/bin/python3 /home/wayne/devel/jane/gqh_submission/_build/default/test/engine/oracle/factory.py --verify-dir /home/wayne/devel/jane/gqh_submission/_build/default/test/engine/oracle/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+Running: /usr/bin/python3 /home/wayne/devel/jane/gqh_submission/_build/default/test/engine/oracle/factory.py --output-dir /tmp/build_531b42_dune/tickweave-fixture-check-cob5zp74/fixtures --scenario all --seed 42 --packets 100
+Generated /tmp/build_531b42_dune/tickweave-fixture-check-cob5zp74/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+PASS: saved fixtures reproduce byte for byte
+PASS: all requested fixture checks completed
+{
+  "accepted": 9554,
+  "action_0": 1922,
+  "action_1": 3694,
+  "action_2": 3934,
+  "clear_valid_collision": 33,
+  "held_0": 866,
+  "held_1": 1887,
+  "held_2": 2121,
+  "latency_steady_2": 8492,
+  "latency_warm_2": 1056,
+  "maximum_sum": 3,
+  "packets": 4774,
+  "previous_equals_old_average": 656,
+  "price_equals_new_average": 631,
+  "reset_state_0": 12,
+  "reset_state_1": 2,
+  "reset_state_2": 2,
+  "reset_state_3": 2,
+  "result_stall_edges": 52806,
+  "results_consumed": 9548,
+  "session_clear": 33,
+  "steady": 8494,
+  "truncated_average": 7865,
+  "warmup": 1056,
+  "warmup_swaps": 258,
+  "wraps": 293,
+  "zero_sum": 41,
+  "supplied_fixture_records": 800,
+  "edges": 100647,
+  "extra_packet_records": 3974,
+  "trace_sha256": "e5ea0b1adbf4f3c978e6d9c938cb311e02f421219f950c4be7e9045237c77012"
+}
+PASS Cyclesim: 100647 edges, handshake, actions, scalars and all known RAM cells
+PASS Icarus: 100647 edges, synchronous RAM, scalar/window consistency, reset and stalled results
+/home/wayne/devel/jane/gqh_submission/_build/default/test/engine/engine_tb.v:62: $finish called at 301941000 (1ps)
+RTL SHA256: f17baeeb8eb3917e419e689717e6345584756d6139e8813190e3cf6388ec68c1
+PASS: Phase F independent oracle, Cyclesim, deterministic RTL, Yosys and Icarus
+test_all_scenarios_wire_answers_csv_and_metadata (test_factory.FactoryTests.test_all_scenarios_wire_answers_csv_and_metadata) ... ok
+test_boundary_prices_and_reset_fixture (test_factory.FactoryTests.test_boundary_prices_and_reset_fixture) ... ok
+test_constant_and_alternating_fixtures_hand_checked (test_factory.FactoryTests.test_constant_and_alternating_fixtures_hand_checked) ... ok
+test_existing_output_is_preserved (test_factory.FactoryTests.test_existing_output_is_preserved) ... ok
+test_invalid_settings_do_not_leave_output (test_factory.FactoryTests.test_invalid_settings_do_not_leave_output) ... ok
+test_ramp_moves_each_item_in_both_directions (test_factory.FactoryTests.test_ramp_moves_each_item_in_both_directions) ... ok
+test_random_seed_changes_prices (test_factory.FactoryTests.test_random_seed_changes_prices) ... ok
+test_repeated_session_clears_prior_nonzero_actions (test_factory.FactoryTests.test_repeated_session_clears_prior_nonzero_actions) ... ok
+test_same_settings_are_byte_identical (test_factory.FactoryTests.test_same_settings_are_byte_identical) ... ok
+test_verifier_catches_changed_action_even_with_updated_hash (test_factory.FactoryTests.test_verifier_catches_changed_action_even_with_updated_hash) ... ok
+test_accepts_hand_checked_complete_response (test_factory.OfflineLogCheckerTests.test_accepts_hand_checked_complete_response) ... ok
+test_rejects_seven_byte_response (test_factory.OfflineLogCheckerTests.test_rejects_seven_byte_response) ... ok
+test_rejects_timeout_with_empty_response (test_factory.OfflineLogCheckerTests.test_rejects_timeout_with_empty_response) ... ok
+test_rejects_wrong_action (test_factory.OfflineLogCheckerTests.test_rejects_wrong_action) ... ok
+test_constant_and_swapped_answers (test_factory.ProtocolAndModelTests.test_constant_and_swapped_answers) ... ok
+test_floor_average_equal_is_not_a_crossing (test_factory.ProtocolAndModelTests.test_floor_average_equal_is_not_a_crossing) ... ok
+test_hand_checked_big_endian_bytes (test_factory.ProtocolAndModelTests.test_hand_checked_big_endian_bytes) ... ok
+test_hand_checked_crossings_and_held_actions (test_factory.ProtocolAndModelTests.test_hand_checked_crossings_and_held_actions) ... ok
+test_model_rejects_skipped_index_without_consuming_packet (test_factory.ProtocolAndModelTests.test_model_rejects_skipped_index_without_consuming_packet) ... ok
+test_rejects_invalid_fields_and_requests (test_factory.ProtocolAndModelTests.test_rejects_invalid_fields_and_requests) ... ok
+test_seeded_random_against_complete_history_oracle (test_factory.ProtocolAndModelTests.test_seeded_random_against_complete_history_oracle) ... ok
+test_session_zero_resets_prices_and_actions (test_factory.ProtocolAndModelTests.test_session_zero_resets_prices_and_actions) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.128s
+
+OK
+
+Exit status: 0; elapsed seconds: 18.318

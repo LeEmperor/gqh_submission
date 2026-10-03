@@ -672,6 +672,33 @@ not a claim about hidden judge qualification. Remaining physical status/startup/
 reset checks and matching bitstream/build/clock-routing review keep status
 **Locally verified — awaiting manual checks**, with F/G1/G2/G/H still open.
 
+### Phase G2 physical status/reset follow-up — October 3, 2026
+
+User-run status check and saved JSON verify heartbeat, LED1 off after initial
+button reset, correct accepted response, sticky busy-fault receive lockout and
+LED1 latch, then S2/KEY2 fault clear and fresh valid response after reset. No
+extra output followed recovery. Evidence/hash:
+`results/phase-g2-board-20261003-142516-thv362qq/status-fz9wj7qq/`.
+All prepared response tests and this physical fault/reset check pass. Remaining:
+exact programmed .fs path/mode, fresh startup and idle-high TX confirmation,
+and whole-design timing/clock-routing review acknowledgement (PR1014 retained).
+Status remains **Locally verified — awaiting manual checks**; F/G1/G2/G/H
+completion is not inferred from this status check.
+
+### Phase G2 fresh startup and user deferral — October 3, 2026
+
+Fresh SRAM configuration without pressing reset passes heartbeat/LED1 checks,
+exact first response and no unsolicited/surplus output; evidence/hash in
+`results/phase-g2-board-20261003-142516-thv362qq/startup-2ld34y_z/`.
+Reported programmed .fs SHA-256 is
+`fac34993701c469f322eba8b77ef9c4f012a7fa2ea086aea8d3662d2bbd773d4`,
+different from the earlier archived image. Physical TX-idle level is unmeasured.
+The user explicitly defers final .fs packaging/identity and matching-report work
+until tomorrow before submission. Preserve historical passing tests; final freeze
+will associate matching source/RTL/reports/.fs and final runs with one candidate.
+Do not pursue deferred identity work now. Status remains **Locally verified —
+awaiting manual checks**; no F/G1/G2/G/H completion is inferred.
+
 ### Phase H — Resource-first optimization after a qualification baseline
 
 **Depends on:** G1/G2 acceptance and saved qualification/resource/latency evidence.

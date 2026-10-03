@@ -1,0 +1,12 @@
+{
+  "port": "/dev/ttyUSB1",
+  "test": "manual busy-fault/button-reset recovery",
+  "pass": true,
+  "heartbeat_observed": true,
+  "initial_reset_fault_off": true,
+  "accepted_response_hex": "0000110022000000",
+  "after_fault_response_hex": "",
+  "fault_led_on": true,
+  "reset_fault_off": true,
+  "post_reset_response_hex": "0000110022000000"
+}

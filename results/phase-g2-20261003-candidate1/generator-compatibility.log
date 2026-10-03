@@ -1,0 +1,5 @@
+$ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe
+Generated /home/wayne/devel/jane/gqh_submission/rtl/gqh_top.v (top module gqh_top)
+$ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition -output results/phase-g2-20261003-candidate1/override/gqh_competition_top.v
+Generated /home/wayne/devel/jane/gqh_submission/results/phase-g2-20261003-candidate1/override/gqh_competition_top.v (top module gqh_competition_top)
+PASS: default bringup unchanged; relative competition output override matches exact production RTL

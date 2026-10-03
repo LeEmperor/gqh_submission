@@ -1,0 +1,39 @@
+{
+  "runner": "custom-runner",
+  "note": "custom-runner measurement; use the official scripts for scoring-style validation",
+  "label": "G2-direct27MHz-div234-gap0",
+  "started_at": "2026-10-03T14:41:08",
+  "fixture": {
+    "path": "/home/wayne/devel/jane/gqh_submission/results/phase-g2-board-20261003-142516-thv362qq/custom-fixture.jsonl",
+    "metadata": {}
+  },
+  "transport": {
+    "kind": "serial",
+    "port": "/dev/ttyUSB1",
+    "baud": 115200
+  },
+  "timeout_s": 1.0,
+  "planned": 1394,
+  "sent": 1394,
+  "counts": {
+    "OK": 1394,
+    "MISMATCH": 0,
+    "SHORT": 0,
+    "TIMEOUT": 0
+  },
+  "scored_counts": {
+    "OK": 1186,
+    "MISMATCH": 0,
+    "SHORT": 0,
+    "TIMEOUT": 0
+  },
+  "aborted": null,
+  "unsolicited_byte_events": 0,
+  "trailing_unsolicited_hex": "",
+  "latency": {
+    "count": 1394,
+    "mean_ms": 16.927632953371592,
+    "median_ms": 16.9396325,
+    "p95_ms": 17.13811
+  }
+}

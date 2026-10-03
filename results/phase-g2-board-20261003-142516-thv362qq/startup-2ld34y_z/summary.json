@@ -1,0 +1,21 @@
+{
+  "test": "fresh configuration without button reset",
+  "startup_pass": true,
+  "fresh_configuration_without_reset": true,
+  "programmed_fs_reported_by_user": "/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/impl/pnr/test_proj1.fs",
+  "programmed_fs_sha256": "fac34993701c469f322eba8b77ef9c4f012a7fa2ea086aea8d3662d2bbd773d4",
+  "programming_mode_reported_by_user": "sram",
+  "matches_archived_bitstream": false,
+  "startup_heartbeat_observed": true,
+  "startup_fault_led_off": true,
+  "port": "/dev/ttyUSB1",
+  "unsolicited_startup_hex": "",
+  "startup_response_hex": "0000110022000000",
+  "extra_response_hex": "",
+  "physical_tx_idle_observation": "unmeasured",
+  "archived_clock_timing_review_acknowledged": true,
+  "remaining_checks": [
+    "Matching reports/source for the newly identified bitstream",
+    "Physical idle-high TX confirmation"
+  ]
+}

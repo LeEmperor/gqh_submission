@@ -1,0 +1,17 @@
+{
+  "status": "Board quick test failed at index 0: 0 of 8 response bytes; no acceptance closure",
+  "observations": [
+    "Project RTL and constraints match candidate hashes",
+    "Synthesis log selects gqh_competition_top",
+    "P&R log records PR1014 generic clock routing warning; causality unestablished",
+    "Programming of this exact .fs not independently established",
+    "Awaiting reset/LED observations; no serial device opened by agent"
+  ],
+  "sha256": {
+    "rtl/gqh_competition_top.v": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+    "test_proj1/test_proj1/src/gqh_competition_top.v": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+    "test_proj1/test_proj1/src/19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+    "test_proj1/test_proj1/src/tang_nano_20k.sdc": "b7e2d8d942dd52547d289668ebf1393175ebbf80b8b7bdaff2c544a365292a2a",
+    "test_proj1/test_proj1/impl/pnr/test_proj1.fs": "eb348fabe16924242114f9f86123ec1d5e82c5e78c8803f2d8bf50c734990632"
+  }
+}

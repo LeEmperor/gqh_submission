@@ -1,0 +1,33 @@
+GowinSynthesis start
+Running parser ...
+Analyzing Verilog file '/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v'
+Compiling module 'gqh_competition_top'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1874)
+Compiling module 'gqh_heartbeat'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1817)
+Compiling module 'gqh_update_engine'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1534)
+Extracting RAM for identifier 'engine_history'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1599)
+Compiling module 'gqh_uart_rx'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1288)
+Compiling module 'gqh_request_decoder'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":989)
+Compiling module 'gqh_transaction_controller'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":585)
+Compiling module 'gqh_response_sequencer'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":279)
+Compiling module 'gqh_reset_release'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":244)
+Compiling module 'gqh_uart_tx'("/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/src/gqh_competition_top.v":1)
+NOTE  (EX0101) : Current top module is "gqh_competition_top"
+[5%] Running netlist conversion ...
+Running device independent optimization ...
+[10%] Optimizing Phase 0 completed
+[15%] Optimizing Phase 1 completed
+[25%] Optimizing Phase 2 completed
+Running inference ...
+[30%] Inferring Phase 0 completed
+[40%] Inferring Phase 1 completed
+[50%] Inferring Phase 2 completed
+[55%] Inferring Phase 3 completed
+Running technical mapping ...
+[60%] Tech-Mapping Phase 0 completed
+[65%] Tech-Mapping Phase 1 completed
+[75%] Tech-Mapping Phase 2 completed
+[80%] Tech-Mapping Phase 3 completed
+[90%] Tech-Mapping Phase 4 completed
+[95%] Generate netlist file "/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/impl/gwsynthesis/test_proj1.vg" completed
+[100%] Generate report file "/home/wayne/devel/jane/gqh_submission/test_proj1/test_proj1/impl/gwsynthesis/test_proj1_syn.rpt.html" completed
+GowinSynthesis finish

@@ -1,0 +1,5 @@
+{
+  "observed_head": "36dd19ecc1401def6443d7c0ed368188415a7c08",
+  "rtl_sha256": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+  "note": "Read-only current source observation after user-reported board checks; not programmed-bitstream confirmation."
+}

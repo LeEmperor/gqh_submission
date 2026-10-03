@@ -1,0 +1,18 @@
+Initial status: ?? test_proj1/ (pre-existing, untouched)
+
+HEAD:
+a192ce4b36a5dfd86461115f20059b87805c7271
+
+Final task status (results/ ignored):
+ M PLAN.md
+ M README.md
+ M REQUEST_RESPONSE_PLAN.md
+ M bin/generate.ml
+ M gowin/README.md
+ M test/engine/README.md
+?? gqh_competition.gprj
+?? rtl/gqh_competition_top.v
+?? src/board/competition_top.ml
+?? src/board/competition_top.mli
+?? test/integration/
+?? test_proj1/

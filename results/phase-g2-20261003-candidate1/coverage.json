@@ -1,0 +1,48 @@
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "rtl_sha256": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  },
+  "production_extra_checks": {
+    "recovery_packets": 408,
+    "busy_fault_completed_packet": 1,
+    "rx_reset_cases": 8,
+    "engine_reset_cases": 6,
+    "tx_reset_cases": 8,
+    "startup_without_button": true,
+    "heartbeat_default": true,
+    "framing_and_busy_sticky_lockout": true
+  },
+  "measured_cycles": {
+    "boundary": "pre-edge request acceptance to pre-edge response offer/transfer",
+    "index_zero": 11,
+    "other_warmup_or_steady": 9,
+    "index_zero_records": 13,
+    "other_records": 1381
+  }
+}

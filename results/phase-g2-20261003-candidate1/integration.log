@@ -1,0 +1,38 @@
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+Generated /tmp/build_94ea08_dune/phase-g2-tddlyfvl/gqh_competition_top.v (top module gqh_competition_top)
+Generated /tmp/build_94ea08_dune/phase-g2-tddlyfvl/gqh_competition_top.v (top module gqh_competition_top)
+PASS: 1394 production-divisor serial oracle packets; core latency session=11 other=9 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and heartbeat
+/home/wayne/devel/jane/gqh_submission/_build/default/test/integration/competition_tb.v:208: $finish called at 3152462628564 (1ps)
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "rtl_sha256": "6c7f220cf209f87d796ec11836d0299913f37faa322f44ccc6b70c5792c32164",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  }
+}
+PASS G2: Cyclesim serial oracle, production-timing RTL serial, resets/faults, deterministic hierarchy and six ports

@@ -1,0 +1,295 @@
+diff --git a/PLAN.md b/PLAN.md
+index 24aa082..4c1a133 100644
+--- a/PLAN.md
++++ b/PLAN.md
+@@ -63,7 +63,7 @@ organizers distinguish designs already at full written score.
+ | `viv25_proj/test_proj1/src/blinky.v` | A six-LED counter in Verilog; starting point for device/tool bring-up. |
+ | `viv25_proj/test_proj1/test_proj1.gprj` | Gowin project for `GW2AR-LV18QN88C8/I7`. |
+ | Blinky `.cst`, `.sdc`, and `impl/` | Saved synthesis/P&R reports and `.fs` exist; report names Gowin V1.9.11.03 Education. These establish saved build evidence, not verified board operation. |
+-| Competition implementation | Hardcaml foundation and UART/protocol transport sources exist; REQUEST_RESPONSE_PLAN.md records local A–E verification. Transport board checks and algorithm packages F–G remain pending. PLL support is planned, not implemented or validated. |
++| Competition implementation | Hardcaml UART/protocol foundation, F engine, G1 controller and G2 competition board system exist. REQUEST_RESPONSE_PLAN.md records A–E evidence and F/G1/G2 local verification. Competition whole-design Gowin/board checks and measured baseline remain pending. PLL validation is separate. |
+ | Organizer inputs | All three files are available in the sibling `../GQH-Hardware-Track-Submission/` checkout; exact paths and reviewed behavior below. Copy pinned inputs into the team project during integration. |
+ | Results | No competition correctness or latency/LUT measurements yet. Blinky resource counts are not a competition baseline. |
+ 
+@@ -438,7 +438,21 @@ All required local builds/regressions and emitted-RTL elaboration checks pass.
+ The [G1 handoff](results/phase-g1-20261003-candidate1/HANDOFF.md) records exact
+ interfaces, cycle measurements, source identity and G2 wiring instructions.
+ G2 may begin; G1 hardware acceptance still comes from G2's matching full-system
+-build. G2, overall G and unrelated phases remain open.
++build. G2 and overall G remain open for manual acceptance; G2 local delivery
++is recorded below.
++
++**G2 local evidence (October 3): Locally verified — awaiting manual checks.**
++The direct 27 MHz `gqh_competition_top` now connects UART, decoder, G1 controller,
++F engine and sequencer. Production RTL and separate root Gowin project are
++available. Serial oracle verification, production-divisor emitted-Verilog checks
++and earlier regressions pass; see [integration coverage](test/integration/README.md)
++and [candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md).
++Matching whole-design synthesis/P&R, memory/resource/timing/clock inspection,
++bitstream programming, startup/reset/status, official quick PASS/robust 84/84 and
++168/168 with zero timeouts, and custom same-connection sessions remain pending.
++F/G1 retain local status, and G2, overall G and H's measured baseline remain open.
++Missing historical F/G1 result directories were not recreated as evidence.
++
+ 
+ ### Gate 0 initialization evidence (October 2, 2026)
+ 
+diff --git a/README.md b/README.md
+index 33e84dd..c0a80d4 100644
+--- a/README.md
++++ b/README.md
+@@ -26,27 +26,31 @@ correctness, then optimize measured LUT count and UART round-trip latency.
+ - **[270 MHz PLL project](Hackathon/)** — Gowin project and generated PLL
+   artifacts imported from the Nano20k PLL branch.
+ - **[Root-level Gowin projects](gowin/README.md#root-level-project-files)** —
+-  separate engine, UART diagnostic, and PLL test projects with canonical paths.
++  separate competition, engine, UART diagnostic, and PLL test projects with canonical paths.
+ 
+ ## Current status
+ 
+-The Hardcaml foundation and minimal board bring-up are implemented and locally
+-verified. **Gate 0 remains incomplete** until the user runs Gowin synthesis/P&R,
+-inspects actual memory mapping and timing, and tests startup/reset on the board.
+-UART and the diagnostic request/response transport are implemented and locally
+-verified. The competition engine and official correctness/performance results
+-are still pending. The old blinky project and archive are preserved.
++The direct **27 MHz competition system is Locally verified — awaiting manual
++checks**. F's update engine, G1's transaction controller and G2's production
++board composition are implemented and locally tested. The A–E transport history
++and reported manual checks are recorded in REQUEST_RESPONSE_PLAN.md. Competition
++synthesis/P&R, whole-design resources/memory mapping/timing, matching bitstream,
++board startup/reset/status, official quick/robust PASS and custom replays remain
++pending. F, G1, G2, overall G and the measured baseline are not marked complete.
++The old blinky, diagnostic transport and independent PLL project are preserved.
+ 
+ ## Build and generate
+ 
+ Use the existing `5.2.0+ox` switch; no package installation, upgrade, or global
+-pinning is needed for this initialization. From `testing/`:
++pinning is needed for this initialization. From the repository root:
+ 
+ ```sh
+ opam exec --switch=5.2.0+ox -- dune build
+ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- bringup
+ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- history-probe
+ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- transport
++opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition
++opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest
+ opam exec --switch=5.2.0+ox -- dune runtest
+ ```
+ 
+@@ -139,14 +143,10 @@ Synthesize it separately without board pin constraints and inspect actual storag
+ mapping before relying on block RAM. A vendor wrapper is a possible next step
+ only if reports justify it.
+ 
+-UART RX/TX now live under `src/uart/`; complete eight-byte request decoding and
+-paced responses live under `src/protocol/`. Next implement a shared sequential update engine under
+-`src/engine/`, and item-indexed history/state under `src/history/` as useful modules
+-become implemented. Preserve the architecture:
+-**UART RX → packet capture → shared sequential engine ↔ item-indexed history/state
+-→ paced UART TX**. Add an independent oracle and directed fixtures alongside UART
+-verification. Full official quick/robust passes require the complete engine;
+-the copied scripts have not been run against a serial device during initialization.
++UART RX/TX live under `src/uart/`, packet decoding, the transaction controller
++and paced responses under `src/protocol/`, and the shared update engine with
++item-indexed 32 x 16 history RAM under `src/engine/`. Expected actions in tests
++come from an independent direct-window oracle, not the DUT's rolling sum.
+ 
+ ## Diagnostic UART transport
+ 
+@@ -155,7 +155,7 @@ the copied scripts have not been run against a serial device during initializati
+ bringup. Transport echoes the index and slot IDs, returns NONE actions and two
+ reserved zero bytes, and starts only after the complete eight-byte request.
+ It has no algorithm state. See [REQUEST_RESPONSE_PLAN.md](REQUEST_RESPONSE_PLAN.md)
+-for the interface contracts and remaining engine/controller work.
++for the interface contracts and acceptance status.
+ 
+ UART uses independent RX/TX timers at 234 clocks/bit (27 MHz / 234 ≈ 115385 baud,
+ about +0.16% vs 115200), with zero extra idle clocks by default. TX always holds
+@@ -191,6 +191,31 @@ See [test/transport/README.md](test/transport/README.md) for exact coverage and
+ tested baud mismatch. Emitted RTL passes Icarus and Yosys checks; Gowin mapping,
+ timing closure and board behavior remain unverified.
+ 
++
++## Competition candidate
++
++`generate.exe competition` emits [rtl/gqh_competition_top.v](rtl/gqh_competition_top.v),
++top **gqh_competition_top**, with the same six scalar board ports. Open the separate
++[gqh_competition.gprj](gqh_competition.gprj) for **GW2AR-LV18QN88C8/I7**; its only
++inputs are that self-contained RTL and the pristine board CST/27 MHz SDC.
++
++The wiring is UART RX → decoder → G1 controller ↔ F engine → sequencer → UART TX.
++The controller owns slot-to-item routing, session clear, warm-up, pointer and
++response ordering. Both items clear logically on index zero, including repeated
++sessions on one connection; warm-up overwrites retained RAM. Receive rearm waits
++for the sequencer's final-frame completion. There is no stream timeout or automatic
++resynchronization: framing/busy-input faults latch LED1 until button reset.
++UART remains 234 clocks/bit, 115384.615 baud (+0.1603% against 115200), 8N1 and zero
++extra gap; every stop bit is full length. All logic runs directly on `sys_clk`.
++
++See [test/integration/README.md](test/integration/README.md) for serial verification
++and [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for
++source/RTL identity, measured core latency, commands and manual acceptance.
++The candidate's status is **Locally verified — awaiting manual checks**. Local
++simulation establishes neither board correctness nor Gowin mapping/timing.
++Official scripts must run against this competition image, with their actual PASS
++outputs/counts preserved; diagnostic NONE responses cannot satisfy acceptance.
++
+ **Submission and board return:** Sunday, October 4, 2026, **11:00 am EDT**.
+ The guide requires a public repository containing the matching source, build
+ files, constraints, and final `.fs`; put the full final commit SHA in Devpost.
+diff --git a/REQUEST_RESPONSE_PLAN.md b/REQUEST_RESPONSE_PLAN.md
+index f112cee..4ad9c92 100644
+--- a/REQUEST_RESPONSE_PLAN.md
++++ b/REQUEST_RESPONSE_PLAN.md
+@@ -1,7 +1,8 @@
+ # FPGA Request–Response Architecture and Implementation Plan
+ 
+ Status: packages A–E implemented and locally verified; custom transport board
+-checks pass. Algorithm packages F–G and synthesis/timing evidence remain pending.
++checks pass. F, G1 and G2 are locally verified — awaiting manual checks;
++competition synthesis/timing and board acceptance remain pending.
+ PLL package P is planned, not
+ implemented or validated. Updated: October 3, 2026.
+ 
+@@ -587,6 +588,29 @@ G2 remains **locally verified — awaiting manual checks** until the matching-bu
+ results are supplied. Close overall G only when G1 and G2's applicable acceptance
+ checks are satisfied. H additionally requires the saved measured baseline.
+ 
++### Phase G2 local evidence — October 3, 2026
++
++**Status: Locally verified — awaiting manual checks.** Production board composition
++is `Board.Competition_top` with the official six ports, direct 27 MHz reset/RX
++synchronization/status and existing controller/engine/sequencer handshakes.
++`generate.exe competition` emits the complete `rtl/gqh_competition_top.v` hierarchy;
++root `gqh_competition.gprj` is separate from all experimental targets.
++
++The [focused integration suite](test/integration/README.md) drives the actual
++production composition over serial and compares all bytes with the existing
++independent direct-window oracle. It includes saved fixtures, boundary/crossing
++vectors, full-range random streams, repeated sessions, warm-up/steady slot swaps,
++production-divisor Icarus at nominal host baud, resets/faults, complete stop bits,
++determinism, six-port and Yosys hierarchy checks. Earlier regressions remain active.
++See [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for exact
++commands, hashes, cycle boundaries and outstanding manual checks. Referenced F/G1
++handoff folders are absent in this checkout; source/interfaces/tests and recorded
++plan evidence were used, without inventing archived results.
++
++F and G1 retain their local status; G2/overall G and the measured baseline remain
++open until matching synthesis/P&R, bitstream/board and official/custom results
++are supplied. PLL validation remains separate.
++
+ ### Phase H — Measured optimization, only after a correct baseline
+ 
+ **Depends on:** G1/G2 acceptance and saved correctness/resource/latency evidence.
+@@ -747,7 +771,7 @@ alone do not establish success; full robust success requires 84/84 packets,
+ - [ ] F: engine and independent oracle locally verified.
+ - [x] G1: controller locally verified with mocks and the real engine/oracle (October 3; handoff above).
+ - [ ] G1 hardware follow-up: controller acceptance established by G2's build/tests.
+-- [ ] G2: complete serial system locally verified and competition RTL generated.
++- [x] G2 local verification: complete serial system and competition RTL generated (October 3; manual acceptance remains open).
+ - [ ] G2 board follow-up: synthesis/timing/startup and official/custom tests pass.
+ - [ ] Baseline synthesis/timing/latency evidence saved.
+ - [ ] P1: clock-derived configuration implemented; direct-clock regressions pass.
+diff --git a/bin/generate.ml b/bin/generate.ml
+index 0bdef2d..fda84ae 100644
+--- a/bin/generate.ml
++++ b/bin/generate.ml
+@@ -4,6 +4,7 @@ open! Hardcaml_gqh
+ 
+ module Bringup = Circuit.With_interface (Board.Top.I) (Board.Top.O)
+ module History = Circuit.With_interface (History_probe.I) (History_probe.O)
++module Competition = Circuit.With_interface (Board.Competition_top.I) (Board.Competition_top.O)
+ module Transport = Circuit.With_interface (Board.Transport_top.I) (Board.Transport_top.O)
+ 
+ let project_root () =
+@@ -42,8 +43,11 @@ let history = target ~summary:"32 x 16 synchronous read-first RAM experiment"
+ let transport = target ~summary:"UART request/response transport (NONE actions)"
+   ~default:"rtl/gqh_transport_top.v" ~build:(fun scope ->
+     Transport.create_exn ~name:"gqh_transport_top" (Board.Transport_top.create scope))
++let competition = target ~summary:"27 MHz competition system with moving-average engine"
++  ~default:"rtl/gqh_competition_top.v" ~build:(fun scope ->
++    Competition.create_exn ~name:"gqh_competition_top" (Board.Competition_top.create scope))
+ let () =
+   let argv = Array.to_list (Sys.get_argv ()) in
+   let argv = if List.length argv = 1 then argv @ ["bringup"] else argv in
+   Command_unix.run ~argv (Command.group ~summary:"Generate self-contained Hardcaml Verilog"
+-  ["bringup", bringup; "history-probe", history; "transport", transport])
++  ["bringup", bringup; "history-probe", history; "transport", transport; "competition", competition])
+diff --git a/gowin/README.md b/gowin/README.md
+index 33ea0ec..5bdc452 100644
+--- a/gowin/README.md
++++ b/gowin/README.md
+@@ -2,12 +2,13 @@
+ 
+ ## Root-level project files
+ 
+-The repository contains three independent Gowin project files at its root. Open
++The repository contains four independent Gowin project files at its root. Open
+ the project matching the experiment you intend to run; do not combine their
+ constraints or top modules into one build.
+ 
+ | Project | Top module | Purpose |
+ | --- | --- | --- |
++| `gqh_competition.gprj` | `gqh_competition_top` | Complete six-port competition design; direct 27 MHz baseline. Locally verified — awaiting manual checks. |
+ | `gqh_engine.gprj` | `gqh_update_engine` | Standalone engine synthesis/timing experiment. It has no board pin constraints and cannot be programmed as a complete board design. |
+ | `gqh_transport.gprj` | `gqh_transport_top` | Six-port, 27 MHz board diagnostic with UART request/response transport. It returns NONE actions and is not the final competition design. |
+ | `gqh_pll_test.gprj` | `top` | Independent 270 MHz Gowin rPLL and divided-clock output experiment. It uses the PLL branch's CST because that file additionally assigns `clk_test` to pin 73. |
+@@ -118,4 +119,42 @@ every response to match and no timeouts or surplus bytes. Save the commands,
+ source/build identity, reports and host output in a fresh results directory.
+ LED1 lights on framing errors or unexpected traffic and stays lit until board
+ reset. This target returns NONE actions and is only a transport diagnostic;
+-official quick/robust algorithm tests require the later competition target.
++official quick/robust algorithm tests require the competition target.
++
++## Competition handoff (G2)
++
++Status: **Locally verified — awaiting manual checks**. Generate with:
++
++```sh
++opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition
++```
++
++Open root-level `gqh_competition.gprj`; select **gqh_competition_top** and
++**GW2AR-LV18QN88C8/I7**. Inputs are exactly `rtl/gqh_competition_top.v`,
++`constraints/19_tang_nano_20k.cst` and `constraints/tang_nano_20k.sdc`.
++No diagnostic, standalone engine or PLL sources belong in this project.
++All processing uses direct `sys_clk` at 27 MHz; UART divisor 234, zero extra gap.
++
++Use the [candidate handoff](../results/phase-g2-20261003-candidate1/HANDOFF.md)
++for exact identity, local results, and concrete board commands. In order:
++
++1. Synthesize/P&R the matching candidate. Preserve whole-design LUT/register
++   counts, actual memory primitive mapping/read behavior, clock routing, warnings,
++   constraints/unconstrained paths and timing reports. No local generic Yosys
++   result proves Gowin memory mapping or timing closure.
++2. Generate and identify the matching `.fs` by SHA-256, record Gowin version,
++   project options and source/RTL hashes, then program manually.
++3. Check fresh startup/configuration, active-high button reset, heartbeat,
++   LED1 fault latch/reset and idle-high TX. Check reset during active traffic and
++   restart with index zero/full warm-up. Startup initialization/CDC review still
++   applies to this new whole-design build.
++4. Run pristine official quick/robust scripts in separate fresh output
++   directories (only PORT may change in an archived run copy). Require quick
++   **PASS**, robust **84/84 scored packets, 168/168 actions, zero timeouts**.
++   Exit status alone is insufficient.
++5. Run the documented custom fixture checks, including every warm-up byte,
++   full-range/equality prices, slot swaps and two sessions without closing the
++   connection or resetting the board. Keep runner outputs and metadata separate
++   from official scoring-style outputs; check unsolicited-byte fields too.
++6. Preserve `.fs`, reports, outputs, latency measurements and full build identity.
++   Supply results before F/G1/G2/overall G or the measured baseline can close.
+diff --git a/test/engine/README.md b/test/engine/README.md
+index c22bd57..31e0dd1 100644
+--- a/test/engine/README.md
++++ b/test/engine/README.md
+@@ -2,7 +2,8 @@
+ 
+ Status: **Locally verified — awaiting manual checks**. This package implements
+ `Hardcaml_gqh.Engine.Update`, independently of UART and the diagnostic transport.
+-It provides no production competition top or Phase G transaction controller.
++This standalone F package does not own the competition top or controller;
++those are now delivered by G1/G2 (see ../integration/README.md).
+ 
+ From the `testing/` root:
+ 

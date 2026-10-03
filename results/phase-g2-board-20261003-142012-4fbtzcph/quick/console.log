@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/home/wayne/devel/jane/gqh_submission/results/phase-g2-board-20261003-142012-4fbtzcph/quick/21_quick_uart_test.py", line 111, in <module>
+    raise TimeoutError(
+TimeoutError: Timeout at index 0: received 0 of 8 bytes
