@@ -1,0 +1,8 @@
+(test
+ (name transport_tests)
+ (modules transport_tests)
+ (libraries core hardcaml hardcaml_gqh))
+(rule
+ (alias runtest)
+ (deps check_transport_rtl.py transport_tb.v ../../bin/generate.exe ../../rtl/gqh_transport_top.v)
+ (action (chdir ../.. (run python3 test/transport/check_transport_rtl.py bin/generate.exe))))

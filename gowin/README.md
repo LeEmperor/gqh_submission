@@ -72,3 +72,27 @@ registers, or other logic? Record the primitive type/count, read register placem
 and collision mode. Read-first inference is an experiment, not a block-RAM guarantee.
 If mapping/collision behavior is unsuitable, compare a narrow Gowin wrapper or
 register implementation based on the saved evidence. No mapping result exists yet.
+## Diagnostic transport handoff
+
+Generate with `opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- transport`.
+In a separate manual Gowin target/project, select `GW2AR-LV18QN88C8/I7`, top
+`gqh_transport_top`, and add:
+
+- `rtl/gqh_transport_top.v` (complete hierarchy; no bringup RTL needed)
+- `constraints/19_tang_nano_20k.cst`
+- `constraints/tang_nano_20k.sdc`
+
+Run synthesis/P&R manually, check the 27 MHz clock timing and resource reports,
+and program the board. Verify heartbeat on LED0, idle-high TX, and LED1 off after
+startup/reset. The active-high reset-button assumption and Gowin initialization
+support still require board checks. Review RX synchronizer placement and CDC/I/O
+timing; the supplied SDC only defines the primary clock.
+
+Reset the board, then run `python3 tools/check_transport.py PORT --count 100`.
+Repeat with `--byte-pause 0.005` to exercise inter-byte pauses. The host alternates
+slot order, includes boundary/full-range prices and repeated indices. Require
+every response to match and no timeouts or surplus bytes. Save the commands,
+source/build identity, reports and host output in a fresh results directory.
+LED1 lights on framing errors or unexpected traffic and stays lit until board
+reset. This target returns NONE actions and is only a transport diagnostic;
+official quick/robust algorithm tests require the later competition target.

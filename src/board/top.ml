@@ -9,7 +9,12 @@ module O = struct
   [@@deriving hardcaml]
 end
 
-let create ?half_period_cycles scope (i : _ I.t) =
+let create 
+  ?half_period_cycles 
+  scope 
+  (i : _ I.t) 
+  =
+  
   let reset = Reset_release.hierarchical ~instance:"reset_release" scope
     { Reset_release.I.clock = i.sys_clk; reset_btn = i.reset_btn } in
   let heartbeat = Heartbeat.hierarchical ~instance:"heartbeat"

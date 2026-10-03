@@ -25,8 +25,9 @@ correctness, then optimize measured LUT count and UART round-trip latency.
 The Hardcaml foundation and minimal board bring-up are implemented and locally
 verified. **Gate 0 remains incomplete** until the user runs Gowin synthesis/P&R,
 inspects actual memory mapping and timing, and tests startup/reset on the board.
-UART, packet handling, the competition engine, and official correctness/performance
-results are still pending. The old blinky project and archive are preserved.
+UART and the diagnostic request/response transport are implemented and locally
+verified. The competition engine and official correctness/performance results
+are still pending. The old blinky project and archive are preserved.
 
 ## Build and generate
 
@@ -37,6 +38,7 @@ pinning is needed for this initialization. From `testing/`:
 opam exec --switch=5.2.0+ox -- dune build
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- bringup
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- history-probe
+opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- transport
 opam exec --switch=5.2.0+ox -- dune runtest
 ```
 
@@ -129,14 +131,57 @@ Synthesize it separately without board pin constraints and inspect actual storag
 mapping before relying on block RAM. A vendor wrapper is a possible next step
 only if reports justify it.
 
-Next add UART RX/TX under `src/uart/`, then complete eight-byte packet capture and
-paced responses under `src/packet/`, a shared sequential update engine under
+UART RX/TX now live under `src/uart/`; complete eight-byte request decoding and
+paced responses live under `src/protocol/`. Next implement a shared sequential update engine under
 `src/engine/`, and item-indexed history/state under `src/history/` as useful modules
 become implemented. Preserve the architecture:
 **UART RX → packet capture → shared sequential engine ↔ item-indexed history/state
 → paced UART TX**. Add an independent oracle and directed fixtures alongside UART
 verification. Full official quick/robust passes require the complete engine;
 the copied scripts have not been run against a serial device during initialization.
+
+## Diagnostic UART transport
+
+`generate.exe transport` emits self-contained `rtl/gqh_transport_top.v`, top
+`gqh_transport_top`, with the official six ports. The default target remains
+bringup. Transport echoes the index and slot IDs, returns NONE actions and two
+reserved zero bytes, and starts only after the complete eight-byte request.
+It has no algorithm state. See [REQUEST_RESPONSE_PLAN.md](REQUEST_RESPONSE_PLAN.md)
+for the interface contracts and remaining engine/controller work.
+
+UART uses independent RX/TX timers at 234 clocks/bit (27 MHz / 234 ≈ 115385 baud,
+about +0.16% vs 115200), with zero extra idle clocks by default. TX always holds
+the mandatory full stop bit. `create`/`hierarchical` accept `cycles_per_bit` and
+`extra_idle_cycles` for simulation or a later spacing experiment. RX validates
+the start center and stop sample, publishes one-cycle byte/error events, and
+does not repeatedly restart on a continuously low line. Two idle-high registers
+synchronize RX at the board boundary. LED0 remains heartbeat; LED1 lights on a
+sticky protocol fault. Reset cancels partial requests and transmission and clears
+that fault. Arbitrary host pauses between bytes are legal.
+
+Use [gowin/README.md](gowin/README.md#diagnostic-transport-handoff) for manual board
+steps. Run only the custom checker against this target:
+
+```sh
+python3 tools/check_transport.py /dev/ttyUSB0 --count 100
+python3 tools/check_transport.py /dev/ttyUSB0 --count 100 --byte-pause 0.005
+```
+
+Requires Python 3 and pyserial on the host. It fails on mismatches, timeouts or
+surplus output and never resets the board automatically. Reset the board before
+retrying a failed stream: there is no protocol marker for automatic realignment.
+These transport checks cannot establish official algorithm correctness.
+
+Focused local checks:
+
+```sh
+opam exec --switch=5.2.0+ox -- dune build @test/transport/runtest
+```
+
+Full regressions: `dune runtest` in the same switch.
+See [test/transport/README.md](test/transport/README.md) for exact coverage and
+tested baud mismatch. Emitted RTL passes Icarus and Yosys checks; Gowin mapping,
+timing closure and board behavior remain unverified.
 
 **Submission and board return:** Sunday, October 4, 2026, **11:00 am EDT**.
 The guide requires a public repository containing the matching source, build
