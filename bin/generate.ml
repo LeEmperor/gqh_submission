@@ -4,6 +4,7 @@ open! Hardcaml_gqh
 
 module Bringup = Circuit.With_interface (Board.Top.I) (Board.Top.O)
 module History = Circuit.With_interface (History_probe.I) (History_probe.O)
+module Competition = Circuit.With_interface (Board.Competition_top.I) (Board.Competition_top.O)
 module Transport = Circuit.With_interface (Board.Transport_top.I) (Board.Transport_top.O)
 
 let project_root () =
@@ -42,8 +43,11 @@ let history = target ~summary:"32 x 16 synchronous read-first RAM experiment"
 let transport = target ~summary:"UART request/response transport (NONE actions)"
   ~default:"rtl/gqh_transport_top.v" ~build:(fun scope ->
     Transport.create_exn ~name:"gqh_transport_top" (Board.Transport_top.create scope))
+let competition = target ~summary:"27 MHz competition system with moving-average engine"
+  ~default:"rtl/gqh_competition_top.v" ~build:(fun scope ->
+    Competition.create_exn ~name:"gqh_competition_top" (Board.Competition_top.create scope))
 let () =
   let argv = Array.to_list (Sys.get_argv ()) in
   let argv = if List.length argv = 1 then argv @ ["bringup"] else argv in
   Command_unix.run ~argv (Command.group ~summary:"Generate self-contained Hardcaml Verilog"
-  ["bringup", bringup; "history-probe", history; "transport", transport])
+  ["bringup", bringup; "history-probe", history; "transport", transport; "competition", competition])

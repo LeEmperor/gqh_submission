@@ -1,7 +1,8 @@
 # FPGA Request–Response Architecture and Implementation Plan
 
 Status: packages A–E implemented and locally verified; custom transport board
-checks pass. Algorithm packages F–G and synthesis/timing evidence remain pending.
+checks pass. F, G1 and G2 are locally verified — awaiting manual checks;
+competition synthesis/timing and board acceptance remain pending.
 PLL package P is planned, not
 implemented or validated. Updated: October 3, 2026.
 
@@ -25,8 +26,15 @@ The organizer guide remains the primary specification. This document expands
 the implementation boundaries and work assignments; it does not replace the
 scoring, submission, or optimization requirements in PLAN.md.
 
+The [October 3 placement supplement](docs/placement-supplement-20261003.md)
+requires 100/100 on the official run plus perfect full-range correctness directly
+afterward without reprogramming. Qualifiers rank by **total logic → registers →
+five-run median latency** (within 5% tied). Gowin V1.9.11.03 rebuilds committed
+source/settings; Resource Usage Summary logic includes LUTs/ALUs/other logic,
+while BSRAM is excluded. Keep synthesis LUTs for qualification separate.
+
 First deliver a reliable byte-oriented transport, then integrate the complete
-algorithm, then measure possible cut-through improvements. The user imports
+algorithm, then establish qualification and minimize resources. The user imports
 generated Verilog into Gowin and handles synthesis/P&R and programming manually.
 
 ## 2. Existing foundation and working rules
@@ -577,9 +585,11 @@ their permitted PORT setting.
 **Manual acceptance:** provide exact generator/Gowin inputs and user commands.
 The user synthesizes/P&Rs the competition design, reviews actual memory mapping,
 resources and timing, generates/programs its identified bitstream, and checks
-startup/reset/TX idle. Require official quick PASS and robust **84/84 packets,
-168/168 actions, zero timeouts**, plus custom warm-up/full-range/slot-swap and
-same-connection repeated-session checks. Retain candidate identity, reports,
+startup/reset/TX idle. Require official quick PASS and normal robust followed by
+full-range practice **without reset/reprogramming**, each with 100 responses,
+**84/84 scored packets, 168/168 actions, zero timeouts**, plus custom
+warm-up/full-range/slot-swap and same-connection repeated-session checks.
+Retain candidate identity, reports,
 test outputs and latency measurements for the baseline. Diagnostic NONE-action
 transport results do not satisfy this new full-system acceptance.
 
@@ -587,21 +597,111 @@ G2 remains **locally verified — awaiting manual checks** until the matching-bu
 results are supplied. Close overall G only when G1 and G2's applicable acceptance
 checks are satisfied. H additionally requires the saved measured baseline.
 
-### Phase H — Measured optimization, only after a correct baseline
+### Phase G2 local evidence — October 3, 2026
 
-**Depends on:** G1/G2 acceptance and saved correctness/resource/latency evidence.
+**Status: Locally verified — awaiting manual checks.** Production board composition
+is `Board.Competition_top` with the official six ports, direct 27 MHz reset/RX
+synchronization/status and existing controller/engine/sequencer handshakes.
+`generate.exe competition` emits the complete `rtl/gqh_competition_top.v` hierarchy;
+root `gqh_competition.gprj` is separate from all experimental targets.
 
-Evaluate one change at a time: memory mapping, arithmetic/control area,
-clock/schedule tradeoffs after P, TX gap, then early prefetch/field-level
-computation if useful. P is required only for PLL experiments, not other H work.
-First compare the unchanged engine at a modest legal PLL frequency with the
-27 MHz baseline, holding physical UART timing constant. Then compare sharing
-or pipeline changes at fixed frequency. Optimize measured cycles/frequency and
-whole-top LUTs, not Fmax or initiation interval alone. Preserve a known-good
-baseline and report actual synthesis LUTs plus complete measured latency results.
-Bit/nibble-level UART outputs are not part of packages A–G.
+The [focused integration suite](test/integration/README.md) drives the actual
+production composition over serial and compares all bytes with the existing
+independent direct-window oracle. It includes saved fixtures, boundary/crossing
+vectors, full-range random streams, repeated sessions, warm-up/steady slot swaps,
+production-divisor Icarus at nominal host baud, resets/faults, complete stop bits,
+determinism, six-port and Yosys hierarchy checks. Earlier regressions remain active.
+See [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for exact
+commands, hashes, cycle boundaries and outstanding manual checks. Referenced F/G1
+handoff folders are absent in this checkout; source/interfaces/tests and recorded
+plan evidence were used, without inventing archived results.
+
+F and G1 retain their local status; G2/overall G and the measured baseline remain
+open until matching synthesis/P&R, bitstream/board and official/custom results
+are supplied. PLL validation remains separate.
+
+### Phase G2 manual follow-up — October 3, 2026
+
+The user reports the competition image was generated/programmed, LED0 heartbeat
+works and LED1 remains off during testing. Official quick testing now prints
+**PASS**, with 21 responses and all five scored updates correct, including slot
+swaps. See `results/phase-g2-board-20261003-142516-thv362qq/manual-progress.md`
+and the preserved quick log. An earlier index-zero timeout is retained separately;
+its cause is unestablished. No RTL fix was applied between these observations.
+Robust/custom tests, remaining status/startup/reset checks, exact bitstream identity
+and whole-design report review remain pending. Status remains **Locally verified
+— awaiting manual checks**; F/G1/G2, overall G and measured baseline stay open.
+
+### Phase G2 robust board follow-up — October 3, 2026
+
+Official robust results supplied by the user and verified from saved CSV/summary
+show **100 responses, 84/84 scored packets, 168/168 actions, zero timeouts**.
+Mean successful host round trip is **16.809 ms** (16808.59 us), including warm-up
+and USB/host overhead; this is distinct from the simulated core-cycle latency.
+Artifacts/hashes are retained in
+`results/phase-g2-board-20261003-142516-thv362qq/robust-pass-observed/`.
+Custom all-byte/full-range/swaps/repeated sessions, remaining startup/reset/status
+checks and matching programmed-bitstream/report identity remain pending.
+Status stays **Locally verified — awaiting manual checks**; no F/G1/G2/G/H closure
+is inferred from this official practice run alone.
+
+### Phase G2 custom board follow-up — October 3, 2026
+
+Saved custom-runner JSON and CSV verify **1,394/1,394 OK**, including 208 warm-up
+and 1,186 scored rows across 13 sessions on one connection, with zero mismatch,
+SHORT/TIMEOUT, abortion, unsolicited-byte events or trailing bytes. Full-range,
+equality/truncation, slot swaps, wraps and repeated-session all-byte checks pass.
+Custom mean/median/p95 latency is 16.928/16.940/17.138 ms; retain its measurement
+label separately from official robust results. Evidence/hashes are in
+`results/phase-g2-board-20261003-142516-thv362qq/custom-Me94C2ml/`.
+The supplemental normal robust → full-range practice pair without reset remains
+pending, as do remaining status/reset/startup checks and matching build/report
+identity. **Locally verified — awaiting manual checks** remains the phase status;
+no F/G1/G2/G/H completion is inferred from this additional PASS alone.
+
+### Phase G2 supplemental practice pair — October 3, 2026
+
+Both saved CSV/summary outputs from the consecutive normal/full-range launcher
+verify **100 responses, 84/84 scored packets, 168/168 actions, zero timeouts**.
+Mean host round trips are 16.811 ms normal and 16.914 ms full-range (seed
+0x1F00D16B). Evidence/hashes:
+`results/phase-g2-board-20261003-142516-thv362qq/qualification-qb8kuABs/`.
+The launcher has no reset/reprogramming step between runs; it requests none.
+All prepared response correctness checks now pass. This is practice evidence,
+not a claim about hidden judge qualification. Remaining physical status/startup/
+reset checks and matching bitstream/build/clock-routing review keep status
+**Locally verified — awaiting manual checks**, with F/G1/G2/G/H still open.
+
+### Phase H — Resource-first optimization after a qualification baseline
+
+**Depends on:** G1/G2 acceptance and saved qualification/resource/latency evidence.
+Add normal robust → `tools/22_robust_uart_test_fullrange.py` practice without
+intervening reset/reprogramming to board acceptance, retaining exact custom
+warm-up/repeated-session tests. Require full scored correctness and zero timeouts
+in both runs; the attachment only reports correctness points out of 70.
+
+Measure the whole design in Gowin V1.9.11.03. First establish a local 100/100
+candidate (including ≤542 synthesis LUTs and ≤20.7825 ms official average under
+the published references), then select qualifying candidates lexicographically:
+Resource Usage Summary **total logic**, then **total registers**, then **median
+latency over five runs**, within 5% tied. Judges determine actual qualification.
+
+Evaluate one change at a time: BSRAM mapping and possible state storage, shared
+add/subtract/comparators or digit-serial arithmetic, redundant payload storage,
+FSM/enables and UART timer costs. Preserve full precision, handshakes and session
+reset. Extra cycles at 27 MHz are acceptable if qualification remains reliable.
+Use PLL work only for measured resource savings or a qualification need; P is
+required only for those experiments. Preserve a known-good qualifying baseline,
+raw logic/register/LUT reports, full project settings and matching source/RTL/.fs.
+Moving math into ALUs does not itself reduce placement logic. See PLAN.md §6
+for candidate selection and evidence. Bit/nibble-level UART outputs remain
+outside packages A–G.
 
 ### Phase P — Optional board clock configuration and PLL validation
+
+**Priority after the placement supplement:** deferred behind qualification and
+27 MHz resource-sharing experiments unless a measured resource-saving or
+qualification hypothesis justifies it. Frequency alone earns no ranking credit.
 
 **Depends on:** A–E transport foundation (locally complete). May proceed alongside
 F without changing its functional contract. **Owns:** agreed clock configuration,
@@ -725,11 +825,13 @@ should elaborate the generated hierarchy with the existing Icarus/Yosys tools
 and exercise actual emitted RTL where relevant. RX/TX loopback alone is
 insufficient because shared timing bugs can cancel each other.
 
-For board measurements preserve source/build identity, TX gap, tool versions,
-synthesis total LUTs, memory/register usage, timing, correctness, timeouts, and
-latency. Run official scripts in fresh results directories. Their exit codes
-alone do not establish success; full robust success requires 84/84 packets,
-168/168 actions, and zero timeouts. See PLAN.md for complete evidence requirements.
+For board measurements preserve source/build identity, committed project
+settings, TX gap, tool versions, Resource Usage Summary total logic/registers,
+separate synthesis LUTs, BSRAM usage, timing, correctness, timeouts and latency.
+Run official scripts in fresh results directories. Their exit codes alone do
+not establish success; normal robust and subsequent full-range practice each
+require 100 responses, 84/84 scored packets, 168/168 actions and zero timeouts.
+Preserve five-run latency evidence for resource-tied candidates. See PLAN.md.
 
 ## 11. Progress checklist
 
@@ -747,9 +849,13 @@ alone do not establish success; full robust success requires 84/84 packets,
 - [ ] F: engine and independent oracle locally verified.
 - [x] G1: controller locally verified with mocks and the real engine/oracle (October 3; handoff above).
 - [ ] G1 hardware follow-up: controller acceptance established by G2's build/tests.
-- [ ] G2: complete serial system locally verified and competition RTL generated.
+- [x] G2 local verification: complete serial system and competition RTL generated (October 3; manual acceptance remains open).
 - [ ] G2 board follow-up: synthesis/timing/startup and official/custom tests pass.
 - [ ] Baseline synthesis/timing/latency evidence saved.
+- [ ] Qualification rehearsal: 100/100-equivalent normal run, then perfect
+  full-range practice without reset/reprogramming; custom warm-up/session checks pass.
+- [ ] Gowin V1.9.11.03 whole-design total logic/register counts and reproducible
+  project settings saved separately from rubric synthesis-LUT count.
 - [ ] P1: clock-derived configuration implemented; direct-clock regressions pass.
 - [ ] P2 local: optional PLL integration and lock/reset simulations pass.
 - [ ] P2 board: legal PLL settings, timing/startup and transport evidence saved.

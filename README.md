@@ -1,14 +1,17 @@
 # GQH Hardware Track
 
 Build a compact **Hardcaml implementation of the required two-item, 16-sample
-moving-average crossing algorithm** on the Tang Nano 20K. Establish complete
-correctness, then optimize measured LUT count and UART round-trip latency.
+moving-average crossing algorithm** on the Tang Nano 20K. Qualify with **100/100
+plus a perfect full-range run**, then minimize **total logic → registers →
+five-run median latency** (within 5% tied), in that order.
 
 ## Start here
 
 - **[PLAN.md](PLAN.md)** — the active implementation plan, exact protocol and
   algorithm, priorities, work assignments, and delivery gates. Update this when
   decisions change.
+- **[October 3 placement supplement](docs/placement-supplement-20261003.md)** —
+  qualification, resource-first ranking, judge rebuild rules and full-range script.
 - **[Competition guide](gqh_hw_guide.pdf)** — organizer requirements, scoring,
   board setup, and submission rules.
 - **[Organizer resource checkout](../GQH-Hardware-Track-Submission/)** — official
@@ -26,27 +29,44 @@ correctness, then optimize measured LUT count and UART round-trip latency.
 - **[270 MHz PLL project](Hackathon/)** — Gowin project and generated PLL
   artifacts imported from the Nano20k PLL branch.
 - **[Root-level Gowin projects](gowin/README.md#root-level-project-files)** —
-  separate engine, UART diagnostic, and PLL test projects with canonical paths.
+  separate competition, engine, UART diagnostic, and PLL test projects with canonical paths.
 
 ## Current status
 
-The Hardcaml foundation and minimal board bring-up are implemented and locally
-verified. **Gate 0 remains incomplete** until the user runs Gowin synthesis/P&R,
-inspects actual memory mapping and timing, and tests startup/reset on the board.
-UART and the diagnostic request/response transport are implemented and locally
-verified. The competition engine and official correctness/performance results
-are still pending. The old blinky project and archive are preserved.
+The direct **27 MHz competition system is Locally verified — awaiting manual
+checks**. F's update engine, G1's transaction controller and G2's production
+board composition are implemented and locally tested. The A–E transport history
+and reported manual checks are recorded in REQUEST_RESPONSE_PLAN.md. Competition
+synthesis/P&R, whole-design resources/memory mapping/timing, matching bitstream,
+remaining startup/reset/status checks, robust/full-range PASS and custom replays remain
+pending. F, G1, G2, overall G and the measured baseline are not marked complete.
+The old blinky, diagnostic transport and independent PLL project are preserved.
+
+Latest G2 board follow-up: official **quick PASS** is saved, with heartbeat and
+no-fault LED behavior reported. Robust/full-range/custom acceptance and resource
+measurements remain open. The new placement rule uses **Resource Usage Summary
+total logic** (including ALUs), then total registers; BSRAM is excluded from
+logic. Judges rebuild with **Gowin V1.9.11.03** and committed project settings.
+The guide's synthesis-LUT and average-latency limits still govern qualification.
+
+The downloaded practice attachment is `tools/22_robust_uart_test_fullrange.py`.
+Run a PORT-only copy immediately after normal robust without resetting or
+reprogramming. Each needs 100 responses, 84/84 scored packets, 168/168 actions
+and zero timeouts; custom tests additionally verify warm-up contents and session
+recovery. Preserve separate output directories and the matching build identity.
 
 ## Build and generate
 
 Use the existing `5.2.0+ox` switch; no package installation, upgrade, or global
-pinning is needed for this initialization. From `testing/`:
+pinning is needed for this initialization. From the repository root:
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune build
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- bringup
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- history-probe
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- transport
+opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition
+opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest
 opam exec --switch=5.2.0+ox -- dune runtest
 ```
 
@@ -139,14 +159,10 @@ Synthesize it separately without board pin constraints and inspect actual storag
 mapping before relying on block RAM. A vendor wrapper is a possible next step
 only if reports justify it.
 
-UART RX/TX now live under `src/uart/`; complete eight-byte request decoding and
-paced responses live under `src/protocol/`. Next implement a shared sequential update engine under
-`src/engine/`, and item-indexed history/state under `src/history/` as useful modules
-become implemented. Preserve the architecture:
-**UART RX → packet capture → shared sequential engine ↔ item-indexed history/state
-→ paced UART TX**. Add an independent oracle and directed fixtures alongside UART
-verification. Full official quick/robust passes require the complete engine;
-the copied scripts have not been run against a serial device during initialization.
+UART RX/TX live under `src/uart/`, packet decoding, the transaction controller
+and paced responses under `src/protocol/`, and the shared update engine with
+item-indexed 32 x 16 history RAM under `src/engine/`. Expected actions in tests
+come from an independent direct-window oracle, not the DUT's rolling sum.
 
 ## Diagnostic UART transport
 
@@ -155,7 +171,7 @@ the copied scripts have not been run against a serial device during initializati
 bringup. Transport echoes the index and slot IDs, returns NONE actions and two
 reserved zero bytes, and starts only after the complete eight-byte request.
 It has no algorithm state. See [REQUEST_RESPONSE_PLAN.md](REQUEST_RESPONSE_PLAN.md)
-for the interface contracts and remaining engine/controller work.
+for the interface contracts and acceptance status.
 
 UART uses independent RX/TX timers at 234 clocks/bit (27 MHz / 234 ≈ 115385 baud,
 about +0.16% vs 115200), with zero extra idle clocks by default. TX always holds
@@ -190,6 +206,31 @@ Full regressions: `dune runtest` in the same switch.
 See [test/transport/README.md](test/transport/README.md) for exact coverage and
 tested baud mismatch. Emitted RTL passes Icarus and Yosys checks; Gowin mapping,
 timing closure and board behavior remain unverified.
+
+
+## Competition candidate
+
+`generate.exe competition` emits [rtl/gqh_competition_top.v](rtl/gqh_competition_top.v),
+top **gqh_competition_top**, with the same six scalar board ports. Open the separate
+[gqh_competition.gprj](gqh_competition.gprj) for **GW2AR-LV18QN88C8/I7**; its only
+inputs are that self-contained RTL and the pristine board CST/27 MHz SDC.
+
+The wiring is UART RX → decoder → G1 controller ↔ F engine → sequencer → UART TX.
+The controller owns slot-to-item routing, session clear, warm-up, pointer and
+response ordering. Both items clear logically on index zero, including repeated
+sessions on one connection; warm-up overwrites retained RAM. Receive rearm waits
+for the sequencer's final-frame completion. There is no stream timeout or automatic
+resynchronization: framing/busy-input faults latch LED1 until button reset.
+UART remains 234 clocks/bit, 115384.615 baud (+0.1603% against 115200), 8N1 and zero
+extra gap; every stop bit is full length. All logic runs directly on `sys_clk`.
+
+See [test/integration/README.md](test/integration/README.md) for serial verification
+and [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for
+source/RTL identity, measured core latency, commands and manual acceptance.
+The candidate's status is **Locally verified — awaiting manual checks**. Local
+simulation establishes neither board correctness nor Gowin mapping/timing.
+Official scripts must run against this competition image, with their actual PASS
+outputs/counts preserved; diagnostic NONE responses cannot satisfy acceptance.
 
 **Submission and board return:** Sunday, October 4, 2026, **11:00 am EDT**.
 The guide requires a public repository containing the matching source, build

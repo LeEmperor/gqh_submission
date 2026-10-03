@@ -5,13 +5,16 @@ Updated: October 3, 2026. **This is the active team plan.**
 ## 1. Objective and priorities
 
 Implement the organizer's fixed algorithm entirely on the **Tang Nano 20K**, in
-**Hardcaml**, then minimize **total synthesized LUTs** and **measured UART
-round-trip latency** while preserving reliable correctness.
+**Hardcaml**. First qualify with **100/100 on the official run and a perfect
+full-range hidden run**, then minimize resources in this strict ranking order:
+**total logic count → total registers → median latency over five runs**.
+Latency within 5% counts as tied. Preserve reliable qualification throughout.
 
 **Clocking decision (October 3): PLL use is permitted.** We can multiply the
-board's 27 MHz reference to run the internal logic faster. Treat core frequency
-as an optimization variable alongside LUT count and cycle schedule; select the
-final frequency using timing closure and board measurements. The external UART
+board's 27 MHz reference to run the internal logic faster. Use a higher core
+frequency only when it enables a measured resource reduction or is needed for
+qualification; frequency alone earns no placement credit. Select the final
+frequency using timing closure and board measurements. The external UART
 remains at 115200 baud, with its divisors and idle-gap counters adjusted to the
 selected core clock. See [the clocking plan](#clocking-decision-configurable-frequency-one-processing-domain).
 
@@ -29,15 +32,18 @@ helping verification, measurement, or reproducibility.
 - [The supplied guide](gqh_hw_guide.pdf), especially Part 2 §§7–11 and Part 3,
   defines the written contract. Record any subsequent organizer clarification
   here, including its source.
-- The user reports that organizers emphasized latency/LUTs and give no extra
-  feature credit. Treat those as the optimization priorities after correctness.
+- **Placement supplement, October 3:** the organizer announcement supplied by
+  the user establishes qualification and a strict resource-first ranking. The
+  [preserved announcement and attachment review](docs/placement-supplement-20261003.md)
+  supplement the guide without changing its rubric or algorithm. Extra features
+  have no specified placement credit.
 - **Clocking clarification, October 3:** the user reports that the competition
   permits the FPGA PLL and faster internal clocks. Treat 27 MHz as the board's
   input reference, not a mandated processing frequency. Source: user report in
   the planning conversation; no written organizer clarification has been added
   to the repository. This does not change the specified 115200-baud UART.
-- The written score is capped; an uncapped ranking or tie-break rule has not
-  been confirmed.
+- The rubric below determines qualification; the separate placement metrics
+  below determine ranking among qualifiers.
 
 | Criterion | Written scoring rule |
 | --- | --- |
@@ -51,9 +57,32 @@ Latency and LUT points are both zero below 95% packet correctness. Aim for
 the full-credit latency boundary is **20.7825 ms**, and the partial-credit
 boundary is **33.252 ms**. The judging PC determines the official measurements.
 
-First reach full-credit territory with margin. Continue improving LUTs/latency
-with measured experiments, retaining the best reliable build. Confirm how
-organizers distinguish designs already at full written score.
+### Qualification and placement — organizer supplement
+
+1. **Official run: 100/100.** Under the published references this requires
+   perfect packet/action correctness, synthesis LUTs **≤542**, and official
+   average round-trip latency **≤20.7825 ms**. Judges may rerun once if the
+   latency tier is missed; design for margin rather than relying on a rerun.
+2. **Immediately following hidden full-range run:** every packet and action
+   correct, zero timeouts, prices `0..65535`, without reprogramming. Latency and
+   LUTs are not re-scored in this run. Preserve 16-bit prices, 20-bit sums and
+   index-zero session reset. Rehearse normal → full-range without board reset.
+3. **Qualified-team order:** lowest **total logic count**, then lowest **total
+   register count**, then lower **median latency over five runs**, with latency
+   differences within 5% tied. This is lexicographic, not a weighted tradeoff.
+   Nonqualifiers rank below every qualifier, ordered by rubric score.
+
+Judges re-synthesize committed source with **Gowin V1.9.11.03** and the committed
+project settings. Placement uses **Resource Usage Summary total logic** (LUTs,
+ALUs and other logic types combined) and **total registers** from that same
+summary. **BSRAM is allowed and excluded from logic count.** Moving arithmetic
+from LUTs into ALUs is not itself a reduction. Keep the guide's synthesis-LUT
+qualification metric separate from this placement total.
+
+Judges use their rebuilt counts, not self-reported figures, and check that the
+rebuilt source behaves like the submitted `.fs`. Preserve complete reproducible
+project settings and matching source/RTL/bitstream. First establish qualification
+with margin, then select measured candidates by the ranking order above.
 
 ## 2. What exists and what is missing
 
@@ -63,9 +92,9 @@ organizers distinguish designs already at full written score.
 | `viv25_proj/test_proj1/src/blinky.v` | A six-LED counter in Verilog; starting point for device/tool bring-up. |
 | `viv25_proj/test_proj1/test_proj1.gprj` | Gowin project for `GW2AR-LV18QN88C8/I7`. |
 | Blinky `.cst`, `.sdc`, and `impl/` | Saved synthesis/P&R reports and `.fs` exist; report names Gowin V1.9.11.03 Education. These establish saved build evidence, not verified board operation. |
-| Competition implementation | Hardcaml foundation and UART/protocol transport sources exist; REQUEST_RESPONSE_PLAN.md records local A–E verification. Transport board checks and algorithm packages F–G remain pending. PLL support is planned, not implemented or validated. |
+| Competition implementation | Hardcaml UART/protocol foundation, F engine, G1 controller and G2 competition board system exist. REQUEST_RESPONSE_PLAN.md records A–E evidence and F/G1/G2 local verification. Competition whole-design Gowin/board checks and measured baseline remain pending. PLL validation is separate. |
 | Organizer inputs | All three files are available in the sibling `../GQH-Hardware-Track-Submission/` checkout; exact paths and reviewed behavior below. Copy pinned inputs into the team project during integration. |
-| Results | No competition correctness or latency/LUT measurements yet. Blinky resource counts are not a competition baseline. |
+| Results | Official quick PASS is preserved in `results/phase-g2-board-20261003-142516-thv362qq/`; robust/full-range acceptance and whole-design resource/latency baseline remain pending. Blinky resource counts are not a competition baseline. |
 
 The directory is a Git worktree on `bpurtell/base_testing`; at review time only
 the old README was tracked, and the supplied plans, PDFs, and Gowin project were
@@ -108,7 +137,14 @@ the team's source and final `.fs` belong in the team's own submission repository
   and seeded slot swaps after warm-up. Both scripts send each item exactly once
   per request and use sequential indices beginning at zero. The unpublished
   judging seed differs; retain full unsigned 16-bit price support.
-- **Coverage gaps:** warm-up responses must arrive but their fields/actions are
+- **Full-range supplement:** user-downloaded
+  `tools/22_robust_uart_test_fullrange.py`, seed `0x1F00D16B`, 100 requests,
+  prices `0..65535`, with post-warm-up swaps. Change only PORT in run copies;
+  preserve attachment provenance separately from the pinned older checkout.
+  Outputs: `trade_results_100_fullrange.csv` and `trade_summary_100_fullrange.txt`.
+  Run after normal robust without resetting/reprogramming. Require 100 complete
+  responses, 84/84 scored packets, 168/168 actions and zero timeouts in each.
+- **Coverage gaps (including the attachment):** warm-up responses must arrive but their fields/actions are
   not checked for correctness. Each script runs one session. Custom tests must
   check warm-up bytes, full-range prices, and repeated index-0 sessions, including
   swaps during warm-up.
@@ -221,9 +257,11 @@ UART TX ← paced response sequencer ← echoed fields + slot actions
 
 ### Clocking decision: configurable frequency, one processing domain
 
-The new permission adds an optimization axis; it does not require replacing the
-shared sequential engine with a deeply pipelined design. Keep the correctness
-path moving at 27 MHz while preparing an independently validated PLL option.
+The permission adds an optional optimization axis; it does not require replacing
+the shared sequential engine with a deeply pipelined design. Keep the correctness
+path moving at 27 MHz. Under the placement supplement, prioritize resource
+sharing at 27 MHz; prepare a PLL option only for a measured resource-saving or
+qualification hypothesis.
 
 ```text
 sys_clk (27 MHz reference)
@@ -276,7 +314,7 @@ Implement the following before enabling a PLL build:
    analog PLL lock/jitter or routed timing. Require Gowin and board evidence
    before making a PLL build the selected competition build.
 
-### Pipeline depth, sharing, and frequency: optimize elapsed time and LUTs
+### Pipeline depth, sharing, and frequency: minimize resources within qualification
 
 For a fixed implementation, processing latency is approximately `L / f`, where
 `L` is the measured cycles from complete-request acceptance to response-ready
@@ -307,9 +345,10 @@ Even the illustrative 20-cycle 27→108 MHz change saves only about 0.556 µs,
 around 0.04% of the nominal 1.39 ms UART wire time. Do not predict a fourfold
 improvement in the judged round trip from a fourfold clock increase.
 
-Higher frequency can instead provide budget for **more resource sharing**:
-more cycles using less arithmetic hardware may retain low elapsed latency and
-reduce LUTs. Compare shared add/subtract, a shorter combinational schedule, and
+More cycles can provide budget for **more resource sharing**, first at 27 MHz:
+less arithmetic hardware may retain qualification latency with fewer total logic
+elements. Consider higher frequency only if needed for that resource-saving
+schedule. Compare shared add/subtract, a shorter combinational schedule, and
 register cuts at measured critical paths. Explicitly selecting one shared
 operator may be necessary; sequential source statements do not prove sharing.
 Pipeline registers consume FFs and can add enables/muxes, routing and LUT cost;
@@ -411,9 +450,9 @@ no Phase C work remains. This validates diagnostic transport, not algorithm PASS
 | --- | --- | --- |
 | **0 — Inputs and build** | Integrate the available organizer scripts/constraints from the pinned sibling checkout; pin OCaml/Hardcaml and Gowin versions. Generate a minimal Hardcaml top and exercise intended history-memory mapping. | Reproducible generation + synthesis + P&R for the target part; inspect actual mapped memory and timing constraints. |
 | **1 — Oracle and UART** | Write the independent software model and hand-checked vectors. Bring up the exact packet receiver/response sequencer on the board with placeholder actions. | Reference fixtures reviewed; repeated packet traffic has correct echoes/length/order, no early TX, and no timeouts. Full quick-test PASS requires Gate 2's algorithm; use separate transport checks here. |
-| **2 — Complete correctness** | Implement and integrate the rolling windows/crossings/session reset. Compare simulation with the oracle, then run official tests. | Directed/random comparisons pass; quick and robust board tests pass; repeated sessions and slot swaps pass; retain CSVs and known-good `.fs`. |
-| **3 — Baseline measurement** | Save whole-design synthesis, implementation, and official-style test outputs for a fixed build. | Exact synthesis total LUT count, other resources, timing result, repeated latency/correctness results, source/build identity, host setup, and TX gap. |
-| **4 — Optimization** | Change one measured cost at a time; rerun correctness and relevant board measurements. | Measured improvement without regression; keep a known-good fallback and record rejected candidates. |
+| **2 — Complete correctness** | Implement and integrate the rolling windows/crossings/session reset. Compare simulation with the oracle, then run official tests. | Quick PASS; normal robust followed by full-range practice passes without reset/reprogramming; exact custom warm-up/repeated-session/slot-swap checks pass; retain CSVs and known-good `.fs`. |
+| **3 — Qualification baseline** | Save whole-design Gowin V1.9.11.03 synthesis/implementation and official-style outputs for a fixed build. | Local evidence supports 100/100 plus full-range pass; record synthesis LUTs separately from Resource Usage Summary total logic/registers, BSRAM, timing, latency, source/settings/bitstream identity, host setup and TX gap. Official qualification is determined by judges. |
+| **4 — Resource-first optimization** | Change one measured cost at a time; preserve qualification and compare total logic, then registers, then five-run median latency. | Improvement in ranking order without qualification regression; keep a known-good fallback and record rejected candidates. |
 | **5 — Freeze and submit** | Rebuild/program the selected design, rerun both scripts, complete README, publish matching source/build/bitstream, submit and return board. | Public repository; final `.fs` matches source; final commit SHA in Devpost; submission and return completed before the deadline. |
 
 **Immediate assignments:** one owner integrates the available organizer assets and proves
@@ -438,7 +477,24 @@ All required local builds/regressions and emitted-RTL elaboration checks pass.
 The [G1 handoff](results/phase-g1-20261003-candidate1/HANDOFF.md) records exact
 interfaces, cycle measurements, source identity and G2 wiring instructions.
 G2 may begin; G1 hardware acceptance still comes from G2's matching full-system
-build. G2, overall G and unrelated phases remain open.
+build. G2 and overall G remain open for manual acceptance; G2 local delivery
+is recorded below.
+
+**G2 local evidence (October 3): Locally verified — awaiting manual checks.**
+The direct 27 MHz `gqh_competition_top` now connects UART, decoder, G1 controller,
+F engine and sequencer. Production RTL and separate root Gowin project are
+available. Serial oracle verification, production-divisor emitted-Verilog checks
+and earlier regressions pass; see [integration coverage](test/integration/README.md)
+and [candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md).
+Matching whole-design synthesis/P&R, memory/resource/timing/clock inspection,
+exact bitstream identity, remaining startup/reset/status checks, robust/full-range
+84/84 and 168/168 with zero timeouts, and custom same-connection sessions remain
+pending. Subsequent partial board evidence records user-reported programming,
+heartbeat/no-fault LED behavior and official quick PASS; see
+`results/phase-g2-board-20261003-142516-thv362qq/manual-progress.md`.
+F/G1 retain local status, and G2, overall G and H's measured baseline remain open.
+Missing historical F/G1 result directories were not recreated as evidence.
+
 
 ### Gate 0 initialization evidence (October 2, 2026)
 
@@ -480,6 +536,8 @@ reported frequency alone.
   transmission before request completion.
 - Warm-up, first scored update at index 16, and circular-buffer wraparound.
 - Repeated index-0 sessions with different histories, without reprogramming.
+- Normal official robust followed immediately by full-range practice without
+  reset/reprogramming; require perfect scored results and zero timeouts in both.
 - Arbitrary A/B slot swaps with deliberately different item histories.
 - Equality boundaries, truncated averages, zero/max prices, and large jumps.
 - Holding BUY and SELL across multiple non-crossing updates.
@@ -491,48 +549,67 @@ rather than copying the hardware's rolling-sum implementation. Keep custom
 tests separate from the organizer scripts; the guide permits changing only
 their `PORT` setting. Retain each local robust-test CSV.
 
-## 6. Optimization order and measurement discipline
+## 6. Resource-first optimization and measurement discipline
 
-1. **History mapping:** inspect whether storage became block RAM, registers,
-   distributed memory, or mux-heavy logic. Fix accidental expensive mapping.
-2. **Arithmetic/control:** measure shared subtract/add hardware against simpler
-   expressions; muxes, intermediate registers, and FSM logic can erase savings.
-   Try a second item engine only to answer a specific synthesis question.
-3. **Clock/schedule experiments:** first try the unchanged engine at one modest
-   legal PLL frequency; 54 MHz is a candidate, not a validated setting. Keep
-   UART baud and physical idle gaps equivalent. If useful and time permits,
-   consider 81/108 MHz after exact-device PLL and timing checks. At a fixed
-   frequency compare cycle schedules/resource sharing; add a pipeline register
-   only to address a measured critical path or specific area/latency hypothesis.
-   Record failures and stop frequency escalation when gains are immaterial.
-4. **Packet/UART overhead:** inspect widths, redundant buffers/state, and timer
-   costs. Share timers only where RX/TX/control overlap permits it safely.
-5. **TX pacing:** sweep idle gaps on hardware and select the lowest reliably
-   passing setting with margin. Compare repeated runs under the same host setup.
-6. **Further scheduling changes:** consider overlap/early computation only if
-   measurements justify complexity, preserving the full-request-before-TX rule.
+**Qualification is a constraint; placement is lexicographic.** Among reliably
+qualifying candidates, fewer total logic elements wins even with more registers
+or slower latency. Compare registers only at equal total logic; compare five-run
+median latency only when both resource counts tie, applying the 5% tie rule.
+Keep enough latency/timing margin to qualify repeatedly on the judging host.
 
-This list groups experiments; it does not make PLL exploration a prerequisite
-for TX pacing or finishing correctness. With the October 4 freeze approaching,
-prefer a complete verified build over an unfinished frequency/pipeline redesign.
+1. **Measure the complete baseline first:** use Gowin V1.9.11.03 and preserve
+   Resource Usage Summary total logic/registers, synthesis LUTs, BSRAM mapping,
+   timing and project settings. Current quick PASS does not establish the LUT
+   limit or complete qualification. Attribute costs before choosing experiments.
+2. **History and state storage:** prove the 32 × 16 history maps to BSRAM;
+   BSRAM is excluded from placement logic. If inference fails, compare a vendor
+   primitive wrapper. Experiment with additional item state in BSRAM where the
+   saved logic/registers exceed address, mux and control overhead. Preserve
+   logical invalidation and read latency; do not reset all memory cells.
+3. **Shared arithmetic/comparisons:** the current shared item engine still
+   expresses subtract and add as separate operations in one update path. Measure
+   one time-multiplexed add/subtract unit, comparator reuse, and narrower
+   digit-serial arithmetic over more cycles. Keep exact 16-bit values and 20-bit
+   sums; serializing arithmetic is allowed, truncating prices is not. Include
+   intermediate storage, muxes and FSM cost in the whole-design comparison.
+4. **Packet/control/UART overhead:** inspect duplicate payload registers across
+   decoder/controller/engine/sequencer, retained fields, enables and state
+   encoding. Reuse storage only when lifetimes and valid/ready stability permit.
+   Evaluate timer sharing only with a proven receive/transmit lifecycle and
+   retained fault/reset behavior. Measure total logic first, registers second.
+5. **Clock/schedule:** use extra 27 MHz cycles before adding a PLL or pipeline.
+   Higher frequency is justified by a measured resource-saving schedule or a
+   qualification need, accounting for wider timers and lock/reset logic. Package
+   P remains required for any PLL candidate; no speculative Fmax escalation.
+6. **Latency margin and final tie-break:** tune TX spacing when needed for
+   reliable qualification. For equal logic/register counts, preserve five-run
+   latency results and their median; within 5% is a placement tie. Cut-through
+   or extra parallelism must justify its resource cost under this ordering.
 
-For every candidate record source revision (and any dirty diff), tool versions,
-build settings, actual core frequency and PLL configuration, pipeline/schedule,
-request processing cycles and nanoseconds, total **synthesis LUT** usage,
-registers/BRAM/PLL usage, routed timing margin, UART divisor/actual baud,
-TX gap in cycles and microseconds, host/USB setup, test cases,
-mismatches/timeouts, and latency results.
-Keep the reports and CSVs with the candidate's bitstream identity/hash. Gowin's
-P&R `Logic` aggregate includes categories such as ALU and is not automatically
-the scoring metric: use the synthesis report's total LUT line specified by the
-guide. Distinguish microsecond FPGA processing time from full host round-trip
-latency and measurement noise.
+Make one attributable change per candidate, rerun relevant local/board checks,
+and retain the best qualifying fallback. A logic-saving serialization may be
+worth many additional core cycles given sub-microsecond current processing and
+millisecond host round trips, but measure the resulting complete transaction.
+With the October 4 freeze approaching, prefer verified resource reductions over
+unfinished redesigns.
 
-Compare repeated host measurements with their variation, not just one average.
-When latency differences are below the observed variation, select using reliable
-correctness, lower LUT cost and timing margin; do not claim a measured speedup.
-The reference 542-LUT score cap still applies, and clock frequency/throughput
-have no separately confirmed scoring credit.
+For every candidate record source revision (and dirty diff), **Gowin version and
+all project settings**, generated RTL and bitstream identity, actual frequency,
+schedule, processing cycles/time, **Resource Usage Summary total logic and total
+registers**, separate **synthesis LUTs for rubric qualification**, BSRAM/PLL use,
+routed timing, UART divisor/baud, physical TX gap, host setup, normal/full-range
+and custom correctness/timeouts, official average latency and five-run median
+when comparing the latency tie-break. Preserve raw reports and CSVs.
+
+Do not substitute a LUT-only count or generic-tool estimate for the placement
+total. Verify the judge-specified Resource Usage Summary in the actual Gowin
+flow, including LUTs, ALUs and other logic types. Local numbers predict the
+judge rebuild; self-reported counts are not authoritative. All resource-saving
+changes must preserve the original ≤542 synthesis-LUT qualification condition.
+Distinguish core processing time from host round-trip latency; archive all five
+run results rather than selecting a fastest run. The supplement does not spell
+out the per-run latency statistic or denominator for the 5% comparison; preserve
+raw samples and per-run summaries rather than inventing those judge details.
 
 ## 7. Team work split and repository shape
 
@@ -583,7 +660,8 @@ file into SRAM and run their own host software.
 Complete the README with team/project name and members, implemented FPGA
 functionality, local host tooling, board/part, languages, actual tool versions,
 top module, build/program commands, input/output and reproduction steps,
-verification and measured LUT/latency results, external-resource attribution,
+verification and measured qualification LUTs, placement logic/register counts
+and latency results, external-resource attribution,
 and known limitations. Publish the repo and verify logged-out access. Put the
 full final commit SHA in **Devpost**, not a self-referential README. The guide's
 submission link is [gqhacks.devpost.com](https://gqhacks.devpost.com).
@@ -592,9 +670,9 @@ submission link is [gqhacks.devpost.com](https://gqhacks.devpost.com).
 | --- | --- |
 | Integrate official `.cst` and scripts | Copied unchanged with pinned provenance/checksums; local checks pass. Gowin/board Gate 0 evidence remains pending. |
 | Custom-test coverage beyond supplied scripts | Gate 2; warm-up field checks, full-range prices, and repeated sessions. |
-| Ranking beyond capped written scores | Before trading reliability/time for marginal optimization. |
+| Ranking beyond capped written scores | Resolved by October 3 supplement: qualification, then total logic → registers → five-run median latency (5% tie). |
 | Hardcaml memory mapping and startup initialization | Gate 0 experiments, then Gate 2 board verification. |
-| PLL configuration and useful frequency/schedule | User reports PLL use is permitted; package P validates the hardware option, then Gate 4 measures benefit. Written clarification can be attached when available; 115200 baud remains fixed. |
+| PLL configuration and useful frequency/schedule | Optional: pursue only for measured resource savings or qualification need. Package P validates the hardware option; 115200 baud remains fixed. |
 | Reliable minimum TX gap | Gate 4 on the actual board/host, with repeated runs. |
 | Named owners and public submission repository | Assign now; confirm the final project identity before freeze. |
 

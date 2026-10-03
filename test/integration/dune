@@ -1,0 +1,11 @@
+(executable
+ (name serial_verify)
+ (modules serial_verify)
+ (libraries core hardcaml hardcaml_gqh))
+(rule
+ (alias runtest)
+ (deps serial_verify.exe run_checks.py competition_tb.v
+  ../../bin/generate.exe ../../dune-project ../../rtl/gqh_competition_top.v
+  (source_tree ../engine/oracle))
+ (action (chdir ../.. (run python3 test/integration/run_checks.py
+   bin/generate.exe test/integration/serial_verify.exe))))

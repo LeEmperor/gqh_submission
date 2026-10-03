@@ -2,12 +2,13 @@
 
 ## Root-level project files
 
-The repository contains three independent Gowin project files at its root. Open
+The repository contains four independent Gowin project files at its root. Open
 the project matching the experiment you intend to run; do not combine their
 constraints or top modules into one build.
 
 | Project | Top module | Purpose |
 | --- | --- | --- |
+| `gqh_competition.gprj` | `gqh_competition_top` | Complete six-port competition design; direct 27 MHz baseline. Locally verified — awaiting manual checks. |
 | `gqh_engine.gprj` | `gqh_update_engine` | Standalone engine synthesis/timing experiment. It has no board pin constraints and cannot be programmed as a complete board design. |
 | `gqh_transport.gprj` | `gqh_transport_top` | Six-port, 27 MHz board diagnostic with UART request/response transport. It returns NONE actions and is not the final competition design. |
 | `gqh_pll_test.gprj` | `top` | Independent 270 MHz Gowin rPLL and divided-clock output experiment. It uses the PLL branch's CST because that file additionally assigns `clk_test` to pin 73. |
@@ -118,4 +119,57 @@ every response to match and no timeouts or surplus bytes. Save the commands,
 source/build identity, reports and host output in a fresh results directory.
 LED1 lights on framing errors or unexpected traffic and stays lit until board
 reset. This target returns NONE actions and is only a transport diagnostic;
-official quick/robust algorithm tests require the later competition target.
+official quick/robust algorithm tests require the competition target.
+
+## Competition handoff (G2)
+
+Status: **Locally verified — awaiting manual checks**. Generate with:
+
+```sh
+opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition
+```
+
+After manually programming the competition bitstream, prepare the official tests
+with one command (replace the port as needed):
+
+```sh
+python3 tools/prepare_board_tests.py /dev/ttyUSB1
+```
+
+This creates a fresh `results/phase-g2-board-*` directory, records RTL/constraint
+hashes, and copies the official scripts with only PORT changed. It prints commands
+for the generated `run-quick.sh` and `run-robust.sh` launchers, which save console
+output alongside each test's files. Reset before each test; prepare a new directory
+for retries. Setup does not open the serial device or run board tests. Python 3
+and pyserial are required when running the tests. Inspect actual PASS/counts as
+described below; exit status alone is insufficient.
+
+Open root-level `gqh_competition.gprj`; select **gqh_competition_top** and
+**GW2AR-LV18QN88C8/I7**. Inputs are exactly `rtl/gqh_competition_top.v`,
+`constraints/19_tang_nano_20k.cst` and `constraints/tang_nano_20k.sdc`.
+No diagnostic, standalone engine or PLL sources belong in this project.
+All processing uses direct `sys_clk` at 27 MHz; UART divisor 234, zero extra gap.
+
+Use the [candidate handoff](../results/phase-g2-20261003-candidate1/HANDOFF.md)
+for exact identity, local results, and concrete board commands. In order:
+
+1. Synthesize/P&R the matching candidate. Preserve whole-design LUT/register
+   counts, actual memory primitive mapping/read behavior, clock routing, warnings,
+   constraints/unconstrained paths and timing reports. No local generic Yosys
+   result proves Gowin memory mapping or timing closure.
+2. Generate and identify the matching `.fs` by SHA-256, record Gowin version,
+   project options and source/RTL hashes, then program manually.
+3. Check fresh startup/configuration, active-high button reset, heartbeat,
+   LED1 fault latch/reset and idle-high TX. Check reset during active traffic and
+   restart with index zero/full warm-up. Startup initialization/CDC review still
+   applies to this new whole-design build.
+4. Run pristine official quick/robust scripts in separate fresh output
+   directories (only PORT may change in an archived run copy). Require quick
+   **PASS**, robust **84/84 scored packets, 168/168 actions, zero timeouts**.
+   Exit status alone is insufficient.
+5. Run the documented custom fixture checks, including every warm-up byte,
+   full-range/equality prices, slot swaps and two sessions without closing the
+   connection or resetting the board. Keep runner outputs and metadata separate
+   from official scoring-style outputs; check unsolicited-byte fields too.
+6. Preserve `.fs`, reports, outputs, latency measurements and full build identity.
+   Supply results before F/G1/G2/overall G or the measured baseline can close.

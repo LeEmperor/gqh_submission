@@ -2,7 +2,8 @@
 
 Status: **Locally verified — awaiting manual checks**. This package implements
 `Hardcaml_gqh.Engine.Update`, independently of UART and the diagnostic transport.
-It provides no production competition top or Phase G transaction controller.
+This standalone F package does not own the competition top or controller;
+those are now delivered by G1/G2 (see ../integration/README.md).
 
 From the `testing/` root:
 
