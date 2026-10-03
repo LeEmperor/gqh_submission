@@ -2,6 +2,8 @@
 
 An OCaml host tool for the data streaming workstream in section 3A of `GQH_Team_Execution_Plan.md`. It reads Databento trades, creates eight-byte GQH price requests, sends one request at a time, checks responses, and preserves transaction evidence in CSV. This branch implements the streaming system only.
 
+Run the commands below from the repository root unless a section changes directories.
+
 ## Build and test
 
 Linux/WSL is the supported serial runtime. Use an OCaml 5.2+ switch with Dune, Yojson, and Core_unix:
@@ -20,7 +22,6 @@ The tested local switch uses OCaml 5.2.0+ox, Dune 3.24.2, Yojson 2.2.2+ox, and C
 Create the results directory and run two complete sessions against a local mock FPGA on one connection:
 
 ```sh
-cd /home/srijan/tickweave
 mkdir -p results
 opam exec -- dune exec tickweave-stream -- \
   --source synthetic --seed 42 --packets 100 --sessions 2 \
@@ -32,7 +33,6 @@ The mock receives real binary requests over a socket pair and returns fragmented
 To replay your saved Databento capture against the mock, with no API call:
 
 ```sh
-cd /home/srijan/tickweave
 opam exec -- dune exec tickweave-stream -- \
   --source replay --input results/historical-trades.csv \
   --symbol-a AAPL --symbol-b MSFT --packets 10 \
@@ -44,7 +44,6 @@ That capture supplies 10 packets. Expect `received=10`, zero timeouts/failures, 
 To prove the runner detects errors:
 
 ```sh
-cd /home/srijan/tickweave
 opam exec -- dune exec tickweave-stream -- \
   --source synthetic --transport mock --mock-fault partial \
   --output "results/partial-$(date +%s%N).csv"
@@ -57,7 +56,6 @@ Faults are injected at index 16: `timeout`, `partial` (seven bytes), `wrong-inde
 In the WSL terminal where you will run the streamer, enter the key into its environment:
 
 ```sh
-cd /home/srijan/tickweave
 read -rsp "Databento API key: " DATABENTO_API_KEY
 export DATABENTO_API_KEY
 printf '\n'
@@ -160,7 +158,7 @@ Protocol and acceptance requirements come from the GQH hardware guide and execut
 The external agent's completed tool is integrated under `external/databento_audit/`. It generates deterministic fixtures and validates local trade captures without credentials. To run its checks independently:
 
 ```sh
-cd /home/srijan/tickweave/external/databento_audit
+cd external/databento_audit
 opam exec -- dune runtest --root .
 opam exec -- dune exec --root . ./databento_audit.exe -- verify --fixtures-dir fixtures
 ```
@@ -174,7 +172,6 @@ The operator's first real historical capture passed an independent encoding audi
 The new plan's Python fixture factory is in [`tools/test_data_factory/`](tools/test_data_factory/README.md). It supplies an independent direct-window oracle, seven deterministic scenarios, eight sessions, and 800 exact request/expected-response records. CSV exports can be replayed with the existing OCaml streamer. Run all offline checks with:
 
 ```bash
-cd /home/srijan/tickweave
 python3 tools/test_data_factory/run_checks.py
 ```
 
