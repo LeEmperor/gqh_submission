@@ -174,7 +174,7 @@ let view ~theme ~focus ~(state : application_state) ~width ~height:rect_height =
     [ status ] @ when_ Apply (apply_row theme state) @ when_ Preflight (preflight_row theme state) @ when_ Proposal (proposal_row theme state ~width:inner)
     @ when_ Delta (delta_row theme state) @ parameters @ when_ Manifest (manifest_row theme state ~width:inner) @ events in
   let body = View.vcat (lines @ [ View.pad ~t:(Int.max 0 (rows - List.length lines - 1)) hint ]) in
-  Panel.frame ~theme ~focus ~panel:Configuration
+  Panel.framed ~theme ~focus ~panel:Configuration
     ~title:("Configuration · " ^ Status_bar.mode_name state.mode) ~width ~height:rect_height body
 
 type response = { command : Model_adapter.command option; is_open : bool }

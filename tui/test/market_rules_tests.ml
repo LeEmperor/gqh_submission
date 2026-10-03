@@ -136,7 +136,7 @@ let%expect_test "eighth-block bars scale to the largest displayed quantity" =
     32 |████|
     |}]
 
-let%expect_test "flash changes only with best prices and expires at 300 ms" =
+let%expect_test "flash changes only with best prices, at one strength, and clears at 300 ms" =
   let snapshot = (state ()).market in
   let first = Market_motion.observe Market_motion.empty ~now:(time 0.) ~snapshot ~updates:0 in
   let quantities = { snapshot with bids = [ { (List.hd_exn snapshot.bids) with quantity_units = 99 } ] } in
@@ -158,8 +158,8 @@ let%expect_test "flash changes only with best prices and expires at 300 ms" =
   [%expect {|
     initial 0.00; quantity-only 0.00
     2.00s bid 0.25 ask 0.25
-    2.12s bid 0.17 ask 0.17
-    2.24s bid 0.08 ask 0.08
+    2.12s bid 0.25 ask 0.25
+    2.24s bid 0.25 ask 0.25
     2.30s bid 0.00 ask 0.00
     2.40s bid 0.00 ask 0.00
     updates/s 1.0; idle 0.0
@@ -167,11 +167,11 @@ let%expect_test "flash changes only with best prices and expires at 300 ms" =
 
 let%expect_test "sparkline uses a 60-second time axis and drops stale observations" =
   let sample time ask : Market_motion.sample = { time; bid = None; ask; delta_updates = 1 } in
-  let samples = [ sample (time 60.) (Some 1001); sample (time 30.) (Some 1003)
+  let samples = Age_deque.of_list [ sample (time 60.) (Some 1001); sample (time 30.) (Some 1003)
                 ; sample (time 0.) (Some 1000); sample (time (-1.)) (Some 9000) ] in
   printf "60s |%s|\n" (Sparkline.ask ~samples ~now:(time 60.) ~width:12);
   printf "expired |%s|\n" (Sparkline.ask ~samples ~now:(time 121.) ~width:12);
-  let invalid = [ sample (time 60.) (Some 1001); sample (time 30.) None
+  let invalid = Age_deque.of_list [ sample (time 60.) (Some 1001); sample (time 30.) None
                 ; sample (time 0.) (Some 1000) ] in
   printf "gap |%s|\n" (Sparkline.ask ~samples:invalid ~now:(time 60.) ~width:12);
   [%expect {|
@@ -185,10 +185,10 @@ let%expect_test "history is bounded and a new run clears motion" =
   let motion = List.fold (List.init 3661 ~f:Fn.id) ~init:Market_motion.empty
       ~f:(fun motion updates -> Market_motion.observe motion ~now:(time (Float.of_int updates /. 60.))
         ~snapshot ~updates) in
-  printf "samples %d\n" (List.length motion.samples);
+  printf "samples %d\n" (Age_deque.length motion.samples);
   let snapshot = { snapshot with identity = { snapshot.identity with run_id = "new-run" } } in
   let fresh = Market_motion.observe motion ~now:(time 62.) ~snapshot ~updates:0 in
-  printf "new run samples %d, initial flash %.2f\n" (List.length fresh.samples)
+  printf "new run samples %d, initial flash %.2f\n" (Age_deque.length fresh.samples)
     (Market_motion.flash_intensity ~now:(time 62.) fresh.ask_changed_at);
   [%expect {|
     samples 3601
@@ -295,7 +295,7 @@ let%expect_test "tick metrics preserve adjacent large integers and negative half
         asks = [ { price_ticks = ask; quantity_units = 12 } ] } in
       print_endline (fst (Market_panel.metrics snapshot)));
   let sample seconds price : Market_motion.sample = { time = time seconds; bid = None; ask = Some price; delta_updates = 1 } in
-  let samples = [ sample 60. 9007199254740993; sample 0. 9007199254740992 ] in
+  let samples = Age_deque.of_list [ sample 60. 9007199254740993; sample 0. 9007199254740992 ] in
   printf "large-price variation |%s|\n" (Sparkline.ask ~samples ~now:(time 60.) ~width:12);
   [%expect {|
     spread 1 t   mid 9007199254740992.5 t

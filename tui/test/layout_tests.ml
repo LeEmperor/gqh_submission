@@ -581,7 +581,7 @@ let%expect_test "a failed preset save shows a short notice, keeps running, and c
   print_endline "notice shown, console kept running, cleared by the next key; none on success";
   [%expect {| notice shown, console kept running, cleared by the next key; none on success |}]
 
-(* --- F12 frame meter and the frame throttle, through the live app ------------------------- *)
+(* --- F12 frame meter, through the live app ------------------------------------------------ *)
 
 let live_app ?(preset = Ui_types.Demo) dimensions =
   let _scheduler = Async.Scheduler.t () in
@@ -589,7 +589,7 @@ let live_app ?(preset = Ui_types.Demo) dimensions =
     (App.live ~initial_preset:preset (module Mock_backend) ~theme:Shell_tests.theme
        ~backend:(Shell_tests.fixture Enabled) ~exit:(fun () -> Effect.Ignore))
 
-(* One 60 Hz frame later: the throttle releases the latest view on the clock's tick. *)
+(* One 60 Hz frame later. *)
 let next_frame handle =
   Handle.advance_clock_by handle (Time_ns.Span.of_sec 0.02);
   Handle.recompute_view_until_stable handle;
@@ -615,17 +615,16 @@ let%expect_test "F12 toggles the frame meter and it hides neither the header nor
   printf "F12 opens below the header, closes on the second press\n";
   [%expect {| F12 opens below the header, closes on the second press |}]
 
-(* Catches a view repainted after every key of a burst. *)
-let%expect_test "the throttle holds a burst back until the next frame" =
+(* The app hands the driver its view as it is; rationing paints is [Paint_throttle]'s job, between
+   the app and the driver, and is tested on its own. A burst must leave the final state. *)
+let%expect_test "a burst of keys leaves the final state on screen" =
   let handle = live_app { width = 120; height = 36 } in
   ignore (next_frame handle : string);
   List.iter [ Event.Key.Tab; Tab; Tab ] ~f:(fun k -> send handle (key k));
-  ensure (contains (Handle.show_into_string handle) "focus: Market") "Burst painted before the frame";
-  let released = next_frame handle in
-  ensure (contains released "focus: Rules") "Burst lost its final state";
+  ensure (contains (next_frame handle) "focus: Rules") "Burst lost its final state";
   ensure (contains (next_frame handle) "focus: Rules") "State changed without input";
-  print_endline "held until the frame, then painted once at its final state";
-  [%expect {| held until the frame, then painted once at its final state |}]
+  print_endline "the burst's final state is on screen, and stays";
+  [%expect {| the burst's final state is on screen, and stays |}]
 
 let%expect_test "F12 decodes to the meter and is listed in help and the footer" =
   ensure (match Keymap.action (key (Function 12)) with Toggle_meter -> true | _ -> false) "F12 not decoded";

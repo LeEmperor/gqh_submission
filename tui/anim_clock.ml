@@ -4,77 +4,117 @@ open Bonsai.Let_syntax
 
 (* The time that animated views read. [Bonsai.Clock.approx_now] ticks for as long as it is
    observed, so a view that reads it is recomputed, and the screen repainted, twenty times a
-   second even when nothing on screen moves. This clock is demand-driven instead: it
-   advances only while something has happened recently, and after the last animation it
-   schedules no timer.
+   second even when nothing on screen moves. This clock moves only for a reason:
 
-   [Touch] is an event that starts or extends an animation. After it the clock ticks once per
-   fade step ([Fade.step], eleven a second) for [fast_hold], long enough for the longest fade
-   (a second), and then at [slow_period] for [slow_hold], so a 60-second chart keeps sliding for
-   as long as it still holds data. After that it stops, and its value stays at the last tick.
+   - an event ([Touch]): the stream has brought something, so the views that depend on the
+     time read it as of now;
+   - an expiry: a highlight that was on for its time ([Fade.level] is binary) must be taken
+     off. The clock keeps one timer, for the next expiry and no sooner, and sets it again
+     from the highlights still on when it fires.
 
-   An application whose stream has gone quiet therefore runs exactly these, and no other timer:
-   - the header's seconds clock, always, repainting the header once a second ([each_second]);
-   - the metrics sampler, while the stream is up or samples remain in the 60 s window, on the
-     same wall-clock second, so the two share one repaint a second ([each_second]);
-   - the stream's own poll, which waits for the backend and repaints nothing when it brings
-     nothing new.
-   A stream that is down, with nothing left in the metrics window, repaints only the header. *)
+   Between those it does not move. Each highlight therefore costs two paints, the one that
+   shows it and the one that clears it, and a quiet application schedules no timer and
+   repaints nothing: with no stream and nothing on, only the header's second ([each_second])
+   runs, and the metrics sampler on the same tick while it has samples to age out.
 
-let fast_period = Fade.step
-let slow_period = Time_ns.Span.of_sec 0.5
-let fast_hold = Time_ns.Span.of_sec 1.1
-let slow_hold = Time_ns.Span.of_sec 65.
+   A highlight ends at its expiry or at the first frame after it (see [grace]), so a stream
+   of events that each highlight something does not wake the application once per highlight. *)
+
+(* A highlight is taken off by the first frame at or after its expiry, whatever the frame is
+   for: the stream's next event, a keystroke. If none comes within this long, the clock makes
+   one. Most of the time the stream is quicker, and the clock's timer is superseded before it
+   fires; when it is not, one tick takes off every highlight that has expired by then. So a
+   highlight lasts its time plus at most this, and a stream of events that each highlight
+   something costs no extra paints. *)
+let grace = Time_ns.Span.of_sec 0.25
+
+(* The instant of the next tick for the highlights that end at [expiries]: [grace] after the
+   earliest of those still to come after [after]. *)
+let next_tick ~after expiries =
+  List.filter expiries ~f:(fun expiry -> Time_ns.(expiry > after))
+  |> List.min_elt ~compare:Time_ns.compare
+  |> Option.map ~f:(fun expiry -> Time_ns.add expiry grace)
+
+(* Runs [action] when the clock reaches [at], and wakes the driver, which sleeps through
+   timers it does not know of. The wake is a soft one: a tick is no reason to paint just
+   before a state of the stream arrives, see [Wake.soft_now]. A sleep that [timer] has since
+   replaced does nothing. *)
+let at_time context ~wake ~timer ~at action =
+  let time_source = Bonsai.Apply_action_context.time_source context in
+  let fallback at =
+    Bonsai.Time_source.sleep time_source (Time_ns.diff at (Bonsai.Time_source.now time_source)) in
+  Bonsai.Apply_action_context.schedule_event context
+    (match%bind.Effect Wake.Timer.sleep_until timer ~fallback at with
+     | Superseded -> Effect.Ignore
+     | Fired ->
+       let%bind.Effect () = Bonsai.Apply_action_context.inject context action in
+       Wake.soft_now_effect wake ~within:Paint_throttle.default_interval)
+
+(* What to do about the one timer when the highlights that are on have changed. A timer in
+   flight that is due no later than the new target stays: when it fires it looks again at
+   what is due and sets itself for the next. So a deadline that keeps moving later, as the
+   stream's "stopped" instant does with every sample, arms nothing; only one that comes
+   sooner than the timer replaces it. *)
+type plan = Keep | Arm of Time_ns.t
+
+let plan ~armed ~target =
+  match target, armed with
+  | None, (Some _ | None) -> Keep
+  | Some target, Some armed when Time_ns.(armed <= target) -> Keep
+  | Some target, (Some _ | None) -> Arm target
+
+(* Whether a highlight is still shown by the clock [now] although it has ended by [clock]. *)
+let any_due expiries ~now:shown ~clock =
+  List.exists expiries ~f:(fun expiry -> Time_ns.(expiry > shown && expiry <= clock))
 
 type model =
   { now : Time_ns.t
-  ; touched : Time_ns.t
-  ; generation : int  (* a pending sleep of an older generation is ignored when it wakes *)
-  ; pending : Time_ns.Span.t option }  (* the period of the sleep in flight, if any *)
+  ; touched : Time_ns.t option  (* the latest event, if there has been one *)
+  ; generation : int          (* a sleep of an older generation is ignored when it ends *)
+  ; armed : Time_ns.t option }  (* the instant the timer in flight is for, if any *)
 
-type action = Sync | Touch | Tick of int
+type action = Sync | Touch | Rearm | Tick of int
 
-let period_after ~age =
-  if Time_ns.Span.(age < fast_hold) then Some fast_period
-  else if Time_ns.Span.(age < slow_hold) then Some slow_period
-  else None
-
-let component ~activity ~equal (local_ graph) =
+(* [activity] changes when the stream has brought something: that is an event. [expiries] are
+   the instants at which highlights that the models hold stop, and [after_touch] the lengths
+   of highlights that start at each event and that nothing else records. *)
+let component ?(wake = Wake.off) ~activity ~equal ~expiries ~after_touch (local_ graph) =
+  let timer = Wake.Timer.create wake in
   let model, inject =
-    Bonsai.state_machine ~default_model:{ now = Time_ns.epoch; touched = Time_ns.epoch
-                                        ; generation = 0; pending = None }
-      ~apply_action:(fun context model action ->
-        let time_source = Bonsai.Apply_action_context.time_source context in
-        let now = Bonsai.Time_source.now time_source in
-        (* Ticks fall on multiples of the period, so a fade steps on the same tick whenever it
-           began, and a late wake-up does not push the ticks after it out of step. *)
-        let sleep_then generation period =
-          let next = Time_ns.next_multiple ~can_equal_after:false ~base:Time_ns.epoch ~after:now
-              ~interval:period () in
-          Bonsai.Apply_action_context.schedule_event context
-            (let%bind.Effect () = Bonsai.Time_source.sleep time_source (Time_ns.diff next now) in
-             Bonsai.Apply_action_context.inject context (Tick generation)) in
-        match action with
-        | Sync -> { model with now }
-        | Touch ->
-          (* A slow sleep may be in flight; waking it for the fast phase needs a new one. *)
-          (match model.pending with
-           | Some period when Time_ns.Span.equal period fast_period ->
-             { model with now; touched = now }
-           | _ ->
-             let generation = model.generation + 1 in
-             sleep_then generation fast_period;
-             { now; touched = now; generation; pending = Some fast_period })
-        | Tick generation when generation <> model.generation -> model
-        | Tick generation ->
-          (match period_after ~age:(Time_ns.diff now model.touched) with
-           | Some period -> sleep_then generation period; { model with now; pending = Some period }
-           | None -> { model with now; pending = None }))
-      graph in
+    Bonsai.state_machine_with_input
+      ~default_model:{ now = Time_ns.epoch; touched = None; generation = 0; armed = None }
+      ~apply_action:(fun context input model action ->
+        match input with
+        | Bonsai.Computation_status.Inactive -> model
+        | Active expiries ->
+          let clock = Bonsai.Time_source.now (Bonsai.Apply_action_context.time_source context) in
+          let ending model = Option.value_map model.touched ~default:[]
+              ~f:(fun touched -> List.map after_touch ~f:(Time_ns.add touched)) @ expiries in
+          let moved = match action with
+            | Sync -> Some { model with now = clock }
+            | Touch -> Some { model with now = clock; touched = Some clock }
+            | Rearm -> Some model
+            | Tick generation when generation <> model.generation -> None
+            | Tick _ ->
+              (* The clock moves only if a highlight it shows is over; a deadline that moved on
+                 since the timer was set is looked at again, and the timer set anew. *)
+              let model = { model with armed = None } in
+              Some (if any_due (ending model) ~now:model.now ~clock then { model with now = clock } else model) in
+          (* The timer follows the highlights that are still on, whatever woke us. *)
+          Option.value_map moved ~default:model ~f:(fun model ->
+            match plan ~armed:model.armed ~target:(next_tick ~after:clock (ending model)) with
+            | Keep -> model
+            | Arm at ->
+              let generation = model.generation + 1 in
+              at_time context ~wake ~timer ~at (Tick generation);
+              { model with generation; armed = Some at }))
+      expiries graph in
   (* The first value only starts the clock's time; it is no event. *)
   let callback = let%arr inject in fun previous (_ : _) ->
     inject (match previous with None -> Sync | Some _ -> Touch) in
   Bonsai.Edge.on_change' ~equal activity ~callback graph;
+  Bonsai.Edge.on_change ~equal:[%equal: Time_ns.t list] expiries
+    ~callback:(let%arr inject in fun (_ : Time_ns.t list) -> inject Rearm) graph;
   let now = let%arr model in model.now in
   Bonsai.cutoff now ~equal:Time_ns.equal
 
@@ -113,21 +153,19 @@ let windowed ?slow ~now ~since ~within () =
 type second_model = { tick : Time_ns.t; waiting : bool }
 type second_action = Enable | Boundary
 
-let each_second ~enabled (local_ graph) =
+let each_second ?(wake = Wake.off) ~enabled (local_ graph) =
+  let timer = Wake.Timer.create wake in
   let model, inject =
     Bonsai.state_machine_with_input ~default_model:{ tick = Time_ns.epoch; waiting = false }
       ~apply_action:(fun context input model action ->
         match input with
         | Bonsai.Computation_status.Inactive -> model
         | Active enabled ->
-          let time_source = Bonsai.Apply_action_context.time_source context in
-          let now = Bonsai.Time_source.now time_source in
+          let now = Bonsai.Time_source.now (Bonsai.Apply_action_context.time_source context) in
           let wait_for_next_second () =
             let next = Time_ns.next_multiple ~can_equal_after:false ~base:Time_ns.epoch ~after:now
                 ~interval:Time_ns.Span.second () in
-            Bonsai.Apply_action_context.schedule_event context
-              (let%bind.Effect () = Bonsai.Time_source.sleep time_source (Time_ns.diff next now) in
-               Bonsai.Apply_action_context.inject context Boundary);
+            at_time context ~wake ~timer ~at:next Boundary;
             { tick = now; waiting = true } in
           (match action with
            | Enable -> if enabled && not model.waiting then wait_for_next_second () else model

@@ -25,6 +25,16 @@ let tiers ~focus =
   ; [ core; layout; tail ]
   ; [ core; tail ] ]
 
+(* The cells a tier takes: its hints, their gaps and the separators between the groups. *)
+let size groups =
+  let cells = Braille_chart.display_width in
+  let group = function
+    | Note text -> cells text
+    | Keys pairs ->
+      List.sum (module Int) pairs ~f:(fun (key, label) -> cells key + 1 + cells label)
+      + (2 * Int.max 0 (List.length pairs - 1)) in
+  List.sum (module Int) groups ~f:group + (3 * Int.max 0 (List.length groups - 1))
+
 let render ~theme groups =
   let separator = View.text ~attrs:(Theme.attrs theme Border) " │ " in
   let group = function
@@ -43,9 +53,9 @@ let view ~theme ~focus ~preset ~zoomed ~scheme ~notice ~width =
   let right = View.text ~attrs:(Theme.attrs theme Focus) status in
   let room = width - View.width right - 1 in
   let tiers = tiers ~focus in
-  let left = match List.find_map tiers ~f:(fun groups ->
-      let view = render ~theme groups in Option.some_if (View.width view <= room) view) with
-    | Some view -> view
+  (* The richest tier that fits is built; the others are only measured. *)
+  let left = match List.find tiers ~f:(fun groups -> size groups <= room) with
+    | Some groups -> render ~theme groups
     | None -> render ~theme (List.last_exn tiers) in
   (* A notice takes the hints' place until the next key; its words carry the meaning. *)
   let left = match notice with
@@ -53,3 +63,4 @@ let view ~theme ~focus ~preset ~zoomed ~scheme ~notice ~width =
     | None -> left in
   let space = Int.max 1 (width - View.width left - View.width right) in
   View.hcat [ left; View.text (String.make space ' '); right ] |> Panel.fit ~width ~height:1
+  |> Theme.settle theme

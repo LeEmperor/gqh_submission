@@ -8,6 +8,10 @@ type t =
   { proposal : proposal; prior_engine : engine; outcome : outcome
   ; phase : phase; elapsed : float }
 
+(* Whether time passing can still change anything: an acknowledgement or a status read is due.
+   A lost or finished apply waits for the operator, not for the clock. *)
+let in_flight t = match t.phase with Running _ | Reading_status -> true | Lost | Terminal -> false
+
 let emit (state : application_state) ~proposal_id payload =
   let sequence = Option.value_map (List.last state.config_events) ~default:0
       ~f:(fun event -> event.sequence + 1) in

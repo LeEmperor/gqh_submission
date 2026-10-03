@@ -48,14 +48,42 @@ let reduce (model : History_state.t) = function
       | _ -> Option.value_map (direction event) ~default:model
           ~f:(History_state.navigate model ~height ~offset)
 
+(* The rows in view, where they start and how many rows there are in all. Every decision shown
+   makes the log the rows, so the window is read from it by position, in the time it takes to
+   reach the window and not the length of the log; a filter needs the filtered rows. *)
+let window_of (model : History_state.t) ~height =
+  let start ~count =
+    if model.follow then Int.max 0 (count - height)
+    else Int.clamp_exn model.offset ~min:0 ~max:(Int.max 0 (count - height)) in
+  match model.filter with
+  | All ->
+    let records = model.shown.records in
+    let count = Map.length records in
+    let start = start ~count in
+    let length = Int.min height (count - start) in
+    let visible =
+      if length <= 0 then []
+      else (
+        let first, _ = Map.nth_exn records start in
+        Sequence.take (Map.to_sequence records ~keys_greater_or_equal_to:first) length
+        |> Sequence.map ~f:snd |> Sequence.to_list) in
+    start, count, visible
+  | Match | Admitted | Blocked | Received | Errors ->
+    let rows = History_state.rows model in
+    let count = Array.length rows in
+    let start = start ~count in
+    start, count, Array.sub rows ~pos:start ~len:(Int.min height (count - start)) |> Array.to_list
+
 type t =
   { view : View.t; handler : Event.t -> bool Effect.t; click : int -> unit Effect.t
   ; model : History_state.t
   ; offset : int; visible : decision list; filter_view : View.t option }
 
 (* [now] is the shared animation clock: new rows fade in against it, and it is read only while
-   a fade runs, so an idle log is not recomputed. *)
+   a fade runs, so an idle log is not recomputed. [on_screen] says whether a panel shows the rows
+   at all: a preset without the decisions keeps the log, and builds no row of it. *)
 let component ?(dimmed = Bonsai.return false) ?(now = Bonsai.return Time_ns.epoch)
+    ?(on_screen = Bonsai.return true)
     ~(theme : Theme.t Bonsai.t) ~focus ~log ~(dimensions : Dimensions.t Bonsai.t) (local_ graph) =
   let model, inject = Bonsai.actor ~default_model:History_state.empty
       ~recv:(fun _context model action -> let next = reduce model action in next, (model, next)) graph in
@@ -72,16 +100,13 @@ let component ?(dimmed = Bonsai.return false) ?(now = Bonsai.return Time_ns.epoc
   let viewport = let%arr dimensions in
     { Dimensions.width = Int.max 1 (dimensions.width - 4)
     ; height = Int.max 1 (dimensions.height - 3) } in
-  let window = let%arr model and viewport in
-    let rows = History_state.rows model in
-    let count = Array.length rows in
-    let start = if model.follow then Int.max 0 (count - viewport.height)
-      else Int.clamp_exn model.offset ~min:0 ~max:(Int.max 0 (count - viewport.height)) in
-    let visible = Array.sub rows ~pos:start ~len:(Int.min viewport.height (count - start)) |> Array.to_list in
-    start, count, visible in
-  let canvas = let%arr window and model and viewport and dimmed and theme and fade_now in
+  let window = let%arr model and viewport in window_of model ~height:viewport.height in
+  let canvas = let%arr window and model and viewport and dimmed and theme and fade_now and on_screen in
     let theme = if dimmed then Theme.dim theme else theme in
     let start, count, visible = window in
+    (* Off screen, the rows stay the size they have, so the scroller keeps its place, and none is
+       built. *)
+    if not on_screen then View.transparent_rectangle ~width:viewport.width ~height:count else
     (* Only this viewport is converted to text views. The other <=10k rows are
        represented by two transparent spacers, then cropped by the real scroller. *)
     View.vcat
@@ -155,7 +180,7 @@ let component ?(dimmed = Bonsai.return false) ?(now = Bonsai.return Time_ns.epoc
     else "MOCK · G live · / filter · Space pause" in
   let body = View.vcat [ Panel.fit scroller.view ~width:(Int.max 0 (dimensions.width - 4))
                           ~height:(Int.max 0 (dimensions.height - 3)); View.text ~attrs:(Theme.attrs theme Muted) pill ] in
-  let view = Panel.frame ~theme ~focus ~panel:Decisions ~title
+  let view = Panel.framed ~theme ~focus ~panel:Decisions ~title
       ~width:dimensions.width ~height:dimensions.height body in
   let filter_view = if not model.filter_open then None else
     let body = View.vcat

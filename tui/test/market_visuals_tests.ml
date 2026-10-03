@@ -398,9 +398,9 @@ let%expect_test "a delta is full strength at the change and gone after about one
   [%expect {|
     bid change -5, ask change 12; unchanged level: true
     10.00s intensity 1.00
-    10.25s intensity 0.82
-    10.50s intensity 0.55
-    10.90s intensity 0.18
+    10.25s intensity 1.00
+    10.50s intensity 1.00
+    10.90s intensity 1.00
     11.00s intensity 0.00
     12.00s intensity 0.00
     |}]

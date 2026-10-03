@@ -82,7 +82,7 @@ let sample seconds ~bid ~ask : Market_motion.sample =
   ; delta_updates = 1 }
 
 let chart ~width ~height samples =
-  Market_chart.view ~theme ~samples ~now:(Time_ns.add Time_ns.epoch (Time_ns.Span.of_sec 60.))
+  Market_chart.view ~theme ~samples:(Age_deque.of_list samples) ~now:(Time_ns.add Time_ns.epoch (Time_ns.Span.of_sec 60.))
     ~threshold:None ~width ~height
   |> rows ~width ~height
 
@@ -188,8 +188,9 @@ let%expect_test "the bench runs Monitor, whatever preset is saved, and never sav
     let backend = Shell_tests.fixture Enabled in
     let events = Bonsai.Expert.Var.create 0 in
     let handle = Bonsai_term_test.create_handle ~initial_dimensions:{ width = 120; height = 36 }
-        (Bench.app ~theme ~backend ~events ~log:(Bench.Log.create ()) ~exit:(fun _ -> Effect.Ignore)) in
-    (* The live app releases one view per 60 Hz frame. *)
+        (fun ~dimensions (local_ graph) ->
+           Bench.app ~theme ~backend ~events ~log:(Bench.Log.create ()) ~keys:(Bench.Log.create ~every:true ())
+             ~exit:(fun _ -> Effect.Ignore) ~dimensions graph) in
     let screen () =
       Handle.advance_clock_by handle (Time_ns.Span.of_sec 0.02);
       Handle.recompute_view_until_stable handle;
@@ -205,7 +206,8 @@ let%expect_test "the bench report names the preset and the size" =
     { last_ms = 1.; avg_ms = 1.; p50_ms = 1.; p99_ms = 2.; max_ms = 3.; events_per_second = 0.
     ; render_count = 10; coalesced_frames = 0; buffer_sizes = [] } in
   let report = Bench.format_report ~dimensions:{ width = 200; height = 60 } ~rate_hz:1000. ~seconds:20.
-      ~events:5 ~staleness:{ p50 = 1.; p99 = 2.; max = 3. } ~stats in
+      ~events:5 ~staleness:{ p50 = 1.; p99 = 2.; max = 3. } ~keys:{ p50 = 1.; p99 = 2.; max = 3. }
+      ~key_count:0 ~stats in
   print_endline (List.hd_exn (String.split_lines report));
   [%expect {| tickweave bench · MOCK · Monitor 200x60 · 20 s · stream 1000 Hz |}]
 
@@ -285,12 +287,13 @@ module Idle_backend = struct
   type t = Mock_backend.t
   let state = Mock_backend.state
   let handle_command = Mock_backend.handle_command
+  let polling = Mock_backend.polling
   let next (_ : t) = Async.Deferred.never ()
 end
 
 (* The real [App.live] on an idle stream, with the per-node recompute hook and a count of the
-   views released to the terminal: each one is a paint. The app starts 0.37 s into the test's
-   clock, as a real one starts at an arbitrary instant, not on a whole second. *)
+   frames whose final view differs from the one before: each one is a paint. The app starts 0.37 s
+   into the test's clock, as a real one starts at an arbitrary instant, not on a whole second. *)
 let idle_app scenario =
   let _scheduler = Async.Scheduler.t () in
   let counts = String.Table.create () and paints = ref 0 in
@@ -308,10 +311,11 @@ let idle_app scenario =
                  ~on_compute (module Idle_backend) ~theme ~backend:(Shell_tests.fixture scenario)
                  ~exit:(fun () -> Effect.Ignore) ~dimensions graph in
              let%arr view and handler in (~view, ~handler) in
+         let view = let%arr app in let ~view, ~handler:_ = app in view in
+         Bonsai.Edge.on_change ~trigger:`After_display ~equal:phys_equal view
+           ~callback:(Bonsai.return (fun (_ : View.t) -> Effect.of_sync_fun incr paints)) graph;
          let%arr app and set_started in
-         let ~view, ~handler = app in
-         incr paints;
-         ((~view, ~handler), fun () -> set_started true)) in
+         (app, fun () -> set_started true)) in
   Handle.advance_clock_by handle (Time_ns.Span.of_sec 0.37);
   Bonsai_term_test.do_actions handle [ () ];
   Handle.recompute_view_until_stable handle;
@@ -501,7 +505,8 @@ let truecolor = Theme.create Truecolor
 
 let%expect_test "white is the saturation zone: nothing below 1.5x the scale reaches it" =
   let top = Heatmap.buckets - 1 in
-  let reaches quantity = Heatmap.bucket_for ~maximum:100 quantity = top in
+  let reaches quantity =
+    Heatmap.bucket_of_heat (Heatmap.intensity ~quantity ~maximum:100) = top in
   printf "100 u at a scale of 100: white %b; 149 u: white %b; 150 u: white %b; 400 u: white %b\n"
     (reaches 100) (reaches 149) (reaches 150) (reaches 400);
   [%expect {| 100 u at a scale of 100: white false; 149 u: white false; 150 u: white true; 400 u: white true |}]
@@ -600,7 +605,7 @@ let%expect_test "the heatmap legend states the saturation zone" =
                  |> String.chop_suffix_if_exists ~suffix:"│" |> String.strip);
   [%expect {| qty 0 ░░░▒▒▓██ 1023 u = max(p95, 3×median), γ1.2; white above 1.5×  ━ ask  ═ bid  ▲ admitted  ✗ blocked |}]
 
-(* --- 14. A fade steps; it does not slide ------------------------------------------------------------ *)
+(* --- 14. A highlight is on or off; it does not fade ------------------------------------------------- *)
 
 (* The real shell in truecolour, with colour escapes in the screen text and the per-node hook. *)
 let colored_app ~initial dimensions =
@@ -638,11 +643,11 @@ let screens_after_an_update ~seconds =
   done;
   Hash_set.length seen, Option.value (Hashtbl.find counts "Market") ~default:0
 
-let%expect_test "a fade is about a dozen colour steps, so one update costs about a dozen screens" =
+let%expect_test "a highlight is on or off, so one update costs a few screens and not a dozen" =
   let screens, market = screens_after_an_update ~seconds:1.3 in
   printf "screens %d, Market recomputes %d\n" screens market;
-  ensure (screens <= 14 && market <= 14) "a fade repaints at the clock's rate, not at its own step";
-  [%expect {| screens 14, Market recomputes 13 |}]
+  ensure (screens <= 4 && market <= 3) "a highlight repaints more than when it ends";
+  [%expect {| screens 4, Market recomputes 2 |}]
 
 (* Notty sends a full colour sequence for every text node, even beside an identical one, and
    resends a whole line when any of it changes, so the bytes of a row follow its node count.
@@ -725,7 +730,7 @@ let%expect_test "a panel frame looks exactly as the border box draws it, in fewe
   [%expect {| frames compared 90, differing 0; most nodes in an interior row of a 60-wide frame round a full-width line: 3 |}]
 
 let%expect_test "a price chart row is a few text nodes, the dashed threshold row too" =
-  let view = Market_chart.view ~theme:truecolor ~samples:steady ~now:(Time_ns.add Time_ns.epoch (Time_ns.Span.of_sec 60.))
+  let view = Market_chart.view ~theme:truecolor ~samples:(Age_deque.of_list steady) ~now:(Time_ns.add Time_ns.epoch (Time_ns.Span.of_sec 60.))
       ~threshold:(Some 1006) ~width:100 ~height:12 in
   let nodes = nodes_per_line view in
   printf "text nodes in each row of a chart with a dashed threshold: %s\n"
@@ -733,13 +738,13 @@ let%expect_test "a price chart row is a few text nodes, the dashed threshold row
   ensure (List.for_all (List.drop nodes 1) ~f:(fun count -> count <= 8)) "a chart row is made of too many text nodes";
   [%expect {| text nodes in each row of a chart with a dashed threshold: 5 3 3 3 3 3 3 3 3 3 3 1 |}]
 
-(* How many different intensities a fade shows between its start and its end, sampled every
-   millisecond: each one is a colour a fading cell is drawn in, and a screen the terminal is sent. *)
+(* How many different intensities a highlight shows between its start and its end, sampled every
+   millisecond: each one is a colour a cell is drawn in, and a screen the terminal is sent. *)
 let levels_of fade ~seconds =
   List.init (Float.to_int (seconds *. 1000.) + 50) ~f:(fun ms -> fade (Time_ns.add Time_ns.epoch (Time_ns.Span.of_ms (Float.of_int ms))))
   |> List.filter ~f:(fun level -> Float.(level > 0.)) |> List.dedup_and_sort ~compare:Float.compare |> List.length
 
-let%expect_test "the delta, tape and decision fades each step through at most a dozen levels" =
+let%expect_test "the delta, tape and decision highlights each have one level, on until they end" =
   let delta = { Market_motion.change = 3; at = Time_ns.epoch } in
   let print = { Tape_panel.time = Time_ns.epoch; side = Buy; price_ticks = 1; quantity_units = 1 } in
   let counts =
@@ -747,11 +752,11 @@ let%expect_test "the delta, tape and decision fades each step through at most a 
     ; "tape", levels_of (fun now -> Tape_panel.freshness ~now print) ~seconds:1.
     ; "decision", levels_of (fun now -> Decision_row.fresh_intensity ~now ~at:Time_ns.epoch) ~seconds:0.8 ] in
   List.iter counts ~f:(fun (name, count) -> printf "%s fade: %d levels\n" name count);
-  ensure (List.for_all counts ~f:(fun (_, count) -> count >= 8 && count <= 12)) "a fade is not a dozen steps";
+  ensure (List.for_all counts ~f:(fun (_, count) -> count = 1)) "a highlight fades instead of ending";
   [%expect {|
-    delta fade: 11 levels
-    tape fade: 11 levels
-    decision fade: 11 levels
+    delta fade: 1 levels
+    tape fade: 1 levels
+    decision fade: 1 levels
     |}]
 
 (* --- 15. The stream is polled once a frame, however fast it is ------------------------------- *)
@@ -761,11 +766,12 @@ module Counting_backend = struct
   let polls = ref 0
   let state = Mock_backend.state
   let handle_command = Mock_backend.handle_command
+  let polling = Mock_backend.polling
   let next t = incr polls; Mock_backend.next t
 end
 
 (* The live app on a stream of [rate_hz], [frames] 60 Hz frames long: how often the backend was
-   polled and how many different views the app released to the terminal. *)
+   polled and in how many frames the view differed from the one before, each a paint. *)
 let polls_and_paints ~rate_hz ~frames =
   let _scheduler = Async.Scheduler.t () in
   Counting_backend.polls := 0;
@@ -776,7 +782,8 @@ let polls_and_paints ~rate_hz ~frames =
          let ~view, ~handler =
            App.live ~initial_preset:Monitor ~on_preset:(Bonsai.return (fun (_ : Ui_types.preset) -> Effect.return (Ok ())))
              (module Counting_backend) ~theme ~backend ~exit:(fun () -> Effect.Ignore) ~dimensions graph in
-         let view = let%arr view in incr paints; view in
+         Bonsai.Edge.on_change ~trigger:`After_display ~equal:phys_equal view
+           ~callback:(Bonsai.return (fun (_ : View.t) -> Effect.of_sync_fun incr paints)) graph;
          ~view, ~handler) in
   for _ = 1 to frames do
     Handle.advance_clock_by handle (Time_ns.Span.of_sec (1. /. 60.));
@@ -789,7 +796,7 @@ let%expect_test "a fast stream is polled and painted once a frame, not once ever
   let polls, paints = polls_and_paints ~rate_hz:1000. ~frames:300 in
   printf "5 s of 60 Hz frames at 1000 Hz: %d polls, %d paints\n" polls paints;
   ensure (polls >= 270 && paints >= 270) "the stream is polled less than once a frame";
-  [%expect {| 5 s of 60 Hz frames at 1000 Hz: 299 polls, 301 paints |}]
+  [%expect {| 5 s of 60 Hz frames at 1000 Hz: 299 polls, 300 paints |}]
 
 let%expect_test "a slow stream is still polled at its own rate" =
   let polls, _ = polls_and_paints ~rate_hz:4. ~frames:300 in
@@ -797,17 +804,29 @@ let%expect_test "a slow stream is still polled at its own rate" =
   ensure (polls >= 18 && polls <= 24) "a 4 Hz stream is not polled about 4 times a second";
   [%expect {| 5 s of 60 Hz frames at 4 Hz: 19 polls |}]
 
-let%expect_test "the bench measures each paint against the newest state that had arrived when its frame began" =
+let%expect_test "the bench times each paint that shows something new, against the newest state it shows" =
   let ms value = Time_ns.add Time_ns.epoch (Time_ns.Span.of_ms value) in
   let log = Bench.Log.create () in
   List.iter [ 0.; 10.; 30. ] ~f:(fun time -> Bench.Log.arrived log (ms time));
   (* Painted from a frame that began after the arrival at 10 ms but before the one at 30 ms. *)
   Bench.Log.painted log ~start:(ms 12.) ~finish:(ms 15.);
   Bench.Log.painted log ~start:(ms 35.) ~finish:(ms 40.);
+  (* A repaint for a header clock or a highlight clearing replies to no state, and is not timed. *)
   Bench.Log.painted log ~start:(ms 36.) ~finish:(ms 52.);
   let { Bench.p50; p99; max } = Bench.Log.staleness log in
-  printf "delays 5 ms (10 to 15), 10 ms (30 to 40), 22 ms (30 to 52): p50 %.1f p99 %.1f max %.1f\n" p50 p99 max;
-  [%expect {| delays 5 ms (10 to 15), 10 ms (30 to 40), 22 ms (30 to 52): p50 10.0 p99 22.0 max 22.0 |}]
+  printf "delays 5 ms (10 to 15), 10 ms (30 to 40), none for the repaint: p50 %.1f p99 %.1f max %.1f\n" p50 p99 max;
+  (* Every key was pressed, so each is timed, against the paint that shows it. *)
+  let keys = Bench.Log.create ~every:true () in
+  List.iter [ 0.; 4.; 30. ] ~f:(fun time -> Bench.Log.arrived keys (ms time));
+  Bench.Log.painted keys ~start:(ms 5.) ~finish:(ms 9.);
+  Bench.Log.painted keys ~start:(ms 33.) ~finish:(ms 37.);
+  let { Bench.p50; p99; max } = Bench.Log.staleness keys in
+  printf "keys at 0, 4 and 30 ms, painted by 9 and 37 ms: %d timed; p50 %.1f p99 %.1f max %.1f\n"
+    (Bench.Log.count keys) p50 p99 max;
+  [%expect {|
+    delays 5 ms (10 to 15), 10 ms (30 to 40), none for the repaint: p50 5.0 p99 10.0 max 10.0
+    keys at 0, 4 and 30 ms, painted by 9 and 37 ms: 3 timed; p50 7.0 p99 9.0 max 9.0
+    |}]
 
 (* --- 13. The Inspector's empty state wraps instead of losing its mode label ------------------- *)
 

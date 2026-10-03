@@ -17,9 +17,9 @@ let move_selection (rules : rule list) ~selected ~direction =
    a different value. A field too wide by itself receives an explicit marker. *)
 let field_rows ~width fields =
   let rows, row = List.fold fields ~init:([], "") ~f:(fun (rows, row) field ->
-    let field = if View.width (View.text field) <= width then field else "VALUE TOO WIDE" in
+    let field = if Braille_chart.display_width field <= width then field else "VALUE TOO WIDE" in
     let joined = if String.is_empty row then field else row ^ "  " ^ field in
-    if View.width (View.text joined) <= width then rows, joined
+    if Braille_chart.display_width joined <= width then rows, joined
     else row :: rows, field) in
   List.rev (row :: rows)
 
@@ -114,21 +114,23 @@ let view ~theme ~focus ~(state : application_state) ~selected ~width ~height =
     else if rule.enabled then "● ON", Bid else "○ OFF", Muted in
   let label (rule : rule) ~selected =
     let status, role = status_of rule in
+    let cells = Braille_chart.display_width in
     let right = text role status in
     (* A long name gives way to the status, which stays whole at the right edge. *)
-    let left = text (if selected then Focus else Text)
-        (Braille_chart.truncate ~width:(Int.max 1 (inner - View.width right - 1))
-           (sprintf "%s #%d %s" (if selected then "▸" else " ") rule.slot rule.name)) in
+    let name = Braille_chart.truncate ~width:(Int.max 1 (inner - cells status - 1))
+        (String.concat [ (if selected then "▸" else " "); " #"; Int.to_string rule.slot; " "; rule.name ]) in
+    let left = text (if selected then Focus else Text) name in
     (* Another rule shows its outcome counts in the room between name and status. *)
     let middle =
       let decided = rule.admitted + rule.blocked in
       let counts = sprintf "m%d a%d b%d%s" rule.matched rule.admitted rule.blocked
           (if decided = 0 then "" else " " ^ String.strip (percent (Float.of_int rule.admitted /. Float.of_int decided))) in
-      if (not selected) && inner - View.width left - View.width right >= String.length counts + 3
-      then text Muted ("  " ^ counts) else View.none in
-    View.hcat [ left; middle
-              ; View.text (String.make (Int.max 1 (inner - View.width left - View.width middle - View.width right)) ' ')
-              ; right ] in
+      if (not selected) && inner - cells name - cells status >= String.length counts + 3
+      then Some ("  " ^ counts) else None in
+    let used = cells name + cells status + Option.value_map middle ~default:0 ~f:cells in
+    View.hcat ([ left ]
+               @ Option.value_map middle ~default:[] ~f:(fun counts -> [ text Muted counts ])
+               @ [ View.rectangle ~width:(Int.max 1 (inner - used)) ~height:1 (); right ]) in
   let body = match selected_rule with
     | None -> View.vcat
         (prose Muted (if List.is_empty state.rules then "No compiled rules" else "Selected rule unavailable")
@@ -196,4 +198,4 @@ let view ~theme ~focus ~(state : application_state) ~selected ~width ~height =
             else [])
          @ [ prose config_role (configuration ^ " · " ^ Status_bar.mode_name state.mode) ]
          @ List.map others ~f:(fun other -> label other ~selected:false)) in
-  Panel.frame ~theme ~focus ~panel:Rules ~title:"Rules" ~width ~height body
+  Panel.framed ~theme ~focus ~panel:Rules ~title:"Rules" ~width ~height body

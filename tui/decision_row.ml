@@ -2,12 +2,12 @@ open! Core
 open Bonsai_term
 open Model_adapter
 
-let time time = Time_ns.to_ofday time ~zone:Timezone.utc |> Time_ns.Ofday.to_millisecond_string
+let time = Clock_text.utc_millis
 let id (decision : decision) = Option.value_map decision.identity.decision_id ~default:"#?"
-    ~f:(sprintf "#%d")
+    ~f:(fun id -> "#" ^ Int.to_string id)
 let candidate_text (candidate : candidate) =
-  sprintf "%s %d @%d" (match candidate.side with Buy -> "BUY" | Sell -> "SELL")
-    candidate.quantity_units candidate.price_ticks
+  String.concat [ (match candidate.side with Buy -> "BUY " | Sell -> "SELL "); Int.to_string candidate.quantity_units
+                ; " @"; Int.to_string candidate.price_ticks ]
 let block_summary reason =
   if String.is_prefix reason ~prefix:"order qty" then "qty"
   else if String.is_prefix reason ~prefix:"price" then "price"
@@ -29,18 +29,18 @@ let predicate_width = 65
 let config_width = 70
 let receipt_width = 82
 
-let pad_to width value = value ^ String.make (Int.max 0 (width - View.width (View.text value))) ' '
+let pad_to width value = value ^ String.make (Int.max 0 (width - Braille_chart.display_width value)) ' '
 let ask_price (decision : decision) = Option.map (List.hd decision.inputs.asks) ~f:(fun l -> l.price_ticks)
 (* "ask 1003 ≤ 1005": the best recorded ask against the rule's maximum_price. A no-signal row
    shows why: "ask 1007 > 1005". With no ask in the recorded book there is no comparison. *)
 let predicate_text (decision : decision) =
   match ask_price decision with
-  | None -> sprintf "ask — vs %d" decision.maximum_price_ticks
+  | None -> "ask — vs " ^ Int.to_string decision.maximum_price_ticks
   | Some ask ->
-    sprintf "ask %d %s %d" ask (if ask <= decision.maximum_price_ticks then "≤" else ">")
-      decision.maximum_price_ticks
+    String.concat [ "ask "; Int.to_string ask; (if ask <= decision.maximum_price_ticks then " ≤ " else " > ")
+                  ; Int.to_string decision.maximum_price_ticks ]
 let config_text (decision : decision) =
-  Option.value_map decision.identity.config_version ~default:"v—" ~f:(sprintf "v%d")
+  Option.value_map decision.identity.config_version ~default:"v—" ~f:(fun version -> "v" ^ Int.to_string version)
 let receipt_delay (decision : decision) =
   Option.map decision.receipt_at ~f:(fun at ->
     sprintf "+%.1fms" (Time_ns.diff at decision.occurred_at |> Time_ns.Span.to_ms))
@@ -72,13 +72,14 @@ let text ~width (decision : decision) =
       @ (if width >= receipt_width then [ field 7 (Option.value (receipt_delay decision) ~default:"") ]
          else []) in
   let result = String.rstrip (String.concat ~sep:" " columns) in
-  if View.width (View.text result) > width then sprintf "%s %s VALUE TOO WIDE" (id decision) status
+  let result_width = Braille_chart.display_width result in
+  if result_width > width then String.concat ~sep:" " [ id decision; status; "VALUE TOO WIDE" ]
   else (
     (* A blocked candidate's reason follows, whole or not at all: a clipped number would
        read as a different reason. The badge always carries its short form. *)
     match decision.outcome with
     | Blocked_result reason when width >= receipt_width
-                              && View.width (View.text result) + 1 + View.width (View.text reason) <= width ->
+                              && result_width + 1 + Braille_chart.display_width reason <= width ->
       result ^ " " ^ reason
     | _ -> result)
 

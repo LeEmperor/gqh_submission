@@ -107,7 +107,7 @@ let needs_sampler (state : application_state) t = state.connected || has_samples
 
 (* Sampled on the second, while the stream is up or real samples remain to age out of the
    window. A lost stream with nothing left in the window needs no sampler, so it runs no timer. *)
-let component ~state (local_ graph) =
+let component ?wake ~state (local_ graph) =
   let metrics, inject =
     Bonsai.state_machine_with_input ~default_model:empty
       ~apply_action:(fun context input t () ->
@@ -118,7 +118,7 @@ let component ~state (local_ graph) =
             ~now:(Bonsai.Time_source.now (Bonsai.Apply_action_context.time_source context)))
       state graph in
   let sampling = let%arr state and metrics in needs_sampler state metrics in
-  let tick = Anim_clock.each_second ~enabled:sampling graph in
+  let tick = Anim_clock.each_second ?wake ~enabled:sampling graph in
   (* The first value is the clock's start, not a tick. *)
   Bonsai.Edge.on_change' ~equal:Time_ns.equal tick
     ~callback:(let%arr inject in fun previous (_ : Time_ns.t) ->

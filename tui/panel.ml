@@ -30,20 +30,21 @@ let frame ?(muted = false) ~theme ~focus ~panel ~title ~width ~height body =
   let inner_width = Int.max 0 (width - 4) and inner_height = Int.max 0 (height - 2) in
   let body = fit body ~width:inner_width ~height:inner_height in
   let across = inner_width + 2 in  (* between the corners: the body and a cell of padding each side *)
-  let rule count = String.concat (List.init (Int.max 0 count) ~f:(fun _ -> "─")) in
   let text value = View.text ~attrs value in
   let title = View.text ~attrs:title_attrs (" " ^ title ^ " ") in
   let top =
     match Int.sign (across - View.width title) with
     | Neg -> View.hcat [ text "╭"; title ]
     | Zero -> View.hcat [ text "╭"; title; text "╮" ]
-    | Pos -> View.hcat [ text "╭"; title; text (rule (across - View.width title) ^ "╮") ] in
-  let bottom = text ("╰" ^ rule across ^ "╯") in
-  let edge value = View.vcat (List.init inner_height ~f:(fun _ -> text value)) in
+    | Pos -> View.hcat [ text "╭"; title; text (Braille_chart.repeat "─" (across - View.width title) ^ "╮") ] in
+  let bottom = text ("╰" ^ Braille_chart.repeat "─" across ^ "╯") in
+  (* One text node is the whole edge: the same view stands in every row of it. *)
+  let edge value = let row = text value in View.vcat (List.init inner_height ~f:(fun _ -> row)) in
   let middle =
     View.hcat [ edge "│ "; View.zcat [ body; View.rectangle ~attrs ~width:inner_width ~height:inner_height () ]
               ; edge " │" ] in
   View.vcat [ top; middle; bottom ] |> fit ~width ~height
 
-let empty ~theme ~focus ~panel ~title ~width ~height =
-  frame ~theme ~focus ~panel ~title ~width ~height View.none
+(* [frame] with its colours settled, as a panel that is shown is: see [Theme.settle]. *)
+let framed ?muted ~theme ~focus ~panel ~title ~width ~height body =
+  Theme.settle theme (frame ?muted ~theme ~focus ~panel ~title ~width ~height body)

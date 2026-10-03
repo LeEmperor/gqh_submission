@@ -32,13 +32,16 @@ let empty =
   ; inspected = None; fresh_keys = []; fresh_at = None; paused = false; follow = true; unseen = 0; paused_arrivals = 0; offset = 0
   ; filter = All; filter_open = false; filter_error = None; editor = Filter_editor.create "all" }
 let rows t = Decision_buffer.to_list t.shown |> List.filter ~f:(matches t.filter) |> Array.of_list
-let tail_offset t ~height = Int.max 0 (Array.length (rows t) - height)
 (* [now] stamps the arrival that the new rows' highlight fades from. *)
 let receive ?(now = Time_ns.epoch) t live =
-  let fresh_keys = Map.fold live.records ~init:[] ~f:(fun ~key:sequence ~data:decision keys ->
-    let new_key = match Map.find t.live.records sequence with
-      | None -> true | Some previous -> not (same_key previous decision) in
-    if new_key then key decision :: keys else keys) in
+  (* The records [live] has that [t.live] does not, newest first. The two logs share nearly all
+     of their structure, so the difference between them is found without walking the ten
+     thousand records: only what a new decision changed. *)
+  let fresh_keys = Map.fold_symmetric_diff live.records t.live.records ~data_equal:same_key ~init:[]
+      ~f:(fun keys (_, change) ->
+        match change with
+        | `Left decision | `Unequal (decision, _) -> key decision :: keys
+        | `Right _ -> keys) in
   let arrivals = Int.max (List.length fresh_keys) (Int.max 0 (live.next_sequence - t.live.next_sequence)) in
   if t.paused || Option.is_some t.selected || not t.follow
   then { t with live; fresh_keys = []; unseen = t.unseen + arrivals

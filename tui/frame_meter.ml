@@ -6,19 +6,19 @@ open Model_adapter
 (* What bonsai_term lets an application measure. Each loop iteration starts by advancing
    the Bonsai clock to the wall time at the top of the frame, flushes and recomputes the
    view, paints it (Notty diff plus a flushed tty write) only when the view changed, then
-   runs the after-display lifecycle. The loop then sleeps until the next event, or until
-   [target_frames_per_second] if idle. So from inside the graph we can read:
+   runs the after-display lifecycle. The loop then sleeps until the next event or [Wake], or
+   until its slow fallback timer. So from inside the graph we can read:
 
    - frame work: wall time from the top of the frame (the Bonsai clock) to the after-display
      lifecycle, i.e. flush + recompute + paint + tty flush, including any Async jobs that ran
      while the paint was being awaited. It excludes the idle wait and event handling.
-   - painted frames: after-display callbacks where the view is not physically equal to the
-     previous one, which is exactly the driver's own "view changed" test.
+   - painted frames: after-display callbacks of a frame in which [Paint_throttle] released a
+     view, which is exactly the frames the driver paints.
 
    Only painted frames are timed: an idle frame that repaints nothing would swamp the
    percentiles with microsecond samples. The frame interval is not reported, because it is
    dominated by the idle wait and says nothing about render cost. The initial full paint
-   is not timed either, since no callback precedes it. *)
+   is not timed either: no view has been released when its frame begins. *)
 
 (* A 60 fps frame is 16.7 ms; 16 ms is the p99 target the bench checks and the overlay flags. *)
 let budget_ms = 16.
@@ -83,7 +83,7 @@ type action = Painted of { start : Time_ns.t; finish : Time_ns.t }
 type probe =
   { stats : Ui_types.frame_stats Bonsai.t
   ; snapshot : Ui_types.frame_stats Effect.t Bonsai.t
-  ; paint : (View.t -> unit Effect.t) Bonsai.t }
+  ; paint : unit Effect.t Bonsai.t }
 
 (* The overlay is republished at most twice a second, and only while [enabled], so that
    measuring never keeps an otherwise idle application repainting. *)
@@ -116,47 +116,26 @@ let probe ?(window = 600) ?(on_paint = fun ~start:_ ~finish:_ -> ()) ~enabled ~u
     | Inactive -> nothing in
   let get_time = Bonsai.Clock.get_current_time graph in
   let paint = let%arr inject and get_time in
-    fun (_ : View.t) ->
-      let open Effect.Let_syntax in
-      let%bind start = get_time in
-      let%bind finish = Effect.of_sync_fun Time_ns.now () in
-      on_paint ~start ~finish;
-      inject (Painted { start; finish }) in
+    let open Effect.Let_syntax in
+    let%bind start = get_time in
+    let%bind finish = Effect.of_sync_fun Time_ns.now () in
+    on_paint ~start ~finish;
+    inject (Painted { start; finish }) in
   { stats = overlay; snapshot; paint }
 
-(* Time every repaint of [view]. The first callback precedes the first paint, so is skipped. *)
-let observe { paint; _ } ~view (local_ graph) =
-  let callback = let%arr paint in
-    fun previous view -> match previous with None -> Effect.Ignore | Some _ -> paint view in
-  Bonsai.Edge.on_change' ~equal:phys_equal ~trigger:`After_display view ~callback graph
-
-(* bonsai_term sleeps up to the frame interval only when idle: pending key or mouse events
-   end the wait at once, so a burst of them repaints after every batch, however fast. This
-   releases [view] to the driver at most once per frame interval; a view that arrives inside
-   the interval is held, and released on the first frame after it ends, so a burst is painted
-   once per interval, one frame late at most. Frames are never exactly one interval apart, so
-   the gap that must have passed is three quarters of it: an idle loop's frames always clear
-   it, and a burst is still held to 80 paints a second at most.
-
-   A frame asks for a release only while the released view differs from [view]. An idle
-   application has nothing to release, so it runs no timer and does no work here. *)
-type throttle_model = { shown : View.t; released_at : Time_ns.t }
-
-let throttle ?(frames_per_second = 60.) ~view (local_ graph) =
-  let gap = Time_ns.Span.of_sec (0.75 /. frames_per_second) in
-  let model, inject =
-    Bonsai.state_machine_with_input
-      ~default_model:{ shown = View.none; released_at = Time_ns.epoch }
-      ~apply_action:(fun context input model () ->
-        match input with
-        | Bonsai.Computation_status.Inactive -> model
-        | Active view ->
-          let now = Bonsai.Time_source.now (Bonsai.Apply_action_context.time_source context) in
-          if Time_ns.Span.(Time_ns.diff now model.released_at >= gap)
-          then { shown = view; released_at = now }
-          else model)
-      view graph in
-  let shown = Bonsai.cutoff ~equal:phys_equal (let%arr model in model.shown) in
-  let behind = let%arr view and shown in not (phys_equal view shown) in
-  Bonsai.Edge.before_display' (let%arr behind and inject in Option.some_if behind (inject ())) graph;
-  shown
+(* Time every paint. [paints] counts the views [Paint_throttle] has released, one per paint.
+   This runs at the end of every frame, after its paint, and times the frames that raised
+   the count. The first frame, which precedes the first paint, raised nothing. Without
+   [paints], as under test where nothing paints, nothing is observed: an effect that runs
+   after every frame would keep a harness that waits for the frames to settle waiting
+   forever. *)
+let observe { paint; _ } ?(paints : (unit -> int) option) (local_ graph) =
+  match paints with
+  | None -> ()
+  | Some paints ->
+    let seen = ref (paints ()) in
+    let after_paint = let%arr paint in
+      let open Effect.Let_syntax in
+      let%bind count = Effect.of_sync_fun paints () in
+      if count = !seen then Effect.Ignore else (seen := count; paint) in
+    Bonsai.Edge.after_display after_paint graph

@@ -12,4 +12,6 @@ let view segments =
       match runs with
       | (previous, run) :: rest when [%equal: Attr.t list] previous attrs -> (previous, run ^ text) :: rest
       | _ -> (attrs, text) :: runs) in
-  View.hcat (List.rev_map runs ~f:(fun (attrs, text) -> View.text ~attrs text))
+  match runs with
+  | [ attrs, text ] -> View.text ~attrs text  (* a concatenation of one is its own node *)
+  | runs -> View.hcat (List.rev_map runs ~f:(fun (attrs, text) -> View.text ~attrs text))

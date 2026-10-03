@@ -72,13 +72,15 @@ let component ~compute ~theme ~state ~focus ~selected ~cumulative ~tiling ~histo
       Market_panel.view ~cumulative ~motion ~now ~theme ~focus:(seen_focus Market ~focused)
         ~state ~width ~height) in
   let heatmap_view =
-    let%arr rect = rect Heatmap and focused = focused Heatmap and theme and state and heatmap in
+    let%arr rect = rect Heatmap and focused = focused Heatmap and theme
+    and state = projected Heatmap.same_inputs and heatmap in
     compute (name Heatmap);
     tile rect (fun ~width ~height ->
       Heatmap.view ~theme ~focus:(seen_focus Heatmap ~focused) ~heatmap ~state ~width ~height) in
+  let tape = Bonsai.cutoff tape ~equal:Tape_panel.same_inputs in
   let tape_now =
     Anim_clock.windowed ~slow:metrics_step ~now ~within:print_horizon
-      ~since:(let%arr tape in Option.map (List.hd (Tape_panel.prints tape)) ~f:(fun (print : Tape_panel.print) -> print.time))
+      ~since:(let%arr tape in Option.map (Tape_panel.newest tape) ~f:(fun (print : Tape_panel.print) -> print.time))
       () in
   let tape_view =
     let%arr rect = rect Tape and focused = focused Tape and theme and tape and now = tape_now in

@@ -29,11 +29,9 @@ let console =
           | Error error -> Async.Deferred.return (Error error)
           | Ok backend when bench -> Bench.run ~theme:(Theme.detect ()) ~backend ~rate_hz
           | Ok backend ->
-            (* Clicks and wheel, but not hover. *)
-            Bonsai_term.start_with_exit ~mouse:All_mouse_events_except_hover
-              (fun ~exit ~dimensions (local_ graph) ->
-                 App.live (module Mock_backend) ~theme:(Theme.detect ()) ~backend ~exit
-                   ~dimensions graph))
+            Runner.run (fun ~wake ~paints ~exit ~dimensions (local_ graph) ->
+              App.live (module Mock_backend) ~wake ~paints ~theme:(Theme.detect ()) ~backend ~exit
+                ~dimensions graph))
        | _ -> Async.Deferred.return
            (Or_error.error_string "--mode must be mock, simulation, sim, or hardware"))
 

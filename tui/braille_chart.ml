@@ -14,7 +14,8 @@ type fill = Solid | Stipple | Line_only [@@deriving equal, sexp_of]
 let window = Time_ns.Span.of_sec 60.
 
 (* Braille dot bit of (sub-column, row from the top of the cell). *)
-let dot_bit ~column ~row = [| [| 0; 1; 2; 6 |]; [| 3; 4; 5; 7 |] |].(column).(row)
+let dot_bits = [| [| 0; 1; 2; 6 |]; [| 3; 4; 5; 7 |] |]
+let dot_bit ~column ~row = dot_bits.(column).(row)
 
 (* Value level: 0 is the bottom dot of the chart and [dots - 1] the top one. A flat
    scale (or a non-finite value) is never plotted above the baseline. *)
@@ -68,14 +69,19 @@ let spans ~now ~window ~pixels ~dots ~low ~high (series : series) =
 let column_dots ~fill ~sub ~parity ~base = function
   | None -> 0, false
   | Some (lo, hi) ->
-    List.fold [ 0; 1; 2; 3 ] ~init:(0, false) ~f:(fun (bits, on_line) y ->
+    let bits = ref 0 and on_line = ref false in
+    for y = 0 to 3 do
       let d = base + (3 - y) in
       let line = d >= lo && d <= hi in
       let lit = match fill with
         | Line_only -> line
         | Solid -> d <= hi
         | Stipple -> line || (d < lo && (parity + d) land 1 = 0) in
-      if lit then bits lor (1 lsl dot_bit ~column:sub ~row:y), on_line || line else bits, on_line)
+      if lit then (
+        bits := !bits lor (1 lsl dot_bit ~column:sub ~row:y);
+        if line then on_line := true)
+    done;
+    !bits, !on_line
 
 (* Cells top row first. [No_data] marks a cell whose two time columns saw no
    observation; it carries no dots. *)
@@ -93,16 +99,20 @@ let cells ~now ?(window = window) ~width ~height ~low ~high ~fill series =
         let bits = left_bits lor right_bits in
         { bits; kind = if left_line || right_line then Line else if bits <> 0 then Fill else Blank })))
 
+(* The 256 braille cells as strings, a blank for no dots at all. *)
+let braille_glyphs =
+  Array.init 256 ~f:(fun bits ->
+    if bits = 0 then " "
+    else (
+      let buffer = Stdlib.Buffer.create 3 in
+      Stdlib.Buffer.add_utf_8_uchar buffer (Stdlib.Uchar.of_int (0x2800 + bits));
+      Stdlib.Buffer.contents buffer))
+
 let glyph cell =
   match cell.kind with
   | No_data -> "·"
   | Blank -> " "
-  | Fill | Line ->
-    if cell.bits = 0 then " "
-    else (
-      let buffer = Stdlib.Buffer.create 3 in
-      Stdlib.Buffer.add_utf_8_uchar buffer (Stdlib.Uchar.of_int (0x2800 + cell.bits));
-      Stdlib.Buffer.contents buffer)
+  | Fill | Line -> braille_glyphs.(cell.bits)
 
 let to_strings cells =
   Array.to_list (Array.map cells ~f:(fun row -> String.concat_array (Array.map row ~f:glyph)))
@@ -150,7 +160,46 @@ let nice_ceiling value =
       |> Option.value ~default:10. in
     step *. magnitude)
 
-let display_width text = View.width (View.text text)
+(* The cells [text] takes on screen, as [View.width (View.text text)] says, without building a
+   view. Printable ASCII is a cell a byte. Other text is the sum of Notty's width of each code
+   point; a control character, which the view rewrites, malformed UTF-8 and the variation
+   selector that widens a cluster are left to the view itself. *)
+let display_width text =
+  let length = String.length text in
+  let rec ascii index =
+    index >= length
+    || (let byte = Char.to_int (String.unsafe_get text index) in
+        byte >= 0x20 && byte < 0x7F && ascii (index + 1)) in
+  let rec cells index total =
+    if index >= length then total
+    else (
+      let decoded = Stdlib.String.get_utf_8_uchar text index in
+      let scalar = Stdlib.Uchar.to_int (Stdlib.Uchar.utf_decode_uchar decoded) in
+      if (not (Stdlib.Uchar.utf_decode_is_valid decoded))
+         || scalar < 0x20 || (scalar >= 0x7F && scalar < 0xA0) || scalar = 0xFE0F
+      then View.width (View.text text)
+      else cells (index + Stdlib.Uchar.utf_decode_length decoded)
+             (total + View.uchar_tty_width (Stdlib.Uchar.utf_decode_uchar decoded))) in
+  if ascii 0 then length else cells 0 0
+
+(* The characters of [value] in decimal, a sign included: [String.length (Int.to_string value)]
+   without the string. *)
+let int_width value =
+  let rec digits value count = if value > -10 then count else digits (value / 10) (count + 1) in
+  (if value < 0 then 1 else 0) + digits (if value > 0 then -value else value) 1
+
+(* [glyph] repeated [count] times (none for a count below one). *)
+let repeat glyph count =
+  let count = Int.max 0 count and size = String.length glyph in
+  let bytes = Stdlib.Bytes.create (count * size) in
+  for index = 0 to count - 1 do Stdlib.Bytes.blit_string glyph 0 bytes (index * size) size done;
+  Stdlib.Bytes.unsafe_to_string bytes
+
+(* The braille cell of [dots], a mask of its eight dots, as its UTF-8 bytes. *)
+let add_braille buffer dots =
+  Stdlib.Buffer.add_char buffer '\xE2';
+  Stdlib.Buffer.add_char buffer (Char.unsafe_of_int (0xA0 lor (dots lsr 6)));
+  Stdlib.Buffer.add_char buffer (Char.unsafe_of_int (0x80 lor (dots land 0x3F)))
 
 (* Padding counts display cells, never bytes: "↑", "·" and "−" are one cell and several bytes. *)
 let spaces count = String.make (Int.max 0 count) ' '
@@ -197,13 +246,6 @@ let gutter ~width ~height ~low ~high ~format =
 (* A cell is drawn by its kind, or is part of a label written over the texture. *)
 type style = Cell of kind | Label [@@deriving equal]
 
-(* One row as runs of equal style, so a row costs a handful of views, not one per cell. *)
-let runs row =
-  List.rev (Array.fold row ~init:[] ~f:(fun runs (style, text) ->
-    match runs with
-    | (previous, run) :: rest when equal_style previous style -> (style, run ^ text) :: rest
-    | _ -> (style, text) :: runs))
-
 let attrs_of theme role ~height ~row = function
   | Label -> Theme.attrs theme Text
   | Cell Line -> Theme.attrs theme role
@@ -219,9 +261,6 @@ let code_points text =
       (match points with last :: rest -> (last ^ String.of_char char) :: rest | [] -> [ String.of_char char ])
     else String.of_char char :: points)
   |> List.rev
-
-let overlay rows ~row ~column text =
-  List.iteri (code_points text) ~f:(fun i point -> rows.(row).(column + i) <- Label, point)
 
 (* Start and width of the widest run of No_data columns. *)
 let widest_gap grid =
@@ -239,6 +278,21 @@ let centred ~width text =
   let left = (width - display_width text) / 2 in
   String.make (Int.max 0 left) ' ' ^ text ^ String.make (Int.max 0 (width - display_width text - left)) ' '
 
+(* One row of the plot as runs of text, a run being the cells of one style. [styles] and
+   [glyphs] hold the row a cell each. *)
+let row_runs theme role ~height ~row styles glyphs =
+  let buffer = Stdlib.Buffer.create (3 * Array.length styles) in
+  let views = ref [] and current = ref None in
+  let flush () =
+    Option.iter !current ~f:(fun style ->
+      views := View.text ~attrs:(attrs_of theme role ~height ~row style) (Stdlib.Buffer.contents buffer) :: !views;
+      Stdlib.Buffer.clear buffer) in
+  Array.iteri styles ~f:(fun x style ->
+    if not ([%equal: style option] !current (Some style)) then (flush (); current := Some style);
+    Stdlib.Buffer.add_string buffer glyphs.(x));
+  flush ();
+  List.rev !views
+
 (* The plot proper, as rows. [no_data] says why an absent series is absent: a dashed
    box holding the reason from 3 rows up, a labelled stripe below that. A partly
    observed series labels its unobserved stretch "no data". *)
@@ -253,7 +307,7 @@ let plot_rows ~theme ~role ~now ~window ~width ~height ~low ~high ~no_data serie
     if empty && height >= 3 && width >= display_width no_data + 4 then
       List.init height ~f:(fun row ->
         let edge left fill_char right = View.text ~attrs:texture
-            (left ^ String.concat (List.init (width - 2) ~f:(fun _ -> fill_char)) ^ right) in
+            (left ^ repeat fill_char (width - 2) ^ right) in
         if row = 0 then edge "┌" "╌" "┐"
         else if row = height - 1 then edge "└" "╌" "┘"
         else if row = height / 2 then
@@ -263,20 +317,23 @@ let plot_rows ~theme ~role ~now ~window ~width ~height ~low ~high ~no_data serie
         else edge "╎" " " "╎")
     else (
       (* The unobserved stretch is a sparse dot grid: present, but quieter than data. *)
-      let rows = Array.mapi grid ~f:(fun row cells -> Array.mapi cells ~f:(fun column cell ->
+      let styles = Array.map grid ~f:(Array.map ~f:(fun cell -> Cell cell.kind)) in
+      let glyphs = Array.mapi grid ~f:(fun row cells -> Array.mapi cells ~f:(fun column cell ->
           match cell.kind with
-          | No_data -> Cell No_data, if (row + column) land 1 = 0 then "·" else " "
-          | Blank | Fill | Line -> Cell cell.kind, glyph cell)) in
+          | No_data -> if (row + column) land 1 = 0 then "·" else " "
+          | Blank | Fill | Line -> glyph cell)) in
       let start, gap = widest_gap grid in
       let label = if empty then no_data else "no data" in
       (* Breathing room each side of the label when the stretch is wide enough. *)
       let label = if gap >= display_width label + 4 then " " ^ label ^ " " else label in
       let size = display_width label in
-      if gap >= size + 2 || (gap >= size && empty) then
-        overlay rows ~row:((height - 1) / 2) ~column:(start + ((gap - size) / 2)) label;
+      if gap >= size + 2 || (gap >= size && empty) then (
+        let row = (height - 1) / 2 and column = start + ((gap - size) / 2) in
+        List.iteri (code_points label) ~f:(fun i point ->
+          styles.(row).(column + i) <- Label;
+          glyphs.(row).(column + i) <- point));
       List.init height ~f:(fun row ->
-        View.hcat (List.map (runs rows.(row)) ~f:(fun (style, text) ->
-          View.text ~attrs:(attrs_of theme role ~height ~row style) text)))))
+        View.hcat (row_runs theme role ~height ~row styles.(row) glyphs.(row)))))
 
 (* [width] x [height] cells in all: y labels and rule, then the plot. [gutter] lets
    stacked charts share one label column so their time axes line up. *)
@@ -301,7 +358,7 @@ let time_axis ~theme ?(window = window) ~gutter ~width () =
   let seconds = Float.iround_nearest_exn (Time_ns.Span.to_sec window) in
   let oldest = sprintf "−%ds" seconds and middle = sprintf "−%ds" (seconds / 2) and newest = "now" in
   let wide text = display_width text in
-  let rule n = String.concat (List.init (Int.max 0 n) ~f:(fun _ -> "─")) in
+  let rule n = repeat "─" n in
   let line =
     if width >= wide oldest + wide middle + wide newest + 8 then (
       let before = ((width - wide middle) / 2) - wide oldest - 2 in

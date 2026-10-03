@@ -134,6 +134,15 @@ let attrs t role =
        in [ foreground; Attr.bg background; Attr.bold ]
      | _ -> [ foreground ])
 
+(* The view with its default colours settled, the ones the backdrop would give it: its image is
+   built now, once, and kept. A view that is not settled is read again, whole, each time its
+   parent is read in other colours, and a panel that has not changed is reused from one frame
+   to the next and read twice in each. *)
+let settle t view =
+  match t.capability with
+  | No_color -> view
+  | Truecolor | Ansi256 | Ansi16 -> View.with_colors view ~fg:(color t Text) ~bg:(color t Bg)
+
 let backdrop t view =
   match t.capability with
   | No_color -> view

@@ -87,23 +87,16 @@ let bucket_of code = code mod buckets
 let ink_of code = code / buckets
 let steps = buckets - 4  (* between the first and the last bucket of the climb *)
 
-(* Where a size falls on the climb, in steps from the first climbing bucket: 0 to [steps], with
-   the fraction between two buckets. [None] below the climb (nothing, or the faint tint) and above
-   it (white). *)
-let climb ~maximum quantity =
-  if quantity <= 0 || maximum <= 0 then None
-  else (
-    let heat = intensity ~quantity ~maximum in
-    if Float.(heat >= 1. || heat < ordinary) then None
-    else Some ((heat -. ordinary) /. (top_shade -. ordinary) *. Float.of_int steps))
+(* Where a heat falls on the climb, in steps from its first bucket; only meaningful between
+   [ordinary] and 1. *)
+let position heat = (heat -. ordinary) /. (top_shade -. ordinary) *. Float.of_int steps
 
-let bucket_for ~maximum quantity =
-  if quantity <= 0 || maximum <= 0 then 0
-  else if Float.(intensity ~quantity ~maximum >= 1.) then buckets - 1
-  else (
-    match climb ~maximum quantity with
-    | None -> 1
-    | Some position -> 2 + Int.min steps (Float.iround_nearest_exn position))
+(* The bucket of a quantity whose heat is [heat]: nothing, the faint tint, a step of the
+   climb, or white. *)
+let bucket_of_heat heat =
+  if Float.(heat >= 1.) then buckets - 1
+  else if Float.(heat < ordinary) then 1
+  else 2 + Int.min steps (Float.iround_nearest_exn (position heat))
 
 (* Sizes jitter around the edge between two buckets, and a row that draws every crossing is a
    confetti of runs: each is a full colour sequence on the wire, and each scroll resends the row.
@@ -111,12 +104,30 @@ let bucket_for ~maximum quantity =
    of that bucket by more than [hold] of a step: the edge is drawn where the size has really
    moved, not where it touches. [hold] 0.5 is no hysteresis at all. *)
 let hold = 0.75
+let settle_heat ~before heat =
+  if Float.(heat >= 1. || heat < ordinary) then bucket_of_heat heat
+  else (
+    let position = position heat in
+    let anchor = Float.of_int (before - 2) in
+    if before >= 2 && before <= 2 + steps && Float.(abs (position -. anchor) < hold)
+    then before else 2 + Int.min steps (Float.iround_nearest_exn position))
 let settle ~before ~maximum quantity =
-  let bucket = bucket_for ~maximum quantity in
-  let near position = Float.compare (Float.abs (position -. Float.of_int (before - 2))) hold < 0 in
-  match climb ~maximum quantity with
-  | Some position when before >= 2 && before <= 2 + steps && near position -> before
-  | Some _ | None -> bucket
+  if quantity <= 0 || maximum <= 0 then 0 else settle_heat ~before (intensity ~quantity ~maximum)
+
+(* [settle] for a frame's worth of cells at one [maximum]. A book repeats its sizes, down a
+   row and across the levels, and a heat costs a power; the heat of a quantity is kept in a
+   small direct-mapped table, so each distinct size pays for its power once. *)
+let settler ~maximum =
+  let slots = 1024 in
+  let sizes = Array.create ~len:slots (-1) and heats = Array.create ~len:slots 0. in
+  fun ~before quantity ->
+    if quantity <= 0 || maximum <= 0 then 0
+    else (
+      let slot = quantity land (slots - 1) in
+      if sizes.(slot) <> quantity then (
+        sizes.(slot) <- quantity;
+        heats.(slot) <- intensity ~quantity ~maximum);
+      settle_heat ~before heats.(slot))
 
 (* The ramp position a bucket stands for. Bucket 1 is a tint, a twentieth of the ramp. *)
 let faint = 0.05
@@ -167,21 +178,53 @@ let style code =
   | ink when ink < 8 -> 2 * buckets
   | _ -> (2 * buckets) + 1
 
-(* One text node per run of cells that share a style. *)
-let row_view ~style cache row =
-  if Array.is_empty row then View.none
+(* What painting needs of a code, found when first asked: a frame uses a few dozen of the
+   [inks * buckets] codes, so the table is filled in as the cells ask. *)
+type painter = { theme : Theme.t; palette : Attr.Color.t option array
+               ; glyphs : string array; attrs : Attr.t list array }
+let painter theme =
+  { theme; palette = palette theme; glyphs = Array.create ~len:(inks * buckets) ""
+  ; attrs = Array.create ~len:(inks * buckets) [] }
+let glyph painter code =
+  let glyph = painter.glyphs.(code) in
+  if not (String.is_empty glyph) then glyph
   else (
-    let buffer = Stdlib.Buffer.create 64 in
-    let flush attrs = View.text ~attrs (Stdlib.Buffer.contents buffer) in
-    let views, last, attrs = Array.fold row ~init:([], style row.(0), snd (cache row.(0)))
-        ~f:(fun (views, current, attrs) cell ->
-          let glyph, cell_attrs = cache cell in
-          let cell_style = style cell in
-          if cell_style = current then (Stdlib.Buffer.add_string buffer glyph; views, current, attrs)
-          else (
-            let views = flush attrs :: views in
-            Stdlib.Buffer.clear buffer;
-            Stdlib.Buffer.add_string buffer glyph;
-            views, cell_style, cell_attrs)) in
-    ignore (last : int);
-    View.hcat (List.rev (flush attrs :: views)))
+    let glyph, attrs = paint painter.theme painter.palette code in
+    painter.glyphs.(code) <- glyph;
+    painter.attrs.(code) <- attrs;
+    glyph)
+let attrs painter code = ignore (glyph painter code : string); painter.attrs.(code)
+
+(* One text node per run of cells that share a style: [padding] cells of code 0, then [cells].
+   A run of blanks is a rectangle, which the view does not have to read for control characters
+   and encodings as it does a string, and a rectangle is the same for every run of its style
+   and length, so one stands for them all: the runs of a frame repeat each other, and a node
+   that is shared is read once. [shared] holds the rectangles made so far. The runs are built
+   in [buffer], which is left empty. *)
+let max_shared_width = 1024
+let row_views ~shared ~buffer ~padding ~style ~glyph ~attrs cells =
+  let views = ref [] and current = ref (-1) in
+  let last = ref 0 and blank = ref true in  (* a code of the run being built, and whether it is all blanks *)
+  let flush () =
+    if !current >= 0 then (
+      let attrs = attrs !last and width = Stdlib.Buffer.length buffer in
+      let rectangle () = View.rectangle ~attrs ~width ~height:1 () in
+      views :=
+        (if not !blank then View.text ~attrs (Stdlib.Buffer.contents buffer)
+         else if width >= max_shared_width then rectangle ()
+         else Hashtbl.find_or_add shared ((!current * max_shared_width) + width) ~default:rectangle) :: !views;
+      Stdlib.Buffer.clear buffer) in
+  let add code =
+    let cell_style = style code in
+    if cell_style <> !current then (flush (); current := cell_style; blank := true);
+    last := code;
+    let glyph = glyph code in
+    if not (String.equal glyph " ") then blank := false;
+    Stdlib.Buffer.add_string buffer glyph in
+  for _ = 1 to padding do add 0 done;
+  Array.iter cells ~f:add;
+  flush ();
+  List.rev !views
+
+let heat_row_views painter ~shared ~buffer ~padding cells =
+  row_views ~shared ~buffer ~padding ~style ~glyph:(glyph painter) ~attrs:(attrs painter) cells

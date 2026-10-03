@@ -157,9 +157,12 @@ let%expect_test "the percentile bins are within 9 percent of the exact percentil
     |}]
 
 let%expect_test "size climbs the ramp in even steps, and only 1.5x the scale reaches white" =
+  let bucket_for ~maximum quantity =
+    if quantity <= 0 || maximum <= 0 then 0
+    else Heatmap.bucket_of_heat (Heatmap.intensity ~quantity ~maximum) in
   List.iter [ 0; 1; 20; 40; 57; 85; 100; 120; 149; 150; 400 ] ~f:(fun quantity ->
-    printf "%3d/100 -> bucket %2d of %d, ramp %.2f\n" quantity (Heatmap.bucket_for ~maximum:100 quantity)
-      (Heatmap.buckets - 1) (Heatmap.bucket_intensity (Heatmap.bucket_for ~maximum:100 quantity)));
+    printf "%3d/100 -> bucket %2d of %d, ramp %.2f\n" quantity (bucket_for ~maximum:100 quantity)
+      (Heatmap.buckets - 1) (Heatmap.bucket_intensity (bucket_for ~maximum:100 quantity)));
   [%expect {|
       0/100 -> bucket  0 of 11, ramp 0.00
       1/100 -> bucket  1 of 11, ramp 0.05
@@ -362,7 +365,7 @@ let history ?(until = 60.) () =
 
 let chart ?(theme = plain) ?(threshold = Some 1002) ?(width = 46) ?(height = 10) ?(now = 60.) samples =
   Bonsai_term_test.print_view
-    (Market_chart.view ~theme ~samples ~now:(time now) ~threshold ~width ~height)
+    (Market_chart.view ~theme ~samples:(Age_deque.of_list samples) ~now:(time now) ~threshold ~width ~height)
 
 let%expect_test "the chart plots bid, ask and mid on a tick scale with a dashed rule threshold" =
   chart (history ());
@@ -395,7 +398,7 @@ let%expect_test "a book that was invalid breaks the lines rather than being brid
     |}]
 
 let%expect_test "the chart holds still between pixel boundaries, so a frame repaints only its newest column" =
-  let render now = text_of (Market_chart.view ~theme:plain ~samples:(history ()) ~now:(time now)
+  let render now = text_of (Market_chart.view ~theme:plain ~samples:(Age_deque.of_list (history ())) ~now:(time now)
                               ~threshold:None ~width:46 ~height:10) in
   let base = render 60. in
   (* A pixel is 60 s / 88 = 0.68 s wide here. *)
@@ -415,7 +418,29 @@ let%expect_test "a stalled stream stops the line at its newest sample" =
         │  ⡆⢺              ⢸⠂
         │ ⠁⡏⠉              ⠈⠉
     1000┤⠠⠤⠇
-         −60 s─────────────−30 s───────────────now
+         −60 s────────────────stopped 00:00:30 UTC
+    |}]
+
+let%expect_test "the axis says now while the stream is live, and when it stopped once it has" =
+  let axis ~width ~now =
+    let rows = String.split_lines (text_of (Market_chart.view ~theme:plain ~samples:(Age_deque.of_list (history ()))
+                                              ~now:(time now) ~threshold:None ~width ~height:10)) in
+    String.rstrip (List.nth_exn rows (List.length rows - 2)) in
+  (* The newest sample is at 60 s. *)
+  List.iter [ 60.; 61.9; 62.; 600. ] ~f:(fun now -> printf "%5.1f |%s|\n" now (axis ~width:46 ~now));
+  List.iter [ 20; 24; 30; 36; 80 ] ~f:(fun width ->
+    let axis = axis ~width ~now:90. in
+    printf "%3d %2d |%s|\n" width (Braille_chart.display_width axis) axis);
+  [%expect {|
+     60.0 |│     −60 s─────────────−30 s───────────────now│|
+     61.9 |│     −60 s─────────────−30 s───────────────now│|
+     62.0 |│     −60 s────────────────stopped 00:01:00 UTC│|
+    600.0 |│no price history yet│|
+     20 22 |│     −60 s───stopped│|
+     24 26 |│     −60 s───────stopped│|
+     30 32 |│     −60 s─────−30 s───stopped│|
+     36 39 |│     −60 s──────stopped 00:01:00 UTC │|
+     80 82 |│     −60 s──────────────────────────────−30 s───────────────stopped 00:01:00 UTC│|
     |}]
 
 let%expect_test "a rule threshold far from the book is named, not plotted" =
@@ -536,7 +561,7 @@ let%expect_test "deltas keep their column and the bars give way, down to a half-
 
 let%expect_test "the free height is a price chart; a short panel keeps the single ask sparkline" =
   let samples = history () in
-  let motion = { Market_motion.empty with samples } in
+  let motion = { Market_motion.empty with samples = Age_deque.of_list samples } in
   let rules = [ { (List.hd_exn (base_state ()).rules) with
                   parameters = [ "maximum_price", 1002, "t" ] } ] in
   List.iter [ 30; 14 ] ~f:(fun height ->
@@ -617,7 +642,7 @@ let%expect_test "the tape totals the last minute and splits it by side, in glyph
 
 let hex (r, g, b) = sprintf "#%02X%02X%02X" r g b
 
-let%expect_test "a fresh print fades from the text colour into its weight over a second" =
+let%expect_test "a fresh print is in the text colour for a second, and then in its weight" =
   let tape = run_tape () in
   let print = List.hd_exn (Tape_panel.prints tape) in
   List.iter [ 0.; 0.25; 0.5; 0.75; 1.0; 3.0 ] ~f:(fun after ->
@@ -626,9 +651,9 @@ let%expect_test "a fresh print fades from the text colour into its weight over a
       (hex (Tape_panel.print_rgb truecolor ~now ~largest:print.quantity_units print)));
   [%expect {|
     0.00s after the print: #A8D9C7
-    0.25s after the print: #95D8BD
-    0.50s after the print: #77D8AC
-    0.75s after the print: #5AD79C
+    0.25s after the print: #A8D9C7
+    0.50s after the print: #A8D9C7
+    0.75s after the print: #A8D9C7
     1.00s after the print: #3DD68C
     3.00s after the print: #3DD68C
     |}]

@@ -39,16 +39,6 @@ let histogram ~bins samples =
 
 let blocks = [| " "; "▁"; "▂"; "▃"; "▄"; "▅"; "▆"; "▇"; "█" |]
 
-(* [rows] lines of eighth-blocks, top first, one string per cell; a non-empty bin
-   always shows at least ▁. *)
-let chart_cells ~rows counts =
-  let peak = Int.max 1 (Array.fold counts ~init:0 ~f:Int.max) in
-  List.init rows ~f:(fun row ->
-    Array.map counts ~f:(fun bin ->
-      let eighths = (bin * rows * 8 + peak - 1) / peak in
-      blocks.(Int.max 0 (Int.min 8 (eighths - 8 * (rows - 1 - row))))))
-let chart ~rows counts = List.map (chart_cells ~rows counts) ~f:String.concat_array
-
 let synthetic = samples ~seed ~count
 
 let percentiles =
@@ -61,15 +51,6 @@ let percentiles =
    recolours its bin's bar and rises above it as a dotted guide; a one-row chart has no
    room above the bar, so there the marker is a rule. *)
 type mark = Body | Tail | P50 | P99 [@@deriving equal, sexp_of]
-
-let marked ~rows ~p50 ~p99 counts =
-  List.map (chart_cells ~rows counts) ~f:(fun glyphs ->
-    Array.mapi glyphs ~f:(fun bin glyph ->
-      let mark = if bin = p50 then P50 else if bin = p99 then P99 else if bin > p99 then Tail else Body in
-      match mark with
-      | (P50 | P99) when rows = 1 -> mark, "│"
-      | (P50 | P99) when String.equal glyph " " -> mark, "╎"
-      | Body | Tail | P50 | P99 -> mark, glyph))
 
 type label = { variants : string list; start : int; role : Theme.role }
 type placed = { text : string; column : int; colour : Theme.role }
@@ -96,10 +77,10 @@ let place ~width labels =
 
 let label_row ~theme ~width placed =
   let segments, used = List.fold placed ~init:([], 0) ~f:(fun (views, used) label ->
-    views @ [ View.text (String.make (label.column - used) ' ')
-            ; View.text ~attrs:(Theme.attrs theme label.colour) label.text ],
+    View.text ~attrs:(Theme.attrs theme label.colour) label.text
+    :: View.rectangle ~width:(label.column - used) ~height:1 () :: views,
     label.column + String.length label.text) in
-  View.hcat (segments @ [ View.text (String.make (Int.max 0 (width - used)) ' ') ])
+  View.hcat (List.rev (View.rectangle ~width:(Int.max 0 (width - used)) ~height:1 () :: segments))
 
 let mark_attrs theme = function
   | Body -> Theme.attrs theme Info
@@ -107,25 +88,43 @@ let mark_attrs theme = function
   | P50 -> Theme.attrs theme Bid @ [ Attr.bold ]
   | P99 -> Theme.attrs theme Warn @ [ Attr.bold ]
 
-let bar_rows ~theme rows =
-  List.map rows ~f:(fun cells ->
-    let runs = Array.fold cells ~init:[] ~f:(fun runs (mark, glyph) ->
-        match runs with
-        | (previous, text) :: rest when equal_mark previous mark -> (mark, text ^ glyph) :: rest
-        | _ -> (mark, glyph) :: runs) in
-    View.hcat (List.rev_map runs ~f:(fun (mark, text) -> View.text ~attrs:(mark_attrs theme mark) text)))
+(* The cells of a row as text nodes, one per run of cells that share a mark. [cell] is a bin's
+   mark and glyph. *)
+let mark_runs ~attrs ~length cell =
+  let buffer = Stdlib.Buffer.create (3 * length) in
+  let views = ref [] and current = ref None in
+  let flush () =
+    Option.iter !current ~f:(fun mark ->
+      views := View.text ~attrs:(attrs mark) (Stdlib.Buffer.contents buffer) :: !views;
+      Stdlib.Buffer.clear buffer) in
+  for index = 0 to length - 1 do
+    let mark, glyph = cell index in
+    if not ([%equal: mark option] !current (Some mark)) then (flush (); current := Some mark);
+    Stdlib.Buffer.add_string buffer glyph
+  done;
+  flush ();
+  View.hcat (List.rev !views)
+
+(* [rows] lines of eighth-blocks, top first, one glyph per bin; a non-empty bin always shows
+   at least ▁. *)
+let bar_rows ~theme ~rows ~p50 ~p99 counts =
+  let peak = Int.max 1 (Array.fold counts ~init:0 ~f:Int.max) in
+  List.init rows ~f:(fun row ->
+    mark_runs ~attrs:(mark_attrs theme) ~length:(Array.length counts) (fun bin ->
+      let eighths = (counts.(bin) * rows * 8 + peak - 1) / peak in
+      let glyph = blocks.(Int.max 0 (Int.min 8 (eighths - 8 * (rows - 1 - row)))) in
+      let mark = if bin = p50 then P50 else if bin = p99 then P99 else if bin > p99 then Tail else Body in
+      match mark with
+      | (P50 | P99) when rows = 1 -> mark, "│"
+      | (P50 | P99) when String.equal glyph " " -> mark, "╎"
+      | Body | Tail | P50 | P99 -> mark, glyph))
 
 (* A rule with ticks at both ends and a tick under each marker. *)
 let ruler ~theme ~width ~p50 ~p99 =
-  let cells = Array.init width ~f:(fun i ->
-      if i = p50 then P50, "┴" else if i = p99 then P99, "┴"
-      else if i = 0 then Body, "├" else if i = width - 1 then Body, "┤" else Body, "─") in
-  let runs = Array.fold cells ~init:[] ~f:(fun runs (mark, glyph) ->
-      match runs, mark with
-      | (Body, text) :: rest, Body -> (Body, text ^ glyph) :: rest
-      | _ -> (mark, glyph) :: runs) in
-  View.hcat (List.rev_map runs ~f:(fun (mark, text) ->
-    View.text ~attrs:(match mark with Body -> Theme.attrs theme Muted | mark -> mark_attrs theme mark) text))
+  mark_runs ~length:width
+    ~attrs:(function Body -> Theme.attrs theme Muted | mark -> mark_attrs theme mark) (fun i ->
+    if i = p50 then P50, "┴" else if i = p99 then P99, "┴"
+    else if i = 0 then Body, "├" else if i = width - 1 then Body, "┤" else Body, "─")
 
 (* The percentile summary, whole parts only, for the title row. *)
 let summary ~width ~p50 ~p99 ~maximum =
@@ -149,7 +148,7 @@ let mock_lines ~width ~rows =
 let view ~theme ~focus ~(state : application_state) ~width ~height =
   let attrs role = Theme.attrs theme role in
   let frame ~muted ~title lines =
-    Panel.frame ~muted ~theme ~focus ~panel:Latency ~title ~width ~height (View.vcat lines) in
+    Panel.framed ~muted ~theme ~focus ~panel:Latency ~title ~width ~height (View.vcat lines) in
   match state.mode with
   | Simulation | Hardware ->
     frame ~muted:true ~title:("Latency · " ^ Status_bar.mode_name state.mode)
@@ -171,7 +170,7 @@ let view ~theme ~focus ~(state : application_state) ~width ~height =
     let { counts; low; high } = histogram ~bins:(Int.max 1 bins) synthetic in
     let bin value = bin_of ~low ~high ~bins:(Int.max 1 bins) value in
     let p50_bin = bin p50 and p99_bin = bin p99 in
-    let bars = bar_rows ~theme (marked ~rows:chart_rows ~p50:p50_bin ~p99:p99_bin counts) in
+    let bars = bar_rows ~theme ~rows:chart_rows ~p50:p50_bin ~p99:p99_bin counts in
     let bars =
       if ends_inline && bins >= 8 then
         List.mapi bars ~f:(fun i row ->

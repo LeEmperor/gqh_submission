@@ -2,16 +2,16 @@ open! Core
 open Bonsai_term
 open Model_adapter
 
+let fractions = [| ""; "▏"; "▎"; "▍"; "▌"; "▋"; "▊"; "▉" |]
 let quantity_bar ~quantity ~maximum ~width =
   let width = Int.max 0 width in
-  if quantity <= 0 || maximum <= 0 then String.make width ' '
+  if quantity <= 0 || maximum <= 0 then Braille_chart.spaces width
   else (
     let eighths = Float.of_int quantity /. Float.of_int maximum *. Float.of_int (width * 8)
         |> Float.to_int |> Int.max 1 |> Int.min (width * 8) in
     let full = eighths / 8 and part = eighths mod 8 in
-    let fractions = [| ""; "▏"; "▎"; "▍"; "▌"; "▋"; "▊"; "▉" |] in
-    String.concat (List.init full ~f:(fun _ -> "█")) ^ fractions.(part)
-    ^ String.make (Int.max 0 (width - full - (if part = 0 then 0 else 1))) ' ')
+    Braille_chart.repeat "█" full ^ fractions.(part)
+    ^ Braille_chart.spaces (width - full - (if part = 0 then 0 else 1)))
 
 let metrics (snapshot : snapshot) =
   match List.hd snapshot.bids, List.hd snapshot.asks with
@@ -45,11 +45,11 @@ let threshold (state : application_state) =
     else List.find_map rule.parameters ~f:(fun (name, value, _) ->
         Option.some_if (String.equal name "maximum_price") value))
 
-let dashes count = String.concat (List.init (Int.max 0 count) ~f:(fun _ -> "╌"))
+let dashes count = Braille_chart.repeat "╌" count
 let threshold_row theme ~width maximum =
   let label = sprintf " maximum_price %d t " maximum in
   let attrs = Theme.attrs theme Warn in
-  let label_width = View.width (View.text label) in
+  let label_width = Braille_chart.display_width label in
   if label_width + 4 > width then View.text ~attrs (dashes width)
   else View.text ~attrs (dashes (width - label_width - 2) ^ label ^ dashes 2)
 
@@ -67,8 +67,9 @@ let delta_rgb theme ~change ~intensity =
   Theme.blend (Theme.role_rgb theme Bg) (Theme.role_rgb theme role) intensity
 (* The delta column as one run of text [delta_width] cells wide. With nothing to show it takes
    [fill], the attributes of the run beside it, so that the two are one text node. *)
+let delta_blank = String.make delta_width ' '
 let delta_segment theme ~now ~bid ~live ~fill motion (level : level option) =
-  let blank = fill, String.make delta_width ' ' in
+  let blank = fill, delta_blank in
   let delta = Option.bind level ~f:(fun level ->
       if live then Market_motion.delta motion ~bid level.price_ticks else None) in
   match delta with
@@ -106,9 +107,9 @@ let view ~cumulative ~(motion : Market_motion.t) ~now
   let bids = shown snapshot.bids and asks = shown snapshot.asks in
   let displayed = bids @ asks in
   let price_width = List.fold displayed ~init:5 ~f:(fun width ((level : level), _) ->
-      Int.max width (String.length (Int.to_string level.price_ticks))) in
+      Int.max width (Braille_chart.int_width level.price_ticks)) in
   let qty_width = List.fold displayed ~init:6 ~f:(fun width (_, quantity) ->
-      Int.max width (String.length (Int.to_string quantity))) in
+      Int.max width (Braille_chart.int_width quantity)) in
   let maximum = List.fold displayed ~init:0 ~f:(fun max (_, quantity) -> Int.max max quantity) in
   (* Deltas need a column of their own, and they come before the bars: a side keeps its
      delta column down to a bar of two cells, which is every panel at 100 columns or more. *)
@@ -166,7 +167,7 @@ let view ~cumulative ~(motion : Market_motion.t) ~now
       let above = List.length buyable in
       List.take ladder above @ (threshold_row theme ~width:inner maximum :: List.drop ladder above) in
   let spread, imbalance = metrics snapshot in
-  let spread = if View.width (View.text spread) <= inner then spread
+  let spread = if Braille_chart.display_width spread <= inner then spread
       else "spread / mid exceed panel width" in
   let missing = match snapshot.bids, snapshot.asks with
     | [], [] -> "BOOK EMPTY" | [], _ -> "BID EMPTY" | _, [] -> "ASK EMPTY" | _ -> "" in
@@ -199,6 +200,6 @@ let view ~cumulative ~(motion : Market_motion.t) ~now
              ~attrs:(Theme.attrs theme Warn) ~left_padding:0 ~right_padding:0 in
       View.zcat [ View.center stamp ~within:{ width = inner; height = Int.max 0 (height - 2) }
                 ; Panel.fit body ~width:inner ~height:(Int.max 0 (height - 2)) ] in
-  Panel.frame ~muted:(not snapshot.valid) ~theme ~focus ~panel:Market
+  Panel.framed ~muted:(not snapshot.valid) ~theme ~focus ~panel:Market
     ~title:("Market · " ^ snapshot.instrument) ~width ~height body
 

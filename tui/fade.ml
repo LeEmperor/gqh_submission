@@ -1,17 +1,12 @@
 open! Core
 
-(* Every fade in the console steps, it does not slide. The terminal is sent every line that
-   changes, across the panels side by side, so a colour that moves a little every 50 ms
-   rewrites most of the screen twenty times a second. A fade here has [steps] levels and
-   the animation clock ticks once per level, so a fading cell changes colour [steps] times a
-   second, every fade changes on the same tick, and between ticks nothing is recomputed or
-   sent. Eleven levels are still a smooth fade to the eye, with the colour itself still
-   interpolated in RGB. *)
-let steps = 11
-let step = Time_ns.Span.of_sec (1. /. Float.of_int steps)
+(* Nothing in the console fades: a highlight is on at full strength for its time and then it
+   is off. The terminal is sent every line that changes, across the panels side by side, so a
+   colour that moves a little on each tick rewrites most of the screen on each tick. A binary
+   highlight costs two paints, the one that shows it and the one that clears it, and nothing
+   is computed or sent in between: the animation clock ticks once, at the expiry. *)
 
-(* The level of an intensity in [0, 1], rounded up so that a fade that has not finished is
-   never drawn as finished. *)
-let level intensity =
-  if Float.(intensity <= 0.) then 0.
-  else Float.min 1. (Float.round_up (intensity *. Float.of_int steps) /. Float.of_int steps)
+(* The level of an intensity in [0, 1]: all of it while any is left, none once the time is up.
+   Callers still ask in terms of "1 at the start, falling to 0 at the end", so a fade that has
+   not finished is never drawn as finished. *)
+let level intensity = if Float.(intensity <= 0.) then 0. else 1.

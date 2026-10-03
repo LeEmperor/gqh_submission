@@ -54,13 +54,21 @@ let summary counts =
   Hashtbl.to_alist counts |> List.sort ~compare:[%compare: string * int]
   |> List.map ~f:(fun (name, n) -> sprintf "%s:%d" name n) |> String.concat ~sep:" "
 
-(* Catches a clock that feeds the whole view: any recompute here is work with no change to show. *)
+(* Catches a clock that feeds the whole view: any recompute here is work with no change to show.
+   The one tick there is is the stream's: a book was seen at the start and nothing has come since,
+   so two seconds on the chart's axis stops saying "now". Once that is said the clock is still. *)
 let%expect_test "a quiet disconnected app recomputes nothing however long the clock runs" =
   let handle, counts = counting_app ~initial:(Shell_tests.state Connection_lost) { width = 120; height = 36 } in
   settle handle counts;
   for _ = 1 to 120 do tick handle 0.25 done;
-  printf "after 30 s: [%s]\n" (summary counts);
-  [%expect {| after 30 s: [] |}]
+  printf "first 30 s: [%s]\n" (summary counts);
+  Hashtbl.clear counts;
+  for _ = 1 to 120 do tick handle 0.25 done;
+  printf "next 30 s: [%s]\n" (summary counts);
+  [%expect {|
+    first 30 s: [Market:1 Metrics:1 Tape:1 body:1 frame:1]
+    next 30 s: []
+    |}]
 
 (* The stream moves the book, the update counter and the decisions. Of the panels, the header
    and the cold ones must not notice. *)
@@ -91,9 +99,11 @@ let%expect_test "a focus move recomputes the two panels it moves between, and th
   printf "%s\n" (summary counts);
   [%expect {| Heatmap:1 Market:1 body:1 footer:1 frame:1 |}]
 
-(* The animation clock runs while the stream moves and for the length of the longest fade,
-   ticks slowly while a chart still holds data, and then stops altogether. *)
-let%expect_test "the animation clock ticks fast, then slow, then stops" =
+(* The animation clock moves when the stream brings something and when a highlight is due to
+   come off, and at no other time. One update highlights the best prices, the deltas, the tape
+   and the new decision, which end 0.3 to 1 s after it: two ticks, since the later ends share
+   one. After that the clock stops altogether. *)
+let%expect_test "the animation clock ticks to take highlights off, and then stops" =
   let backend = Shell_tests.fixture Enabled in
   let handle, counts = counting_app ~initial:(Mock_backend.state backend) { width = 120; height = 36 } in
   settle handle counts;
@@ -101,40 +111,35 @@ let%expect_test "the animation clock ticks fast, then slow, then stops" =
   Handle.recompute_view_until_stable handle;
   Hashtbl.clear counts;
   for _ = 1 to 20 do tick handle 0.05 done;
-  let fast = count counts "Market" in
+  let first = count counts "Market" in
   Hashtbl.clear counts;
-  for _ = 1 to 60 do tick handle 0.5 done;
-  let slow = count counts "Market" in
-  (* 31 s in; the slow phase ends 65 s after the stream tick. *)
-  for _ = 1 to 80 do tick handle 0.5 done;
+  for _ = 1 to 120 do tick handle 0.5 done;
+  let rest = count counts "Market" in
   Hashtbl.clear counts;
-  for _ = 1 to 40 do tick handle 0.5 done;
-  let after = count counts "Market" in
-  printf "first second: %s\n" (if fast >= 10 && fast <= 12 then "a frame per fade step" else sprintf "unexpected: %d" fast);
-  printf "next 30 s: %s\n" (if slow >= 50 && slow <= 70 then "two a second" else sprintf "unexpected: %d" slow);
-  printf "from 71 s to 91 s: %d recomputes\n" after;
-  [%expect {|
-    first second: a frame per fade step
-    next 30 s: two a second
-    from 71 s to 91 s: 0 recomputes
-    |}]
+  for _ = 1 to 120 do tick handle 0.5 done;
+  let idle = count counts "Market" in
+  printf "Market recomputes: first second %d, next minute %d, minute after that %d\n" first rest idle;
+  (* The highlights take two ticks; the stream counted as stopped, two seconds on, is a third. *)
+  ensure (first + rest = 3 && idle = 0) "the clock ticked more than once per group of highlights, or did not stop";
+  [%expect {| Market recomputes: first second 1, next minute 2, minute after that 0 |}]
 
-(* A stream tick during the slow phase must restart the fast one at once, not wait out the
-   half-second sleep already in flight. *)
-let%expect_test "a stream tick in the slow phase restarts the fast clock" =
+(* A stream tick while highlights are on moves the clock at once and puts the timer where the
+   highlights now end, so a stream of updates is not ticked once per update on top. *)
+let%expect_test "an update during a highlight moves the clock at once and does not add a tick of its own" =
   let backend = Shell_tests.fixture Enabled in
   let handle, counts = counting_app ~initial:(Mock_backend.state backend) { width = 120; height = 36 } in
   settle handle counts;
   let backend = Mock_backend.advance backend in
   Bonsai_term_test.do_actions handle [ Mock_backend.state backend ];
-  for _ = 1 to 10 do tick handle 0.5 done;
+  tick handle 0.2;
   Bonsai_term_test.do_actions handle [ Mock_backend.state (Mock_backend.advance backend) ];
   Handle.recompute_view_until_stable handle;
+  let at_once = count counts "Market" in
   Hashtbl.clear counts;
-  for _ = 1 to 10 do tick handle 0.05 done;
-  printf "frames in the half second after the tick: %s\n"
-    (if count counts "Market" >= 4 then "fast" else sprintf "slow: %d" (count counts "Market"));
-  [%expect {| frames in the half second after the tick: fast |}]
+  for _ = 1 to 60 do tick handle 0.05 done;
+  (* The highlights end in two ticks, and the stream stopping is a third. *)
+  printf "recomputed by the second update: %b; recomputes in the next 3 s: %d\n" (at_once >= 1) (count counts "Market");
+  [%expect {| recomputed by the second update: true; recomputes in the next 3 s: 3 |}]
 
 (* --- Every cold panel's cutoff is sound: what it ignores is never on its screen ------------- *)
 
@@ -236,7 +241,7 @@ let%expect_test "the tape moves with the time only by its highlight, then in hal
   print_endline "highlight visible at 50 ms; from print_horizon on the screen only moves in half-second steps";
   [%expect {| highlight visible at 50 ms; from print_horizon on the screen only moves in half-second steps |}]
 
-let%expect_test "a new decision row's highlight fades to nothing in eleven even steps" =
+let%expect_test "a new decision row's highlight is on for 0.8 s and then off" =
   let at = Time_ns.epoch in
   let intensity seconds = Decision_row.fresh_intensity ~now:(Time_ns.add at (Time_ns.Span.of_sec seconds)) ~at in
   let steps = List.map [ 0.; 0.2; 0.4; 0.6; 0.79; 0.8; 5. ] ~f:intensity in
@@ -244,7 +249,7 @@ let%expect_test "a new decision row's highlight fades to nothing in eleven even 
             ~f:(fun (a, b) -> Float.(a >= b))) "The fade is not monotone";
   ensure (List.for_all steps ~f:(fun x -> Float.(x >= 0. && x <= 1.))) "Intensity out of range";
   printf "%s\n" (String.concat ~sep:" " (List.map steps ~f:(sprintf "%.2f")));
-  [%expect {| 1.00 0.82 0.55 0.27 0.09 0.00 0.00 |}]
+  [%expect {| 1.00 1.00 1.00 1.00 1.00 0.00 0.00 |}]
 
 (* --- Header clock ------------------------------------------------------------------------ *)
 
@@ -376,34 +381,39 @@ let%expect_test "the footer is one line, separated like the header, and keeps it
   print_endline "100-200 columns: hints grouped by │, status intact";
   [%expect {| 100-200 columns: hints grouped by │, status intact |}]
 
-(* --- Throttle ---------------------------------------------------------------------------- *)
+(* --- Paint throttle ---------------------------------------------------------------------- *)
 
-let throttle_app () =
-  Bonsai_term_test.create_handle_generic ~initial_dimensions:{ width = 10; height = 1 }
-    ~to_view_with_handler:fst
-    ~handle_incoming:(fun (_, set) view -> set view)
-    (fun ~dimensions:_ (local_ graph) ->
-      let view, set = Bonsai.state (View.text "v0") graph in
-      let shown = Frame_meter.throttle ~view graph in
-      let%arr shown and set in
-      ((~view:shown, ~handler:(fun (_ : Event.t) -> Effect.Ignore)), set))
-
-let%expect_test "the throttle paints a burst once per frame, and an idle view not at all" =
-  let handle = throttle_app () in
-  let shown () =
-    (* The view is drawn in a one-row box: the middle line, without the box. *)
-    List.nth_exn (String.split_lines (Handle.show_into_string handle)) 1
-    |> String.strip ~drop:(fun c -> Char.is_whitespace c || Char.equal c '|' || Char.(c > '\127')) in
-  let frame () = Handle.advance_clock_by handle (Time_ns.Span.of_sec 0.0167); shown () in
-  ignore (frame () : string);
-  ignore (frame () : string);
-  List.iter [ "v1"; "v2"; "v3" ] ~f:(fun v -> Bonsai_term_test.do_actions handle [ View.text v ]; ignore (shown () : string));
-  let inside_frame = shown () in
-  let next = frame () in
-  let later = List.init 30 ~f:(fun _ -> frame ()) in
-  printf "within the frame: %s; next frame: %s; 30 idle frames: %s\n" inside_frame next
-    (String.concat ~sep:"," (List.dedup_and_sort later ~compare:String.compare));
-  [%expect {| within the frame: v1; next frame: v3; 30 idle frames: v3 |}]
+let%expect_test "the throttle paints at once when it can, holds a burst to one paint an interval, and idles at nothing" =
+  let clock = ref Time_ns.epoch in
+  let throttle = Paint_throttle.create ~now:(fun () -> !clock) () in
+  let views = List.map [ "v1"; "v2"; "v3"; "v4" ] ~f:(fun name -> name, View.text name) in
+  let name view = fst (List.find_exn views ~f:(fun (_, candidate) -> phys_equal candidate view)) in
+  let offer ~ms v =
+    clock := Time_ns.add Time_ns.epoch (Time_ns.Span.of_ms ms);
+    let shown = Paint_throttle.release throttle (List.Assoc.find_exn views v ~equal:String.equal) in
+    printf "%6.1f ms: offered %s, shown %s, paints %d\n" ms v (name shown) (Paint_throttle.paints throttle) in
+  (* The first view, long after the epoch, is the leading edge: painted at once. *)
+  offer ~ms:100. "v1";
+  (* A burst inside the 16.7 ms interval is held, and the newest is painted when it ends. *)
+  offer ~ms:105. "v2";
+  offer ~ms:110. "v3";
+  offer ~ms:116. "v3";
+  offer ~ms:117. "v3";
+  (* The same view again is nothing to paint. *)
+  offer ~ms:118. "v3";
+  offer ~ms:150. "v3";
+  (* After a quiet interval the next view is the leading edge again. *)
+  offer ~ms:200. "v4";
+  [%expect {|
+    100.0 ms: offered v1, shown v1, paints 1
+    105.0 ms: offered v2, shown v1, paints 1
+    110.0 ms: offered v3, shown v1, paints 1
+    116.0 ms: offered v3, shown v1, paints 1
+    117.0 ms: offered v3, shown v3, paints 2
+    118.0 ms: offered v3, shown v3, paints 2
+    150.0 ms: offered v3, shown v3, paints 2
+    200.0 ms: offered v4, shown v4, paints 3
+    |}]
 
 (* The shell joins the panels by rows and columns instead of stacking full-size layers, which
    draws each cell once. That is only right if the pieces tile the body exactly. *)

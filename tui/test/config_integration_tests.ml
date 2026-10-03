@@ -10,6 +10,7 @@ module Backend = struct
   type t = Mock_backend.t
   let state = Mock_backend.state
   let next = Mock_backend.next
+  let polling = Mock_backend.polling
   let handle_command backend command =
     commands := command :: !commands;
     Mock_backend.handle_command backend command
@@ -117,6 +118,7 @@ module Delayed_backend = struct
   let pending = ref None
   let state = Mock_backend.state
   let handle_command = Mock_backend.handle_command
+  let polling = Mock_backend.polling
   let next backend =
     let result = Async.Ivar.create () in
     pending := Some (result, backend);

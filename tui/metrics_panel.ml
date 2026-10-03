@@ -7,6 +7,7 @@ open Bonsai_term
 
 type metric =
   { label : string; short : string; role : Theme.role; series : Metrics_state.series
+  ; summary : Metrics_state.summary option  (* of [series], found once *)
   ; low : float; high : float
   ; number : float -> string  (* a value without its unit, for min/max and axes *)
   ; unit : string
@@ -28,22 +29,22 @@ let rate_number value =
 let metrics_of (t : Metrics_state.t) =
   let connected = Metrics_state.connected t in
   let collecting = if connected then "no data · collecting" else "no data · stream lost" in
-  let rate ~label ~short ~role series =
-    let peak = Option.value_map (Metrics_state.summarize series) ~default:1.
-        ~f:(fun summary -> Float.max 1. summary.max) in
+  let rate ~label ~short ~role ~(summary : Metrics_state.summary option) series =
+    let peak = Option.value_map summary ~default:1. ~f:(fun summary -> Float.max 1. summary.max) in
     (* A little headroom keeps a steady rate off the top edge; an idle series keeps 0..1. *)
     let high = if Float.(peak <= 1.) then 1. else Braille_chart.nice_ceiling (peak *. 1.1) in
-    { label; short; role; series; low = 0.; high
+    { label; short; role; series; summary; low = 0.; high
     ; number = rate_number; unit = "/s"; absent = collecting; connected
     ; undefined = (if connected then "no sample" else "stream lost")
     ; undefined_long = (if connected then "no sample in the newest interval" else "stream lost") } in
-  let loss = Metrics_state.trace_loss_per_second t in
-  let lossy = Option.value_map (Metrics_state.summarize loss) ~default:false
-      ~f:(fun summary -> Float.(summary.max > 0.)) in
-  let ratio = Metrics_state.admit_ratio t in
+  let decisions = Metrics_state.decisions_per_second t and loss = Metrics_state.trace_loss_per_second t
+  and ratio = Metrics_state.admit_ratio t in
+  let loss_summary = Metrics_state.summarize loss in
+  let lossy = Option.value_map loss_summary ~default:false ~f:(fun summary -> Float.(summary.max > 0.)) in
   let no_outcomes = connected && not (List.is_empty ratio) in
-  [ rate ~label:"decisions/s" ~short:"dec/s" ~role:Info (Metrics_state.decisions_per_second t)
-  ; { label = "admit ratio"; short = "admit"; role = Bid; series = ratio; low = 0.; high = 1.
+  [ rate ~label:"decisions/s" ~short:"dec/s" ~role:Info ~summary:(Metrics_state.summarize decisions) decisions
+  ; { label = "admit ratio"; short = "admit"; role = Bid; series = ratio
+    ; summary = Metrics_state.summarize ratio; low = 0.; high = 1.
     ; number = sprintf "%.2f"; unit = ""; connected
     ; absent = (if no_outcomes then "no data · no outcomes yet" else collecting)
     ; undefined = (if connected then "no outcomes" else "stream lost")
@@ -51,12 +52,12 @@ let metrics_of (t : Metrics_state.t) =
         (if connected
          then sprintf "no outcomes in the last %.0f s" (Time_ns.Span.to_sec Metrics_state.sample_period)
          else "stream lost") }
-  ; rate ~label:"trace loss/s" ~short:"loss/s" ~role:(if lossy then Warn else Muted) loss ]
+  ; rate ~label:"trace loss/s" ~short:"loss/s" ~role:(if lossy then Warn else Muted) ~summary:loss_summary loss ]
 
 type current = Now of float | Undefined of string
 
 let current metric =
-  match Metrics_state.summarize metric.series with
+  match metric.summary with
   | None -> Undefined metric.absent
   | Some { last = Some value; _ } -> Now value
   | Some { last = None; _ } -> Undefined metric.undefined
@@ -66,12 +67,12 @@ let current metric =
 let value_text metric = function
   | Now value -> metric.number value ^ metric.unit
   | Undefined _ ->
-    if Option.is_some (Metrics_state.summarize metric.series) then metric.undefined
+    if Option.is_some metric.summary then metric.undefined
     else if metric.connected then "—" else "unknown"
 
 (* "min 3.0 · max 14.8", then the full reason the newest value is missing, if it is. *)
 let stats_parts metric =
-  Option.value_map (Metrics_state.summarize metric.series) ~default:[] ~f:(fun { min; max; _ } ->
+  Option.value_map metric.summary ~default:[] ~f:(fun { min; max; _ } ->
     [ "min " ^ metric.number min; "max " ^ metric.number max ]
     @ match current metric with Undefined _ -> [ "now: " ^ metric.undefined_long ] | Now _ -> [])
 
@@ -80,7 +81,7 @@ let bold theme role value = View.text ~attrs:(Theme.attrs theme role @ [ Attr.bo
 
 let plot ~theme ~anchor ?gutter ~width ~height metric =
   let no_data =
-    if Option.is_some (Metrics_state.summarize metric.series) then "no data" else metric.absent in
+    if Option.is_some metric.summary then "no data" else metric.absent in
   Braille_chart.plot ~theme ~role:metric.role ~now:anchor ?gutter ~no_data ~width ~height
     ~low:metric.low ~high:metric.high ~format:Braille_chart.compact metric.series
 
@@ -145,7 +146,7 @@ let inline ~theme ~anchor ~metrics ~width ~height ~connected =
   let label_width = List.fold metrics ~init:0 ~f:(fun w metric -> Int.max w (display_width (label metric))) in
   let value_width = List.fold metrics ~init:0 ~f:(fun w metric ->
       Int.max w (display_width (value_text metric (current metric)))) in
-  let range metric = match Metrics_state.summarize metric.series with
+  let range metric = match metric.summary with
     | None -> "" | Some { min; max; _ } ->
       if long then sprintf "min %s · max %s" (metric.number min) (metric.number max)
       else sprintf "%s–%s" (metric.number min) (metric.number max) in
@@ -191,5 +192,5 @@ let view ~theme ~focus ~(metrics : Metrics_state.t) ~now ~width ~height =
   let layout = match layout_for ~width ~height with
     | Side_by_side -> side_by_side | Stacked -> stacked | Inline -> inline in
   let body = layout ~theme ~anchor ~metrics:series ~width:inner_width ~height:inner_height ~connected in
-  Panel.frame ~theme ~focus ~panel:Metrics ~title:("Metrics · " ^ Status_bar.mode_name metrics.mode)
+  Panel.framed ~theme ~focus ~panel:Metrics ~title:("Metrics · " ^ Status_bar.mode_name metrics.mode)
     ~width ~height (View.vcat body)

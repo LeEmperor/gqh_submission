@@ -104,13 +104,26 @@ let on_mouse ui ~dimensions ~(state : application_state) ~(kind : Event.mouse_ki
     Dashboard
   | _ -> ui, Dashboard
 
+(* When each print of the tape that is still highlighted stops being. Prints are newest
+   first, and one more than a highlight older than the newest is over before it begins. *)
+let tape_expiries (tape : Tape_panel.t) =
+  match Tape_panel.newest tape with
+  | None -> []
+  | Some newest ->
+    let floor = Time_ns.sub newest.time Tape_panel.fade in
+    let expiries = ref [] in
+    Age_deque.iter_while tape.prints ~f:(fun print ->
+      Time_ns.(print.time > floor)
+      && (expiries := Time_ns.add print.time Tape_panel.fade :: !expiries; true));
+    List.rev !expiries
+
 (* [overlay] carries the frame meter's numbers while its box is open; [live] owns the meter.
    [on_compute] is a test hook: each node of the shell calls it with its name when it
    recomputes, so a test can count what an event really cost. *)
 let component ?(overlay = Bonsai.return None) ?(initial_preset = Ui_types.Monitor)
     ?(on_preset = Bonsai.return (fun (_ : Ui_types.preset) -> Effect.return (Ok ())))
     ?(send_command = Bonsai.return (fun (_ : command) -> Effect.Ignore))
-    ?(on_compute = ignore)
+    ?(on_compute = ignore) ?wake
     ~(theme : Theme.t) ~state ~clock ~exit ~(dimensions : Dimensions.t Bonsai.t) (local_ graph) =
   (* The reducer sees the latest state for every queued key, even when several
      keys arrive before a redraw. A handler capturing focus/overlay would not. *)
@@ -202,18 +215,23 @@ let component ?(overlay = Bonsai.return None) ?(initial_preset = Ui_types.Monito
   let motion = Market_motion.component ~state graph in
   let heatmap = Heatmap.component ~state graph in
   let tape = Tape_panel.component ~state graph in
-  let metrics = Metrics_state.component ~state graph in
-  (* Animated views read this clock. It runs only while the stream moves or a fade is in
-     flight, so a quiet application schedules no timer and repaints nothing. *)
+  let metrics = Metrics_state.component ?wake ~state graph in
+  (* Animated views read this clock. It moves when the stream brings something and when a
+     highlight is due to be taken off, and not otherwise: see Anim_clock. *)
   let activity = let%arr state in state.market, state.updates, state.decisions.next_sequence in
-  let now = Anim_clock.component ~activity ~equal:[%equal: snapshot * int * int] graph in
-  let history = History_panel.component ~theme:themed ~dimmed ~now
-      ~focus:(let%arr focus in Panel_views.seen_focus Decisions ~focused:(Keymap.equal_focus focus Decisions))
-      ~log ~dimensions:history_dimensions graph in
+  let expiries = let%arr motion and tape in Market_motion.expiries motion @ tape_expiries tape in
+  let now = Anim_clock.component ?wake ~activity ~equal:[%equal: snapshot * int * int] ~expiries
+      ~after_touch:[ Decision_row.fresh_fade ] graph in
   let tiling = Bonsai.cutoff ~equal:[%equal: Layout.t option]
       (let%arr ui and dimensions in
        Layout.create ~preset:ui.preset ~zoom:(Option.some_if ui.zoom ui.focus) ~toggles:ui.toggles
          ~width:dimensions.width ~height:(Layout.body_height ~height:dimensions.height)) in
+  (* The decisions are kept while their panel is not shown, and no row of them is built. *)
+  let on_screen = Bonsai.cutoff ~equal:Bool.equal
+      (let%arr tiling in Option.is_some (Layout.rect_of tiling Decisions)) in
+  let history = History_panel.component ~theme:themed ~dimmed ~now ~on_screen
+      ~focus:(let%arr focus in Panel_views.seen_focus Decisions ~focused:(Keymap.equal_focus focus Decisions))
+      ~log ~dimensions:history_dimensions graph in
   let selected = let%arr ui in ui.selected in
   let cumulative = let%arr ui in ui.toggles.cumulative in
   let body = Panel_views.component ~compute:on_compute ~theme:panel_theme ~state ~focus ~selected
@@ -279,95 +297,36 @@ let component ?(overlay = Bonsai.return None) ?(initial_preset = Ui_types.Monito
       Option.value_map response.command ~default:Effect.Ignore ~f:send_command in
   ~view, ~handler
 
-(* The driver's own frame, which the stream is polled once of. *)
-let frame = Time_ns.Span.of_sec (1. /. 60.)
+let frame = Live_poll.frame
+let poll_margin = Live_poll.poll_margin
+let poll_delay = Live_poll.poll_delay
 
-type 'backend backend_model = { backend : 'backend; revision : int }
-type 'backend backend_action =
-  | Command_backend of command | Poll_backend of int * 'backend
-
+(* [paints] counts the views the driver has been given to paint, for the frame meter; the
+   runner owns the throttle that releases them, and counts them. Without it, as under test,
+   the meter records nothing. *)
 let live (type backend) ?(initial_preset = Presets.load ())
     ?(on_preset = Bonsai.return (fun preset -> Effect.of_sync_fun (fun preset -> Presets.save preset) preset))
-    ?on_compute
+    ?on_compute ?paints ?(wake = Wake.off)
     (module Backend : Backend_intf.S with type t = backend)
     ~theme ~(backend : backend) ~exit ~(dimensions : Dimensions.t Bonsai.t) (local_ graph) =
-  (* A command and an asynchronous poll may share a frame. Serialize commands
-     against the latest backend, and never overwrite them with an older poll. *)
-  let backend, inject = Bonsai.actor ~default_model:{ backend; revision = 0 }
-      ~recv:(fun _context model action ->
-        let model = match action with
-          | Command_backend command ->
-            { backend = Backend.handle_command model.backend command; revision = model.revision + 1 }
-          | Poll_backend (revision, backend) ->
-            if revision = model.revision then { backend; revision = revision + 1 } else model in
-        model, (model.backend, model.revision)) graph in
-  let state = let%arr backend in Backend.state backend.backend in
-  (* The poll loop reads the backend and the stream's period from here, a frame stale at worst.
-     [Bonsai.peek] would be current, but it answers only at the start of the next frame, and a
-     poll that waits a frame for its inputs is a poll every other frame. *)
-  let latest = Bonsai.Expert.Var.create None in
-  let period = let%arr state in Time_ns.Span.of_sec (1. /. state.rate_hz) in
-  Bonsai.Edge.before_display
-    (let%arr backend and period in
-     Effect.of_sync_fun (fun () -> Bonsai.Expert.Var.set latest (Some (backend, period))) ()) graph;
-  let send_command = let%arr inject in fun command ->
-    let%map.Effect _ = inject (Command_backend command) in () in
-  (* The stream is polled once a frame at most. The driver advances the Bonsai clock once at the
-     top of each frame, so a sleep ends at a frame's start: a poll begins there, the backend
-     answers while the frame is being drawn, and the answer is applied at the start of the next
-     frame. That is one frame between a poll and its paint, for a stream of any rate.
-     [Bonsai.Clock.every] cannot do this: it re-arms through two more frames after each effect
-     finishes, so a poll came every third frame and a 1000 Hz stream painted twenty times a
-     second. [wait_after_display] is no better, three frames in the driver. A stream slower than
-     a frame sleeps its own period between polls, since polling it faster would hand it more
-     steps than its rate; [Backend.next] counts the steps owed from the time between polls, so
-     a poll that comes late loses none. *)
-  let sleep = Bonsai.Clock.sleep graph in
-  let poll_loop =
-    let%arr inject and sleep in
-    let open Effect.Let_syntax in
-    (* [predicted] is the backend the last poll was applied to produce: the graph shows it only
-       from the next frame, and a poll that began from the older one would carry a stale
-       revision and be dropped. Whichever has the newer revision is the one to poll from; a
-       command applied since is newer, and a poll it overtook is simply lost. *)
-    let rec loop predicted =
-      let%bind () = Effect.return () in
-      let wait = match Bonsai.Expert.Var.get latest with
-        | Some (_, period) -> Time_ns.Span.max period (Time_ns.Span.of_ms 1.)
-        | None -> frame in
-      let%bind () = sleep wait in
-      let newest = match Bonsai.Expert.Var.get latest, predicted with
-        | Some (seen, _), Some predicted -> Some (if seen.revision >= predicted.revision then seen else predicted)
-        | Some (seen, _), None -> Some seen
-        | None, predicted -> predicted in
-      match newest with
-      | None -> loop predicted
-      | Some { backend; revision } ->
-        let%bind next = Effect.of_deferred_fun Backend.next backend in
-        (* Not waited for: the action is applied at the start of the next frame either way, and
-           waiting would put the next poll a frame later. *)
-        let%bind () = Effect.Many [ (let%map _ = inject (Poll_backend (revision, next)) in ()) ] in
-        loop (Some { backend = next; revision = revision + 1 }) in
-    loop None in
-  Bonsai.Edge.lifecycle ~on_activate:poll_loop graph;
+  let state, send_command = Live_poll.start ~wake (module Backend) ~backend graph in
   (* The header's one wall clock is UTC, like the tape's, to the second, read from a clock that
      ticks once a second on the second: a finer digit would be a guess. It is one of the two
      things an idle application runs (the other is the metrics sampler on the same tick), and
      it repaints the header once a second. *)
-  let now = Anim_clock.each_second ~enabled:(Bonsai.return true) graph in
+  let now = Anim_clock.each_second ~wake ~enabled:(Bonsai.return true) graph in
   let clock = Bonsai.cutoff ~equal:String.equal
       (let%arr now in Time_ns.to_ofday now ~zone:Timezone.utc |> Time_ns.Ofday.to_sec_string) in
-  (* The meter and its F12 key wrap the whole component: it times the frames the driver
-     really paints, so the throttle comes first and the meter observes what it releases. *)
+  (* The meter and its F12 key wrap the whole component. It times the frames the driver really
+     paints, which the throttle between the application and the driver decides. *)
   let debug, toggle_meter = Bonsai.toggle ~default_model:false graph in
   let meter = Frame_meter.probe ~enabled:debug ~updates:(let%arr state in state.updates)
       ~buffers:(let%arr state in Frame_meter.buffers_of_state state) graph in
   let overlay = let%arr debug and stats = meter.Frame_meter.stats in Option.some_if debug stats in
   let ~view, ~handler =
-    component ~overlay ~initial_preset ~on_preset ~send_command ?on_compute ~theme ~state ~clock ~exit
+    component ~overlay ~initial_preset ~on_preset ~send_command ?on_compute ~wake ~theme ~state ~clock ~exit
       ~dimensions graph in
   let handler = let%arr handler and toggle_meter in fun event ->
     match Keymap.action event with Toggle_meter -> toggle_meter | _ -> handler event in
-  let view = Frame_meter.throttle ~view graph in
-  Frame_meter.observe meter ~view graph;
+  Frame_meter.observe meter ?paints graph;
   ~view, ~handler

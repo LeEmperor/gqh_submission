@@ -28,4 +28,8 @@ val steps_due : rate_hz:float -> elapsed:Time_ns.Span.t -> carried:float -> int 
 (* Polls the stream: yields, then advances by [steps_due] since the previous poll. *)
 val next : t -> t Deferred.t
 
+(* Whether a poll can bring anything: the stream is up, or an apply is in flight and ticks with
+   the poll. A lost connection with nothing in flight has no next state, so it is not polled. *)
+val polling : t -> bool
+
 val handle_command : t -> Model_adapter.command -> t

@@ -292,16 +292,26 @@ let%expect_test "bench report states the pass line and defines coalescing" =
     { last_ms = 2.; avg_ms = 2.5; p50_ms = 2.4; p99_ms = 9.1; max_ms = 12.3
     ; events_per_second = 1000.; render_count = 1190; coalesced_frames = 18700
     ; buffer_sizes = [] } in
-  let report p99 =
+  let report ?(key_count = 0) p99 =
     Bench.format_report ~dimensions:{ width = 120; height = 36 } ~rate_hz:1000.
       ~seconds:20. ~events:19890 ~staleness:{ p50 = 9.5; p99 = 17.2; max = 21.8 }
+      ~keys:{ p50 = 1.6; p99 = 8.4; max = 12.1 } ~key_count
       ~stats:{ stats with p99_ms = p99 } in
   print_endline (report 9.1);
+  print_endline (report ~key_count:340 9.1);
   ensure (contains (report 16.5) "FAIL") "Slow p99 passed";
   [%expect {|
     tickweave bench · MOCK · Monitor 120x36 · 20 s · stream 1000 Hz
     frame work, painted frames only (flush + compute + paint to tty): p50 2.40 ms · p99 9.10 ms · max 12.30 ms
     stream to paint, from a state reaching the app to the end of the paint that shows it: p50 9.5 ms · p99 17.2 ms · max 21.8 ms
+    key to paint: no keys sent (give bench_pty.py a keys-per-second argument)
+    p99 < 16 ms: PASS
+    renders 1190 (59.5/s, cap 60/s) · stream events received 19890 · coalesced 18700
+    coalesced = stream events that shared a painted frame with an earlier one (per painted frame: events since the previous painted frame, minus one)
+    tickweave bench · MOCK · Monitor 120x36 · 20 s · stream 1000 Hz
+    frame work, painted frames only (flush + compute + paint to tty): p50 2.40 ms · p99 9.10 ms · max 12.30 ms
+    stream to paint, from a state reaching the app to the end of the paint that shows it: p50 9.5 ms · p99 17.2 ms · max 21.8 ms
+    key to paint, from a key reaching the app to the end of the paint that shows it (340 keys): p50 1.6 ms · p99 8.4 ms · max 12.1 ms
     p99 < 16 ms: PASS
     renders 1190 (59.5/s, cap 60/s) · stream events received 19890 · coalesced 18700
     coalesced = stream events that shared a painted frame with an earlier one (per painted frame: events since the previous painted frame, minus one)

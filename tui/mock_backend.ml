@@ -177,10 +177,12 @@ let steps_due ~rate_hz ~elapsed ~carried =
     let steps = Int.max 1 whole in
     steps, Float.max (-1.) (owed -. Float.of_int steps))
 
-(* The app polls at most once a frame, and a Bonsai timer cannot fire faster than that.
-   Advancing by the steps due since the last poll delivers a stream faster than the
-   frame rate as one batch per frame, instead of slowing it to one step per frame. The first
-   poll takes one step. *)
+(* The app polls on a timer of its own, no faster than once per paint interval, whatever the
+   stream's rate: a state it could not paint before the next would only be work. Advancing by
+   the steps due since the last poll delivers a faster stream as one batch per poll, instead
+   of slowing it to one step per poll, and the state the poll answers with is the newest the
+   stream has reached, as a stream pushing its own states would hand over. The first poll
+   takes one step. *)
 let next t =
   let%map.Deferred () = Scheduler.yield () in
   let now = Time_ns.now () in
@@ -189,6 +191,8 @@ let next t =
     | Some at -> steps_due ~rate_hz:t.state.rate_hz ~elapsed:(Time_ns.diff now at) ~carried:t.owed in
   let t = Fn.apply_n_times ~n:steps advance t in
   { t with polled_at = Some now; owed }
+
+let polling t = t.state.connected || Option.exists t.applying ~f:Mock_apply.in_flight
 
 let handle_command t = function
   | Apply_proposal proposal ->
