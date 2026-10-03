@@ -1,0 +1,22 @@
+[
+  {
+    "size": "120x36",
+    "seconds_in_app": 12.01,
+    "exit_code": 0,
+    "last_snapshot": 47,
+    "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0 │ 15:13:25.547",
+    "last_counters": "matched 27  admitted 24  blocked 3",
+    "block_reason": "last block: ask qty 3 u < min 10 u",
+    "distinct_imbalances": 39
+  },
+  {
+    "size": "100x30",
+    "seconds_in_app": 12.01,
+    "exit_code": 0,
+    "last_snapshot": 47,
+    "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0",
+    "last_counters": "matched 27  admitted 24  blocked 3",
+    "block_reason": "last block: ask qty 3 u < min 10 u",
+    "distinct_imbalances": 39
+  }
+]

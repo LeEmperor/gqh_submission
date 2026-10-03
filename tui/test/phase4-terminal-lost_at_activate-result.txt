@@ -1,0 +1,36 @@
+tickweave ▸ MOCK LOST │ build m01 │ run demo-03 │ cfg ?UNKNOWN last v12 │ ? UNKNOWN │ book ✓VALID │ trace loss 0
+╭ Market · AAPL ───────────────────────────────────╮ ╭ Rules ──────────────────────────────────────────────────────────╮
+│ px (t) · qty (u)                                 │ │ ▸ #0 buy_below_limit                                  ? UNKNOWN │
+│ qty(u) BID        px(t)│px(t) ASK         qty(u) │ │ ask_px ≤ maximum_price → BUY qty @ ask_px                       │
+│     45 █████▋      1005│ 1007 █████████       65 │ │ maximum_price 1005 t  quantity 1 u                              │
+│     59 ███████▍    1004│ 1008 ▍                3 │ │ matched 8  admitted 8  blocked 0                                │
+│     69 ████████▋   1003│ 1009 ▍                3 │ │ cfg ?UNKNOWN last v12 · MOCK                                    │
+│     43 █████▍      1002│ 1010 █████████▌      69 │ │                                                                 │
+│      4 ▌           1001│ 1011 ███             22 │ │                                                                 │
+│     61 ███████▋    1000│ 1012 ███████████     79 │ │                                                                 │
+│     54 ██████▊      999│ 1013 ███████▉        57 │ │                                                                 │
+│     77 ███╭ Configuration review · MOCK ─────────────────────────────────────────────────────────────────╮───────────╯
+│     22 ██▊│ target build m01                │ connected build m01                                        │───────────╮
+│ spread 2 t│ base version v12                │ last ACK active v12                                        │           │
+│ imbalance │ ? STATE UNKNOWN — last ack v12                                                               │           │
+│ ask       │ ✓ validate                                                                                   │           │
+│ MOCK #20  │ ✓ disable                                                                                    │           │
+╰───────────│ ✓ wait idle                                                                                  │           │
+╭ Decisions │ ✓ write                                                                                      │           │
+│ #1    13:3│ ✓ verify readback                                                                            │           │
+│ #2    13:3│ ? activate · indeterminate: MOCK activation acknowledgment missing                           │           │
+│ #3    13:3│ ? STATE UNKNOWN — last ack v12                                                               │           │
+│ #4    13:3│ r reconcile                                                                                  │           │
+│ #5    13:3│ r reconcile · Esc close                                                                      │           │
+│ #6    13:3╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│ #7    13:37:01.750 MATCH BUY 1 @1003 ✓ADM ✓RCV   │ │                                                                 │
+│ #8    13:37:02.000 MATCH BUY 1 @1004 ✓ADM ✓RCV   │ │                                                                 │
+│ #9    13:37:02.250 MATCH BUY 1 @1003 ✓ADM        │ │                                                                 │
+│ #10   13:37:02.500 ·     no signal               │ │                                                                 │
+│ #11   13:37:02.750 MATCH BUY 1 @1005 ✓ADM ✓RCV   │ │                                                                 │
+│ #12   13:37:03.000 MATCH BUY 1 @1001 ✓ADM        │ ╰─────────────────────────────────────────────────────────────────╯
+│                                                  │ ╭ Configuration ──────────────────────────────────────────────────╮
+│                                                  │ │                                                                 │
+│ MOCK · G live · / filter · Space pause           │ │                                                                 │
+╰──────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────────────────╯
+Tab/⇧Tab focus  1–5 panel  c config  ? help  q quit  · MOCK stream                                         focus: Market

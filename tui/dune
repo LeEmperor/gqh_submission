@@ -1,0 +1,4 @@
+(library
+ (name tickweave_tui)
+ (libraries core async bonsai_term bonsai_term_components.border_box bonsai_term_components.scroller bonsai_term_components.textbox bonsai_term_components.spinner bonsai_term_components.color_scheme tickweave_tui_model)
+ (preprocess (pps ppx_jane bonsai.ppx_bonsai)))

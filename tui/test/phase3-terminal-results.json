@@ -1,0 +1,26 @@
+[
+  {
+    "size": "120x36",
+    "command": "cd /Users/vishalnaveen/Downloads/tickweave-tui && eval $(opam env --switch 5.2.0+ox) && stty rows 36 columns 120 && env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor dune exec -- ./tui/bin/main.exe console --mode mock --scenario enabled",
+    "seconds_before_q": 12.002,
+    "exit_code": 0,
+    "bytes": 1010876,
+    "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0 │ 16:17:16.997      ",
+    "frozen_inspector": true,
+    "paused": true,
+    "arrival_pill": true,
+    "filter_seen": true
+  },
+  {
+    "size": "100x30",
+    "command": "cd /Users/vishalnaveen/Downloads/tickweave-tui && eval $(opam env --switch 5.2.0+ox) && stty rows 30 columns 100 && env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor dune exec -- ./tui/bin/main.exe console --mode mock --scenario enabled",
+    "seconds_before_q": 12.006,
+    "exit_code": 0,
+    "bytes": 719761,
+    "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0 ",
+    "frozen_inspector": true,
+    "paused": true,
+    "arrival_pill": true,
+    "filter_seen": true
+  }
+]

@@ -1,0 +1,36 @@
+tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v13 │ ● ARMED │ book ✓VALID │ trace loss 0 │ 17:04:50.149
+╭ Market · AAPL ───────────────────────────────────╮ ╭ Rules ──────────────────────────────────────────────────────────╮
+│ px (t) · qty (u)                                 │ │ ▸ #0 buy_below_limit                                       ● ON │
+│ qty(u) BID        px(t)│px(t) ASK         qty(u) │ │ ask_px ≤ maximum_price → BUY qty @ ask_px                       │
+│     29 ███▊        1004│ 1006 ██████████▍     73 │ │ maximum_price 1006 t  quantity 2 u                              │
+│     57 ███████▉    1002│ 1005 ██▌             17 │ │ matched 12  admitted 11  blocked 1                              │
+│     23 ███▏        1001│ 1006 █████           33 │ │ last block: price 1006 t outside [1001, 1005] t                 │
+│     57 ███╭ Configuration review · MOCK ─────────────────────────────────────────────────────────────────╮           │
+│     45 ███│ target build m01                │ connected build m01                                        │           │
+│     30 ███│ base version v12                │ last ACK active v13                                        │           │
+│     69 ███│ ✗ STALE — re-plan required                                                                   │           │
+│     19 ██▋│ ✓ CONFIGURATION_ONLY · declared runtime parameters                                           │───────────╯
+│      5 ▋  │   parameter              │   active │   proposed │ unit │ range                              │───────────╮
+│ spread 1 t│ ▸ maximum_price          │     1006 │       1006 │ t    │ [995, 1010]                        │           │
+│ imbalance │   quantity               │        2 │          2 │ u    │ [1, 5]                             │           │
+│ ask       │ ✓ build match             proposal, manifest and connected build                             │           │
+│ MOCK #24  │ ✗ base version match      last acknowledged active version                                   │           │
+╰───────────│ ✓ every field in range    declared fields, unique names and integer ranges                   │           │
+╭ Decisions │ ✓ engine reachable        connected with known engine state                                  │           │
+│ #3    13:3│ ✓ validate                                                                                   │           │
+│ #4    13:3│ ✓ disable                                                                                    │           │
+│ #5    13:3│ ✓ wait idle                                                                                  │           │
+│ #6    13:3│ ✓ write                                                                                      │           │
+│ #7    13:3│ ✓ verify readback                                                                            │           │
+│ #8    13:3│ ✓ activate                                                                                   │           │
+│ #9    13:3│ ✓ ACK v13                                                                                    │           │
+│ #10   13:3│ ✓ APPLIED — ACK v13 · Esc close                                                              │           │
+│ #11   13:3│ Backend acknowledgments alone advance lifecycle and active configuration                     │           │
+│ #12   13:3╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│ #21   13:37:05.250 MATCH BUY 2 @1006 ✗BLK price  │ │                                                                 │
+│ #22   13:37:05.500 MATCH BUY 2 @1003 ✓ADM ✓RCV   │ ╰─────────────────────────────────────────────────────────────────╯
+│ #23   13:37:05.750 MATCH BUY 2 @1001 ✓ADM ✓RCV   │ ╭ Configuration ──────────────────────────────────────────────────╮
+│ #24   13:37:06.000 MATCH BUY 2 @1004 ✓ADM        │ │                                                                 │
+│ MOCK · G live · / filter · Space pause           │ │                                                                 │
+╰──────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────────────────╯
+Tab/⇧Tab focus  1–5 panel  c config  ? help  q quit  · MOCK stream                                         focus: Market

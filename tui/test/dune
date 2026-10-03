@@ -1,0 +1,5 @@
+(library
+ (name tickweave_tui_tests)
+ (libraries core async bonsai_term bonsai_term_test tickweave_tui tickweave_tui_model)
+ (inline_tests (flags (-source-tree-root .)))
+ (preprocess (pps ppx_jane bonsai.ppx_bonsai)))

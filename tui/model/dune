@@ -1,0 +1,4 @@
+(library
+ (name tickweave_tui_model)
+ (libraries core)
+ (preprocess (pps ppx_jane)))

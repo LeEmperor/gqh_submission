@@ -1,0 +1,28 @@
+[
+  {
+    "scenario": "update_ok",
+    "size": "120x36",
+    "duration_s": 12.56,
+    "exit_code": 0,
+    "command": "cd /Users/vishalnaveen/Downloads/tickweave-tui && eval $(opam env --switch 5.2.0+ox) && stty rows 36 columns 120 && env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor ./_build/default/tui/bin/main.exe console --mode mock --scenario update_ok",
+    "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v13 │ ● ARMED │ book ✓VALID │ trace loss 0 │ 17:04:50.149",
+    "captures": [
+      "applying",
+      "result",
+      "inspector"
+    ]
+  },
+  {
+    "scenario": "lost_at_activate",
+    "size": "120x36",
+    "duration_s": 12.53,
+    "exit_code": 0,
+    "command": "cd /Users/vishalnaveen/Downloads/tickweave-tui && eval $(opam env --switch 5.2.0+ox) && stty rows 36 columns 120 && env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor ./_build/default/tui/bin/main.exe console --mode mock --scenario lost_at_activate",
+    "header": "tickweave ▸ MOCK LOST │ build m01 │ run demo-03 │ cfg ?UNKNOWN last v12 │ ? UNKNOWN │ book ✓VALID │ trace loss 0",
+    "captures": [
+      "applying",
+      "result",
+      "unknown"
+    ]
+  }
+]

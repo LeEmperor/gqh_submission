@@ -1,0 +1,36 @@
+tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0 │ 16:17:16.997      
+╭ Market · AAPL ───────────────────────────────────╮ ╭ Rules ──────────────────────────────────────────────────────────╮
+│ px (t) · qty (u)                                 │ │ ▸ #0 buy_below_limit                                       ● ON │
+│ qty(u) BID        px(t)│px(t) ASK         qty(u) │ │ ask_px ≤ maximum_price → BUY qty @ ask_px                       │
+│     12 █▌          1003│ 1004 █████           37 │ │ maximum_price 1005 t  quantity 1 u                              │
+│     55 ██████▉     1002│ 1005 ████████▉       65 │ │ matched 26  admitted 23  blocked 3                              │
+│     80 ██████████  1001│ 1006 ████████▊       64 │ │ last block: price 1000 t outside [1001, 1005] t                 │
+│     20 ██▌         1000│ 1007 ██████████▊     79 │ │ cfg ✓ACK v12 · MOCK                                             │
+│     41 █████▏       999│ 1008 █████▋          41 │ │                                                                 │
+│     26 ███▎         998│ 1009 █████████▊      71 │ │                                                                 │
+│     55 ██████▉      997│ 1010 ▏                1 │ │                                                                 │
+│     46 █████▊       996│ 1011 ████████▍       61 │ ╰─────────────────────────────────────────────────────────────────╯
+│     64 ████████     995│ 1012 ███████████     80 │ ╭ Inspector · MOCK FROZEN ────────────────────────────────────────╮
+│ spread 1 t   mid 1003.5 t                        │ │ MOCK FROZEN #1 · 13:37:00.250                                   │
+│ imbalance -0.51 ▼                                │ │ run demo-03 · build m01                                         │
+│ ask                            ⠐⠾⢶⠳⣶⣴⠒⠄ last 60s │ │ cfg v12 · slot 0 · snapshot #1                                  │
+│ MOCK #46  updates/s 4.0                          │ │ recorded bid 1004 t / 79 u · ask 1005 t / 12 u                  │
+╰──────────────────────────────────────────────────╯ │ ask_px 1005 ≤ maximum_price 1005 = true                         │
+╭ Decisions · MOCK · all ⏸ PAUSED ─────────────────╮ │ candidate BUY 1 @1005                                           │
+│ #18   13:37:04.500 ·     no signal               │ │ bounds qty [1, 5] u · price [1001, 1005] t                      │
+│ #19   13:37:04.750 ·     no signal               │ │ admission ✓ accepted                                            │
+│ #20   13:37:05.000 ·     no signal               │ │ receipt ✓ received 13:37:00.252                                 │
+│ #21   13:37:05.250 ·     no signal               │ │                                                                 │
+│ #22   13:37:05.500 MATCH BUY 1 @1003 ✓ADM ✓RCV   │ │                                                                 │
+│ #23   13:37:05.750 MATCH BUY 1 @1001 ✓ADM ✓RCV   │ │                                                                 │
+│ #24   13:37:06.000 MATCH BUY 1 @1004 ✓ADM        │ │                                                                 │
+│ #25   13:37:06.250 ·     no signal               │ │                                                                 │
+│ #26   13:37:06.500 ·     no signal               │ │                                                                 │
+│ #27   13:37:06.750 MATCH BUY 1 @1003 ✓ADM        │ │                                                                 │
+│ #28   13:37:07.000 MATCH BUY 1 @1001 ✓ADM ✓RCV   │ │                                                                 │
+│ #29   13:37:07.250 MATCH BUY 1 @1000 ✗BLK price  │ ╰─────────────────────────────────────────────────────────────────╯
+│ #30   13:37:07.500 MATCH BUY 1 @1002 ✓ADM        │ ╭ Configuration ──────────────────────────────────────────────────╮
+│ #31   13:37:07.750 MATCH BUY 1 @1001 ✓ADM ✓RCV   │ │                                                                 │
+│ ↓ 15 new (15 while paused)                       │ │                                                                 │
+╰──────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────────────────╯
+Tab/⇧Tab focus  1–5 panel  ? help  q quit  · j/k Enter / Space G                                        focus: Decisions

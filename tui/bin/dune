@@ -1,0 +1,6 @@
+(executable
+ (name main)
+ (public_name tickweave)
+ (package tickweave)
+ (libraries core core_unix.command_unix async bonsai_term tickweave_tui)
+ (preprocess (pps ppx_jane bonsai.ppx_bonsai)))

@@ -1,0 +1,46 @@
+Command:
+cd /Users/vishalnaveen/Downloads/tickweave-tui && eval $(opam env --switch 5.2.0+ox) && stty cols 100 rows 30 && env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor dune exec -- ./tui/bin/main.exe console --mode mock --scenario enabled --seed 42 --rate 4
+
+Real PTY result:
+{
+  "size": "100x30",
+  "seconds_in_app": 12.01,
+  "exit_code": 0,
+  "last_snapshot": 47,
+  "header": "tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0",
+  "last_counters": "matched 27  admitted 24  blocked 3",
+  "block_reason": "last block: ask qty 3 u < min 10 u",
+  "distinct_imbalances": 39
+}
+
+First complete frame (ANSI removed):
+tickweave ▸ MOCK UP │ build m01 │ run demo-03 │ cfg ✓ACK v12 │ ● ARMED │ book ✓VALID │ trace loss 0 
+╭ Market · AAPL ──────────────────────────╮ ╭ Rules ───────────────────────────────────────────────╮
+│ px (t) · qty (u)                        │ │ ▸ #0 buy_below_limit                            ● ON │
+│ qty(u) BID    px(t)│px(t) ASK    qty(u) │ │ ask_px ≤ maximum_price → BUY qty @ ask_px            │
+│     33 ██▋     1003│ 1005 ██▋        32 │ │ maximum_price 1005 t  quantity 1 u                   │
+│     73 ██████  1002│ 1006 █▌         19 │ │ matched 0  admitted 0  blocked 0                     │
+│     20 █▋      1001│ 1007 █▌         19 │ │ cfg ✓ACK v12 · MOCK                                  │
+│     56 ████▌   1000│ 1008 █████▌     67 │ │                                                      │
+│     50 ████     999│ 1009 ▏           3 │ │                                                      │
+│     70 █████▊   998│ 1010 ██▏        27 │ ╰──────────────────────────────────────────────────────╯
+│ spread 2 t   mid 1004.0 t               │ ╭ Inspector ───────────────────────────────────────────╮
+│ imbalance +0.02 ▲                       │ │                                                      │
+│ ask                          ⠠ last 60s │ │                                                      │
+│ MOCK #0  updates/s 0.0                  │ │                                                      │
+╰─────────────────────────────────────────╯ │                                                      │
+╭ Decisions ──────────────────────────────╮ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ ╰──────────────────────────────────────────────────────╯
+│                                         │ ╭ Configuration ───────────────────────────────────────╮
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+│                                         │ │                                                      │
+╰─────────────────────────────────────────╯ ╰──────────────────────────────────────────────────────╯
+Tab/⇧Tab focus  1–5 panel  ? help  q quit  · MOCK stream                               focus: Market│ ask                          ⠄ last 60s │ │                                                      │
