@@ -2,11 +2,11 @@
  "Device" : "GW2AR-18C",
  "Files" : [
   {
-   "Path" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/Hackathon/src/gowin_rpll/gowin_rpll.v",
+   "Path" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/Hackathon/src/PLL.v",
    "Type" : "verilog"
   },
   {
-   "Path" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/Hackathon/src/toggle_test.v",
+   "Path" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/Hackathon/src/gowin_rpll/gowin_rpll.v",
    "Type" : "verilog"
   }
  ],

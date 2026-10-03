@@ -1,13 +1,15 @@
 GowinSynthesis start
 Running parser ...
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v'
 Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\gowin_rpll\gowin_rpll.v'
-Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\toggle_test.v'
-Compiling module 'top'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\toggle_test.v":1)
+Compiling module 'PLL'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v":1)
 Compiling module 'Gowin_rPLL'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\gowin_rpll\gowin_rpll.v":10)
-NOTE  (EX0101) : Current top module is "top"
-WARN  (EX0211) : The output port "uart_tx_o" of module "top" has no driver, assigning undriven bits to Z, simulation mismatch possible("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\toggle_test.v":10)
+NOTE  (EX0101) : Current top module is "PLL"
+WARN  (EX0211) : The output port "uart_tx_o" of module "PLL" has no driver, assigning undriven bits to Z, simulation mismatch possible("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v":6)
+WARN  (EX0211) : The output port "led0_n" of module "PLL" has no driver, assigning undriven bits to Z, simulation mismatch possible("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v":9)
 [5%] Running netlist conversion ...
-WARN  (CV0016) : Input uart_rx_i is unused("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\toggle_test.v":11)
+WARN  (CV0016) : Input reset_btn is unused("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v":4)
+WARN  (CV0016) : Input uart_rx_i is unused("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\Hackathon\src\PLL.v":7)
 Running device independent optimization ...
 [10%] Optimizing Phase 0 completed
 [15%] Optimizing Phase 1 completed
