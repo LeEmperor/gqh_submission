@@ -1,0 +1,23 @@
+(test
+ (name core_test)
+ (modules core_test)
+ (libraries tickweave))
+(test
+ (name cli_test)
+ (modules cli_test)
+ (libraries unix tickweave)
+ (action (run %{test} %{exe:../bin/stream.exe})))
+(test
+ (name transport_test)
+ (modules transport_test)
+ (libraries tickweave unix))
+(test
+ (name databento_test)
+ (modules databento_test)
+ (libraries tickweave unix yojson))
+(test
+ (name external_fixture_test)
+ (modules external_fixture_test)
+ (libraries tickweave yojson)
+ (deps (source_tree ../external/databento_audit/fixtures))
+ (action (run %{test} ../external/databento_audit/fixtures)))

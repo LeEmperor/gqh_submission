@@ -1,0 +1,8 @@
+(test
+ (name test_audit)
+ (libraries databento_audit_lib unix yojson)
+ (deps
+  ../databento_audit.exe
+  (source_tree ../fixtures))
+ (action
+  (run %{test} ../databento_audit.exe ../fixtures)))

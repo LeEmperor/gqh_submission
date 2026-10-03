@@ -1,0 +1,5 @@
+_build/
+*.install
+*.partial.*
+*.tmp.*
+.env

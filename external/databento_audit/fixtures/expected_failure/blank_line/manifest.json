@@ -1,0 +1,32 @@
+{
+  "name": "blank_line",
+  "kind": "expected_failure",
+  "description": "EXPECTED FAILURE, not a valid trading session. Empty line between rows is a one-field record.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": { "trades": "trades.csv", "expected_requests": null },
+  "expected_valid": false,
+  "expected_input_records": 1,
+  "expected_requests": 0,
+  "expected_incomplete_symbols": [],
+  "expected_error": {
+    "category": "field_count",
+    "line": 3,
+    "field": null,
+    "value": "1"
+  },
+  "notes": [
+    "expected_input_records and expected_requests count what was accepted before the failure"
+  ]
+}

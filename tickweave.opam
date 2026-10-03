@@ -1,0 +1,12 @@
+opam-version: "2.0"
+synopsis: "Databento trade streamer and GQH UART test driver"
+maintainer: "Tickweave team"
+authors: ["Tickweave team"]
+build: [["dune" "build" "-p" name "-j" jobs]]
+run-test: [["dune" "runtest" "-p" name]]
+depends: [
+  "ocaml" {>= "5.2"}
+  "dune" {>= "3.11"}
+  "yojson" {>= "2.0"}
+  "core_unix" {>= "v0.17"}
+]

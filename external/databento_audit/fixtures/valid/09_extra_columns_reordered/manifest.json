@@ -1,0 +1,30 @@
+{
+  "name": "09_extra_columns_reordered",
+  "kind": "valid_session",
+  "description": "Databento-style wider header with required columns in a different order; extra columns are ignored but every row must have the header's field count.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": {
+    "trades": "trades.csv",
+    "expected_requests": "expected_requests.csv"
+  },
+  "expected_valid": true,
+  "expected_input_records": 4,
+  "expected_requests": 2,
+  "expected_incomplete_symbols": [],
+  "expected_error": null,
+  "notes": [
+    "contract interpretation: extra columns are allowed (see REPORT.md questions)"
+  ]
+}

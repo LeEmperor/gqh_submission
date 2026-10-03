@@ -1,0 +1,16 @@
+(library
+ (name databento_audit_lib)
+ (modules
+  csv_stream
+  trade_contract
+  validator
+  report
+  safe_output
+  generator
+  fixture_check)
+ (libraries unix yojson))
+
+(executable
+ (name databento_audit)
+ (modules databento_audit)
+ (libraries databento_audit_lib unix))

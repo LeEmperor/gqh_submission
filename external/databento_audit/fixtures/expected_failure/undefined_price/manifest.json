@@ -1,0 +1,32 @@
+{
+  "name": "undefined_price",
+  "kind": "expected_failure",
+  "description": "EXPECTED FAILURE, not a valid trading session. Databento UNDEF_PRICE after one good pair.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": null,
+    "pairs": null,
+    "rng": "none (hand-written)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": { "trades": "trades.csv", "expected_requests": null },
+  "expected_valid": false,
+  "expected_input_records": 2,
+  "expected_requests": 1,
+  "expected_incomplete_symbols": [],
+  "expected_error": {
+    "category": "undefined_price",
+    "line": 4,
+    "field": "price",
+    "value": "9223372036854775807"
+  },
+  "notes": [
+    "expected_input_records and expected_requests count what was accepted before the failure"
+  ]
+}

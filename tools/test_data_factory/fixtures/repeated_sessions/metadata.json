@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "BUY": 2,
+    "NONE": 0,
+    "SELL": 1
+  },
+  "format_version": 1,
+  "item_ids": {
+    "A": 17,
+    "B": 34
+  },
+  "packets_per_session": 100,
+  "price_unit": "unsigned 16-bit wire integer; no currency scaling",
+  "scenario": "repeated_sessions",
+  "seed": 42,
+  "sessions": 2,
+  "settings": {
+    "reset": "index 0, same model instance",
+    "session_0": "crossings",
+    "session_1": "constant",
+    "slots": "alternate"
+  },
+  "sha256": {
+    "fixture.jsonl": "c1c3def8227180359bb117723fd6490e58b8522d88e6b8ddc4c79b59b24f4774",
+    "requests-session-0.csv": "e5d10aa1f30133871f3ccc9d6abe8f5eef3a5c2379478fc00704f79621433f85",
+    "requests-session-1.csv": "09a2a134e8f5bb9bb0dab6c6287a7e6ddc8af1ed8a52a8c7bc7bcb80ecffe633"
+  },
+  "window_size": 16
+}

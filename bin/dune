@@ -1,0 +1,4 @@
+(executable
+ (name stream)
+ (public_name tickweave-stream)
+ (libraries tickweave unix))

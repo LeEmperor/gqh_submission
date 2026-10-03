@@ -1,0 +1,30 @@
+{
+  "name": "04_unrelated_symbol_interleaved",
+  "kind": "valid_session",
+  "description": "Unrelated symbols (GOOG, TSLA, aapl, MSFT.X, NVDA) appear between relevant updates and never supply a price.",
+  "generator": {
+    "tool": "databento_audit generate",
+    "seed": 42,
+    "pairs": null,
+    "rng": "splitmix64 seeded with seed xor fnv1a64(name)"
+  },
+  "symbol_a": "AAPL",
+  "item_a": 17,
+  "symbol_b": "MSFT",
+  "item_b": 34,
+  "quantum_nanos": "10000000",
+  "max_line_bytes": 65536,
+  "slot_order": "alternating",
+  "files": {
+    "trades": "trades.csv",
+    "expected_requests": "expected_requests.csv"
+  },
+  "expected_valid": true,
+  "expected_input_records": 80,
+  "expected_requests": 15,
+  "expected_incomplete_symbols": [],
+  "expected_error": null,
+  "notes": [
+    "symbol matching is exact and case-sensitive: aapl and MSFT.X are unrelated"
+  ]
+}
