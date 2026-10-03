@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module name="top" Register="4" Lut="5" T_Register="4(4)" T_Lut="5(5)">
+ <SubModule name="pll_inst"/>
+</Module>
