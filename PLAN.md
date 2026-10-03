@@ -8,6 +8,13 @@ Implement the organizer's fixed algorithm entirely on the **Tang Nano 20K**, in
 **Hardcaml**, then minimize **total synthesized LUTs** and **measured UART
 round-trip latency** while preserving reliable correctness.
 
+**Clocking decision (October 3): PLL use is permitted.** We can multiply the
+board's 27 MHz reference to run the internal logic faster. Treat core frequency
+as an optimization variable alongside LUT count and cycle schedule; select the
+final frequency using timing closure and board measurements. The external UART
+remains at 115200 baud, with its divisors and idle-gap counters adjusted to the
+selected core clock. See [the clocking plan](#clocking-decision-configurable-frequency-one-processing-domain).
+
 The critical path is:
 
 > Official fixtures + working build → reliable UART → correct complete engine
@@ -359,6 +366,46 @@ fastest setting that passed once.
 
 Each gate needs saved evidence before it is called complete. These are the
 ordered milestones; independent software and transport work can overlap.
+
+**Implementation-agent rules (user clarification, October 3):** no mutative Git
+operations, including staging, committing, pushing, switching/resetting/restoring,
+stashing, merging/rebasing, fetching/pulling, or modifying branches/worktrees/Git
+configuration. Read-only Git inspection and task-scoped source/RTL edits are
+allowed; preserve existing staged and unstaged work. Do not mark a phase or gate
+complete until its required manual synthesis/P&R, bitstream generation,
+programming and applicable board tests have actually been performed by the user
+and passing results supplied for the delivered candidate. Finish local work and
+give exact manual instructions first; record **locally verified — awaiting manual
+checks** while those checks are pending. Historical evidence only covers the
+build and behavior it actually tested. See REQUEST_RESPONSE_PLAN.md §2 and the
+individual phase's manual-acceptance checklist for the detailed policy.
+
+**Phase C (October 3): COMPLETE.**
+The TX audit retained the existing implementation and production direct 27 MHz
+configuration. Added an independent all-byte, 15-configuration timing/boundary
+suite; build, focused tests, full regressions and generated-Verilog checks pass.
+Transport RTL is byte-identical to the pre-task file. See
+[`results/phase-c-20261003-candidate1/HANDOFF.md`](results/phase-c-20261003-candidate1/HANDOFF.md)
+for the original source/RTL identity and manual checklist. Synthesis/P&R,
+timing review, bitstream generation/programming, startup/reset/TX-idle checks
+and both 100-request transport checks now have passing evidence or user
+confirmation. See REQUEST_RESPONSE_PLAN.md §11 for the closing record.
+
+October 3 follow-up: after the user reported programming a fresh bitstream,
+both custom 100-request transport checks were run on the identified Sipeed
+serial interface and passed (zero mismatches/timeouts/surplus bytes; exit 0).
+New outputs are in
+`results/phase-c-20261003-candidate1/board-tests-20261003T174429.688210Z/`.
+The user confirmed the programmed bitstream was built from the delivered artifacts.
+
+October 3 clarification: the user waived bitstream hashes and report archival
+for this early Phase C delivery. Current Gowin P&R/timing outputs were reviewed
+in place: the delivered RTL is the project input, 27 MHz setup/hold timing has
+zero violations (worst slacks +31.839 ns / +0.425 ns), and P&R/bitstream generation
+completed. PR1014 is recorded as a clock-routing caveat; the report still lists
+PRIMARY clock distribution. The user subsequently confirmed startup/reset/TX-idle
+checks and explicitly requested Phase C closure. Final acceptance is checked;
+no Phase C work remains. This validates diagnostic transport, not algorithm PASS.
 
 | Gate | Work | Exit evidence |
 | --- | --- | --- |

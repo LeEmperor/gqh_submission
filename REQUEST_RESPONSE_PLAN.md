@@ -1,7 +1,8 @@
 # FPGA Request–Response Architecture and Implementation Plan
 
-Status: packages A–E implemented and locally verified; transport board checks
-and algorithm packages F–G remain pending. PLL package P is planned, not
+Status: packages A–E implemented and locally verified; custom transport board
+checks pass. Algorithm packages F–G and synthesis/timing evidence remain pending.
+PLL package P is planned, not
 implemented or validated. Updated: October 3, 2026.
 
 ## 1. Purpose and authority
@@ -45,8 +46,56 @@ subdirectories under `src/`, board reset/heartbeat/top, a history-memory probe,
 - Preserve the six board ports, official CST, bring-up target, and memory probe.
 - Keep organizer test scripts pristine; put custom checks in separate files.
 - Do not claim Gowin mapping, timing closure, or board success from simulation.
-- Do not commit, push, program hardware, or automate the IDE unless separately
+- **No mutative Git operations.** Implementation agents may edit task-scoped
+  files and generate RTL, but must not change Git's index, refs, configuration,
+  repository topology or stored history. Do not run `git add`, `commit`, `push`,
+  `reset`, `restore`, `checkout`, `switch`, `clean`, `stash`, `merge`, `rebase`,
+  `cherry-pick`, `fetch`, `pull`, branch/tag mutation, worktree mutation or
+  `git config` writes. Read-only inspection (`status`, `diff`, `log`, `show`,
+  `rev-parse`, etc.) is allowed; use `GIT_OPTIONAL_LOCKS=0` where appropriate.
+  Preserve pre-existing staged and unstaged changes. Do not stage your own work.
+  Any exception requires explicit user authorization for that operation.
+- The user performs manual Gowin synthesis/P&R, bitstream generation, programming
+  and board-test runs. Prepare the complete local deliverable and exact handoff
+  first. Do not operate the IDE, programmer or serial device unless separately
   requested. Generated RTL and local reversible implementation work are in scope.
+
+### Phase completion policy — required for every implementation agent
+
+User clarification, October 3: **do not mark a phase COMPLETE until all required
+manual checks have actually been performed by the user and their passing
+results have been reported or supplied as artifacts.** Giving the user commands
+does not count as running them. Local tests do not substitute for board checks.
+
+Use distinct statuses:
+
+- **In progress:** implementation or required local verification remains.
+- **Locally verified — awaiting manual checks:** implementation, relevant local
+  tests and RTL generation are finished; enumerate the remaining user actions.
+- **Complete:** all required local and manual checks pass for the delivered
+  version, and the evidence and its scope are recorded.
+
+Before the handoff, list the phase's concrete required manual checks, using its
+acceptance criteria and the applicable Gowin/board handoff. Hardware-affecting
+phases require synthesis/P&R and timing review, bitstream generation, programming,
+and the relevant board tests. Pure type/documentation work may have no hardware
+checks; record that explicitly instead of inventing unrelated tests.
+
+Record the delivered source state (including any dirty diff), generated RTL hash,
+programmed bitstream identity/hash, tool/configuration details, manual commands
+and reported results when collecting new hardware evidence. No Git commit is
+needed to identify a candidate. Existing reports remain historical evidence;
+reuse them only when their build identity and test coverage establish that they
+apply to the delivered version. A new TX/clock/reset change requires renewed
+affected hardware checks. Do not silently erase earlier results or reopen
+unrelated completed phases.
+
+Never add a `COMPLETE` heading, tick an overall completion box, or describe a
+phase as finished while manual checks remain. A checked **locally verified**
+box records only that narrower status. Complete all authorized local work before
+handing off; it is appropriate to end the turn with the manual checks pending.
+Ask for the actual results when ready, not for permission to perform ordinary
+implementation. User silence or elapsed time is not a passing result.
 
 ## 3. Frozen external behavior
 
@@ -253,7 +302,12 @@ Each assignment should tell an agent to read this document and PLAN.md, implemen
 only its package, run its focused checks, and report remaining limitations.
 Do not treat a package handoff as permission to implement all later packages.
 
-### A — Freeze contracts and test layout
+### Phase A — Freeze contracts and test layout — COMPLETE
+
+**Status: complete.** Typed payloads and protocol constants are implemented in
+`src/protocol/types.ml`; handshake names and fault/receive-enable ownership are
+established. Test layout and explicit module ownership are in place. Build and
+existing regressions pass; see the evidence in §11.
 
 **Depends on:** existing scaffold. **Owns:** `src/protocol/types.ml`, shared test
 helpers/layout, minimal shared Dune changes, contract clarifications here.
@@ -266,7 +320,13 @@ explicitly assign modules so Dune does not claim the same module twice.
 **Acceptance:** existing build/tests pass; later agents can implement against
 the types without guessing payload widths or handshake semantics.
 
-### B — UART receiver
+### Phase B — UART receiver — COMPLETE
+
+**Status: complete.** `src/uart/rx.ml` implements start-edge timing, start/stop
+validation and one-cycle byte/error events. Independent local checks cover all
+256 bytes, back-to-back frames, tested baud mismatch, false starts, framing
+errors, long low input and reset. The board transport also passed both
+100-request checks on October 3; see §11 for coverage and results.
 
 **Depends on:** A. **Owns:** `src/uart/rx.ml`, `test/uart/rx/`.
 
@@ -278,9 +338,24 @@ start phase, nominal and modest positive/negative baud mismatch, false starts,
 invalid stop, long low input, reset mid-frame, and exactly one valid pulse per
 good byte. State the tested mismatch range; do not claim universal tolerance.
 
-### C — UART transmitter
+### Phase C — UART transmitter — COMPLETE
 
-**Depends on:** A. **Owns:** `src/uart/tx.ml`, `test/uart/tx/`.
+**Status: complete (October 3, 2026).** The user confirmed startup/reset/TX-idle
+checks and explicitly requested closure. Local tests, matching-artifact Gowin
+synthesis/P&R and timing review, programming and both 100-request transport
+checks passed. The user waived bitstream-hash and report-archival requirements
+for this early delivery. See the closing evidence in §11.
+
+October 3 focused audit
+found no TX implementation defect; retained the existing hardware and added an
+independent boundary suite. Current candidate and local evidence are recorded
+in §11 and `results/phase-c-20261003-candidate1/HANDOFF.md`.
+Final acceptance is supported by this candidate's checks and user confirmation;
+the earlier transport board runs remain historical evidence.
+
+**Depends on:** A. **Owns:** `src/uart/tx.ml` and its tests. Existing TX tests live
+in `test/transport/transport_tests.ml`; extend that suite or add an explicitly
+owned `test/uart/tx/` suite without duplicate Dune module ownership.
 
 Implement latched input, ready/busy, full bit periods, and build-time idle gap.
 Test with an independent serial decoder/timing checker.
@@ -289,7 +364,32 @@ Test with an independent serial decoder/timing checker.
 acceptance, valid held through stalls, consecutive transfers, zero/nonzero gap,
 idle high, and reset during transmission. No shortened first start bit.
 
-### D — Request decoder and response sequencer
+**Required manual acceptance:** after local verification, hand off the generated
+transport RTL and exact Gowin inputs. The user must synthesize/P&R for the stated
+part, review relevant clock/timing reports, generate and identify the `.fs`,
+program that build, and check startup/reset plus TX returning to idle. Then run
+both custom transport checks against the programmed candidate:
+
+```sh
+python3 tools/check_transport.py PORT --count 100
+python3 tools/check_transport.py PORT --count 100 --byte-pause 0.005
+```
+
+Require 100/100 matching responses and no timeouts or surplus bytes in each run.
+Use the actual selected serial port; the earlier `/dev/ttyUSB1` is historical,
+not a guaranteed current device. Save outputs and build/report identity in a
+fresh results directory. Document and perform any additional board checks needed
+for timing/gap/reset behavior changed by this delivery. Exact bit-duration and
+handshake coverage also comes from the independent local checker; a host round
+trip alone does not prove every waveform property.
+
+The diagnostic target returns NONE actions. Official algorithm quick/robust
+PASS is not required to close this TX-only phase and must not be claimed from
+its custom tests. Leave the phase **locally verified — awaiting manual checks**
+until the user supplies the required matching-build results. See §2 for the
+completion rule and the prohibition on mutative Git operations.
+
+### Phase D — Request decoder and response sequencer
 
 **Depends on:** A; can use byte-level mocks before B/C finish.
 **Owns:** decoder/sequencer modules and `test/protocol/` suites for those blocks.
@@ -302,7 +402,7 @@ inter-byte pauses, byte 7 included correctly, no request after seven bytes,
 stable stalled requests/responses, exactly eight accepted TX bytes, reserved
 zeros, final-frame completion, partial-frame abort, and busy-input fault.
 
-### E — Transport integration and manual board handoff
+### Phase E — Transport integration and manual board handoff
 
 **Depends on:** B, C, D. **Owns:** transport board top, a clearly named transport
 harness, generator integration, custom host transport check, integration tests,
@@ -321,7 +421,7 @@ a custom host check that fails on mismatches/timeouts. Do not call placeholder
 responses an official quick/robust algorithm PASS. Board testing is pending the
 user's run, not a reason to leave local integration unfinished.
 
-### F — Independent oracle and engine
+### Phase F — Independent oracle and engine
 
 **Depends on:** A and finalized engine command contract. May proceed independently
 of transport. **Owns:** `src/engine/`, `test/engine/`, custom algorithm fixtures.
@@ -334,7 +434,7 @@ equality and truncation boundaries, zero/max prices, distinct item histories,
 slot swaps, repeated index-0 sessions including warm-up swaps, exact-once
 updates under result stalls, and reset/session clear. Account for memory latency.
 
-### G — Full transaction controller and competition integration
+### Phase G — Full transaction controller and competition integration
 
 **Depends on:** D, E, F. **Owns:** production transaction controller, competition
 board top, generator integration, end-to-end tests, and final usage documentation.
@@ -349,7 +449,7 @@ swapped slots, full-range prices, repeated sessions, warm-up responses, no early
 TX, correct response count, and reset. Locally elaborate emitted RTL and preserve
 transport regressions. Then hand off official board-test commands to the user.
 
-### H — Measured optimization, only after a correct baseline
+### Phase H — Measured optimization, only after a correct baseline
 
 **Depends on:** G and saved correctness/resource/latency evidence.
 
@@ -363,7 +463,7 @@ whole-top LUTs, not Fmax or initiation interval alone. Preserve a known-good
 baseline and report actual synthesis LUTs plus complete measured latency results.
 Bit/nibble-level UART outputs are not part of packages A–G.
 
-### P — Optional board clock configuration and PLL validation
+### Phase P — Optional board clock configuration and PLL validation
 
 **Depends on:** A–E transport foundation (locally complete). May proceed alongside
 F without changing its functional contract. **Owns:** agreed clock configuration,
@@ -373,13 +473,13 @@ generator/constraints/handoff changes coordinated with the integration owner.
 This is a new package, not a reason to reopen completed A–E functionality or
 delay the complete 27 MHz F/G baseline. Implement in two reviewable steps:
 
-1. **P1: configuration seam.** Separate reference/core frequency; derive UART,
+1. **Phase P1: configuration seam.** Separate reference/core frequency; derive UART,
    heartbeat and gap settings from actual core frequency, with rounding and
    width checks. Keep gap configuration in physical time at the build boundary.
    Preserve direct-clock target behavior and tests. One configuration must drive
    both RTL timing and the associated clock constraints; reject inconsistent
    PLL-frequency/divisor combinations. No PLL implementation required for P1.
-2. **P2: optional PLL target.** Generate/select exact-device Gowin PLL IP and
+2. **Phase P2: optional PLL target.** Generate/select exact-device Gowin PLL IP and
    preserve its sources/configuration in the repo. Add a separate PLL transport
    target with an explicit source manifest, leaving existing targets intact.
    Keep all functional logic in one core domain. Implement reset during unlock,
@@ -431,6 +531,10 @@ Every handoff must include changed files, interfaces implemented, exact commands
 run, outcomes, assumptions, pending hardware checks, and the next eligible task.
 Update the checklist below only with evidence; distinguish local completion
 from board validation. Do not mark another agent's package complete by inference.
+Apply the §2 completion policy: explicitly say which manual checks are pending,
+provide runnable user instructions, and wait for reported results before changing
+the overall phase status to complete. Do not perform mutative Git operations as
+part of preparing, recording or delivering a handoff.
 
 ## 9. Cut-through policy and expected benefit
 
@@ -489,9 +593,11 @@ alone do not establish success; full robust success requires 84/84 packets,
 - [x] A: contracts and test layout frozen; existing regressions pass.
 - [x] B: UART RX locally verified.
 - [x] C: UART TX locally verified.
+- [x] C final acceptance: matching-build synthesis/timing, bitstream/programming,
+  startup/reset and required custom board checks recorded for the Phase C delivery.
 - [x] D: decoder/sequencer locally verified.
 - [x] E: transport integrated and emitted RTL locally checked.
-- [ ] E board follow-up: repeated custom transport checks pass on hardware.
+- [x] E board follow-up: repeated custom transport checks pass on hardware.
 - [ ] F: engine and independent oracle locally verified.
 - [ ] G: complete serial system locally verified and RTL generated.
 - [ ] G board follow-up: official tests and custom session/boundary tests pass.
@@ -519,16 +625,98 @@ checks cover zero/nonzero gap and latched data. Byte mocks cover packet fields,
 stalls, fault lockout and final drain. Serial integration covers repeated
 transactions and swapped slots; production-divisor emitted RTL passes Icarus
 serial/reset/fault simulation and Yosys hierarchy/process/check. See
-`test/transport/README.md` for full scope. Custom host fixture/CLI checks pass;
-`tools/check_transport.py` has not been run against hardware. Official scripts
-and constraints remain pristine. No synthesis/P&R/board claims are made.
+`test/transport/README.md` for full scope. Custom host fixture/CLI checks pass.
+Official scripts and constraints remain pristine. Local checks do not establish
+Gowin resource mapping or timing closure.
+
+October 3 board follow-up: user programmed a fresh transport bitstream; both
+custom checker runs on `/dev/ttyUSB1` exited successfully:
+
+| Command | Responses | Mismatches/timeouts | Mean round trip | Maximum |
+| --- | --- | --- | --- | --- |
+| `python3 tools/check_transport.py /dev/ttyUSB1 --count 100` | 100/100 | 0 | 16.961 ms | 17.698 ms |
+| `python3 tools/check_transport.py /dev/ttyUSB1 --count 100 --byte-pause 0.005` | 100/100 | 0 | 50.957 ms | 51.758 ms |
+
+These runs support the A/B completion checks and establish the basic E board
+transport follow-up, including legal inter-byte pauses. They check diagnostic
+NONE-action responses only. The paused-run time includes host-inserted pauses.
+Exact programmed bitstream identity and Gowin synthesis/P&R reports were not
+captured in these runs; baseline resource/timing evidence remains pending.
 
 Next eligible package: **F**, then **G** once the engine is independently
-verified. The NONE-action transport is diagnostic only. Manual transport board
-follow-up can proceed independently using `gowin/README.md` and the custom host
-checker; it does not establish an official algorithm PASS.
+verified. The NONE-action transport is diagnostic only. Further manual board
+checks can use `gowin/README.md` and the custom host checker; transport success
+does not establish an official algorithm PASS.
 
 October 3 clocking amendment: **P1/P2** may also be assigned to a separate owner
 with coordinated shared-file edits. Keep F/G progressing at 27 MHz. Frequencies,
 PLL support and pipeline experiments described here are planned options, not
 changes already made to the current direct-clock implementation.
+
+Phase C candidate, October 3: **Locally verified — awaiting manual checks.**
+Added `test/transport/tx_boundary_tests.ml` with explicit Dune ownership;
+preserved the existing TX implementation and all earlier tests. All 256 bytes
+pass an independent every-clock waveform/ready/busy oracle at 15 timing settings,
+including divisors 1/2/3, 7/8/9 and 234, zero/one-cycle and counter-width-boundary
+gaps. Checks cover changing data after acceptance, busy-time offers, held valid
+across completion, idle without valid, reset at both ends of each bit/gap,
+held reset with valid, immediate post-reset acceptance and invalid parameters.
+`dune build`, `dune build @test/transport/runtest`, transport generation and
+`dune runtest --force` passed in switch `5.2.0+ox`, including fresh Yosys/Icarus
+checks for transport, bringup and history RTL. No unrelated failures found.
+
+Delivered RTL: `rtl/gqh_transport_top.v`, SHA-256
+`62cc2f314102c4d13860df1d27f187b5fe6aadfd916459890fae4e228ffd7090`;
+byte-identical to the pre-task RTL. Direct 27 MHz, 234 clocks/bit, zero extra gap;
+no PLL changes. Source-state snapshots, prior dirty plan patches and local logs
+are in `results/phase-c-20261003-candidate1/`. Manual synthesis/P&R and timing
+review, identified `.fs` generation/programming, startup/reset/TX idle and both
+100-request custom tests remain required for this candidate. Follow its handoff
+and return the actual reports and results before closing Phase C. Historical
+board results and unrelated completed-phase statuses remain unchanged.
+
+Phase C board-script follow-up, October 3: after the user reported programming
+a fresh bitstream and explicitly authorized agent serial access, both custom
+checks were run on the identified Sipeed USB Debugger interface
+`/dev/serial/by-id/usb-SIPEED_USB_Debugger_2025030317-if01-port0` (`/dev/ttyUSB1`).
+Normal: 100/100 responses, zero mismatches/timeouts, mean 16.965 ms, max 17.331 ms.
+With `--byte-pause 0.005`: 100/100 responses, zero mismatches/timeouts, mean
+50.877 ms, max 51.591 ms. Both exited 0 and detected no surplus bytes.
+No reset or input discard was performed by the runner. Commands, stdout/stderr,
+exit statuses, Python/pyserial details and current RTL/checker hashes are saved
+in `results/phase-c-20261003-candidate1/board-tests-20261003T174429.688210Z/`.
+These are diagnostic NONE-action transport passes, not an algorithm PASS.
+Status remains **Locally verified — awaiting manual checks**: the exact
+programmed `.fs` identity/hash, matching Gowin synthesis/P&R and timing review,
+and user startup/reset/TX-idle observations still need to be supplied.
+
+October 3 acceptance clarification: the user explicitly waived `.fs`/SHA
+retention and synthesis-report archival for this early Phase C step. Those
+record-keeping requirements are no longer blockers for this delivery; existing
+evidence is retained. The user confirms the programmed bitstream was built from
+the delivered artifacts and synthesis passed, with PR1014 as the sole IDE warning.
+Read-only review found the current Gowin V1.9.11.03 Education P&R/timing outputs
+in `viv25_proj/test_proj1/impl/pnr/` (October 3, 10:42:28). The project RTL
+matches the delivered RTL. P&R and bitstream generation completed; the timing
+report applies 27 MHz and shows zero setup/hold violations, worst setup slack
++31.839 ns and worst hold slack +0.425 ns. The P&R report lists `sys_clk_d`
+on PRIMARY routing and no dedicated GCLK input pin usage. PR1014 indicates
+generic routing in the clock route; it is recorded as a clock-routing caveat,
+not a demonstrated failure of this 27 MHz candidate. No routing/PLL changes
+were made. Recovery/removal tables have nothing to report; they do not prove
+asynchronous board-reset behavior. Manual startup/reset/TX-idle confirmation
+remains the final pending Phase C check. No additional serial runs are needed
+unless that check fails. Status remains **Locally verified — awaiting manual checks**.
+
+**Phase C closure, October 3, 2026: COMPLETE.** In response to the remaining
+startup/reset/TX-idle checklist, the user confirmed those checks and requested
+closure. The delivered candidate passed the independent local TX boundary suite,
+build/regressions and emitted-RTL checks; matching-artifact Gowin synthesis/P&R,
+27 MHz setup/hold timing and bitstream generation were reviewed; the user
+programmed the build; both custom board tests passed 100/100 with no mismatches,
+timeouts or surplus bytes. PR1014 remains a recorded clock-routing caveat for
+future clock work, with no timing failure in this build. Bitstream hashes and
+report archival were explicitly waived for this step. Earlier pending-status
+entries above describe the verification sequence and are superseded by this
+closure. No Phase C work remains. This establishes UART TX/diagnostic transport
+acceptance, not an official algorithm PASS, and does not change other phases.

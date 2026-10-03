@@ -2,6 +2,10 @@
  (name transport_tests)
  (modules transport_tests)
  (libraries core hardcaml hardcaml_gqh))
+(test
+ (name tx_boundary_tests)
+ (modules tx_boundary_tests)
+ (libraries core hardcaml hardcaml_gqh))
 (rule
  (alias runtest)
  (deps check_transport_rtl.py transport_tb.v ../../bin/generate.exe ../../rtl/gqh_transport_top.v)

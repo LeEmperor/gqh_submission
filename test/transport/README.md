@@ -11,6 +11,20 @@ checks; its Dune executable has an explicit module owner (`transport_tests`).
 The existing foundation executable stays in `test/`. No networking checkout
 is needed to build or test.
 
+Phase C also has a focused executable, `tx_boundary_tests.ml`, explicitly owned
+by `(modules tx_boundary_tests)` in the same Dune file. Run it alone with
+`opam exec --switch=5.2.0+ox -- dune exec test/transport/tx_boundary_tests.exe`.
+It checks all 256 bytes at each of these `(clocks_per_bit, extra_idle_cycles)`
+settings: `(1,0)`, `(1,1)`, `(1,2)`, `(2,0)`, `(2,1)`, `(3,3)`, `(7,0)`,
+`(7,13)`, `(8,7)`, `(8,8)`, `(8,9)`, `(9,0)`, `(9,16)`, `(234,0)`, `(234,256)`.
+The independent clock-by-clock oracle checks all ten bit durations and the
+exact gap, latched data under continuously changing inputs, held/pulsed valid
+under backpressure, first-ready-edge acceptance, no deferred busy-time offers,
+extended idle, reset at both ends of every bit/gap, valid asserted during held
+reset, and immediate post-reset acceptance. Invalid zero/negative bit periods
+and negative gaps must fail elaboration. The production board remains at
+234 clocks/bit with zero extra gap; these parameter variants are local tests.
+
 - RX uses an independent waveform source: all 256 bytes back-to-back at 100
   clocks/bit; start phases with 98–102 clocks/bit (about ±2% period mismatch);
   short false start, invalid stop, long break, and reset mid-frame. Valid is a
