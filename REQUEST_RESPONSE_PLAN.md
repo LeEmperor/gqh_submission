@@ -389,10 +389,24 @@ its custom tests. Leave the phase **locally verified — awaiting manual checks*
 until the user supplies the required matching-build results. See §2 for the
 completion rule and the prohibition on mutative Git operations.
 
-### Phase D — Request decoder and response sequencer
+### Phase D — Request decoder and response sequencer — COMPLETE
 
 **Depends on:** A; can use byte-level mocks before B/C finish.
 **Owns:** decoder/sequencer modules and `test/protocol/` suites for those blocks.
+Original Phase D checks remain active in `test/transport/transport_tests.ml`;
+the dedicated suite adds boundary scenarios without duplicating Dune ownership.
+
+**Status: complete.** Local verification and applicable matching-build hardware
+evidence are recorded in the October 3 Phase D closure below. Focused command:
+
+```sh
+opam exec --switch=5.2.0+ox -- dune build @test/protocol/runtest
+```
+
+Also run `dune build @test/transport/runtest` in the same switch for the original
+block tests and serial/emitted-RTL integration. See
+[test/protocol/README.md](test/protocol/README.md) for ownership, reference testing
+conventions, and precise pre-edge/post-edge sampling semantics.
 
 Implement complete-request assembly, held payloads, response ordering, TX
 backpressure handling, completion events, and the stated decoder fault policy.
@@ -401,6 +415,17 @@ backpressure handling, completion events, and the stated decoder fault policy.
 inter-byte pauses, byte 7 included correctly, no request after seven bytes,
 stable stalled requests/responses, exactly eight accepted TX bytes, reserved
 zeros, final-frame completion, partial-frame abort, and busy-input fault.
+Additional focused coverage: a second response held valid through Send/Drain;
+exact acceptance/byte/completion counts under deterministic generated stalls;
+reset at every partial/held request position, every sending byte and final drain;
+fresh successful transfers after reset; and fault/acceptance collisions.
+
+Collision policy: a framing error suppresses a held request before acceptance
+and wins over final-byte publication. An unexpected byte on a held request's
+acceptance edge does not overwrite its payload: the published request transfers,
+then fault lockout blocks future reception. With ready low, no transfer occurs.
+Tests exercise both ready values, sticky lockout and reset recovery. These
+verification additions preserve the existing RTL behavior.
 
 ### Phase E — Transport integration and manual board handoff
 
@@ -595,7 +620,8 @@ alone do not establish success; full robust success requires 84/84 packets,
 - [x] C: UART TX locally verified.
 - [x] C final acceptance: matching-build synthesis/timing, bitstream/programming,
   startup/reset and required custom board checks recorded for the Phase C delivery.
-- [x] D: decoder/sequencer locally verified.
+- [x] D: decoder/sequencer complete; local boundary coverage and unchanged-build
+  transport hardware acceptance recorded in the October 3 closure.
 - [x] E: transport integrated and emitted RTL locally checked.
 - [x] E board follow-up: repeated custom transport checks pass on hardware.
 - [ ] F: engine and independent oracle locally verified.
@@ -720,3 +746,42 @@ report archival were explicitly waived for this step. Earlier pending-status
 entries above describe the verification sequence and are superseded by this
 closure. No Phase C work remains. This establishes UART TX/diagnostic transport
 acceptance, not an official algorithm PASS, and does not change other phases.
+
+
+**Phase D closure, October 3, 2026: COMPLETE.** The user authorized closure
+against the existing matching-build transport evidence after the focused
+verification additions. No decoder, sequencer, UART, clock/reset, board-top or
+RTL changes were made in this Phase D follow-up. The current transport RTL
+SHA-256 was checked and remains
+`62cc2f314102c4d13860df1d27f187b5fe6aadfd916459890fae4e228ffd7090`, matching
+the Phase C delivered and programmed candidate. The source changes for this
+follow-up are the new `test/protocol/` suite, its documentation, the transport
+verification README and this plan; the existing untracked Phase C evidence is
+preserved. No Git index, refs or history were changed.
+
+Local acceptance: the original decoder/sequencer tests and the new six
+unit/property tests plus two golden tests pass. Coverage includes all packet
+fields/byte positions, legal pauses, stable stalled payloads, byte-7 publication,
+response order/zeros, second-response backpressure, final-frame drain,
+reset at every partial/held request position and sending byte/final drain,
+fault/acceptance collisions and reset recovery. The deterministic property runs
+100 payload/stall trials. `dune build`, `dune runtest --force` and
+`dune build @test/protocol/runtest` passed in switch `5.2.0+ox`; full regressions
+include independent UART checks and Icarus/Yosys transport, bringup and history
+RTL verification. See `test/protocol/README.md` for exact scope and commands.
+
+Hardware acceptance reuses the unchanged transport candidate's recorded Phase C
+closure: matching-artifact Gowin synthesis/P&R and bitstream generation,
+27 MHz timing with zero setup/hold violations, user-confirmed programming and
+startup/reset/TX-idle checks, and both custom transport runs passing 100/100
+with zero mismatches/timeouts or surplus bytes. The byte-paused run establishes
+legal inter-byte-pause behavior. Saved custom-run artifacts are in
+`results/phase-c-20261003-candidate1/board-tests-20261003T174429.688210Z/`.
+This is reuse of that candidate's accepted evidence, not a new board run or a
+claim that host checks exercise internal stalls/fault collisions; those boundary
+properties are established by local simulation. The accepted candidate retains
+its recorded PR1014 clock-routing caveat and the user's existing record-keeping
+waiver. No additional synthesis, flashing or manual checks are required for
+this verification-only follow-up. No Phase D work remains; this closes protocol
+transport acceptance only and does not establish an algorithm PASS or change
+other phases. F, followed by G, remains the algorithm implementation path.

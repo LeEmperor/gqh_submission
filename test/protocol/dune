@@ -1,0 +1,8 @@
+(library
+ (name protocol_verification)
+ (modules protocol_testbench protocol_unit_quickcheck_tests protocol_expect_tests)
+ ; ppx_expect v0.18~preview needs the runner's copied-source directory.
+ ; See hardcaml_networking/test/test_architecture.md.
+ (inline_tests (flags (:standard -source-tree-root .)))
+ (libraries core hardcaml hardcaml_gqh)
+ (preprocess (pps ppx_jane)))

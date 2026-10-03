@@ -26,3 +26,4 @@ gowin/**/*.bak
 gowin/**/*.log
 # Generated rtl/*.v and all constraints are intentional deliverables.
 impl/
+results/

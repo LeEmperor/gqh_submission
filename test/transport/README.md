@@ -6,7 +6,12 @@ Run the focused package A–E suite from the project root:
 opam exec --switch=5.2.0+ox -- dune build @test/transport/runtest
 ```
 
-`transport_tests.ml` owns the block and reduced-divider serial integration
+Phase D's additional focused handshake/reset/collision suite lives in
+`test/protocol/`; run `dune build @test/protocol/runtest` in the same switch.
+See [its verification notes](../protocol/README.md) for coverage and sampling.
+The original decoder/sequencer checks here remain active.
+
+`transport_tests.ml` owns the original block and reduced-divider serial integration
 checks; its Dune executable has an explicit module owner (`transport_tests`).
 The existing foundation executable stays in `test/`. No networking checkout
 is needed to build or test.
