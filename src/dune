@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+(library
+ (name hardcaml_gqh)
+ (public_name hardcaml_gqh)
+ (libraries core hardcaml)
+ (preprocess (pps ppx_hardcaml ppx_jane)))

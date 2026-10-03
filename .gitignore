@@ -1,0 +1,28 @@
+# Dune / OCaml
+_build/
+_opam/
+*.merlin
+*.cmi
+*.cmo
+*.cmx
+*.cmxa
+*.cma
+*.o
+# Python and editors
+__pycache__/
+*.py[cod]
+.venv/
+.vscode/
+.idea/
+*~
+*.swp
+.DS_Store
+# Transient IDE build directories. Keep selected reports under results/ and
+# the selected final .fs under bitstream/; neither is blanket ignored.
+gowin/**/impl/
+gowin/**/temp/
+gowin/**/tmp/
+gowin/**/*.bak
+gowin/**/*.log
+# Generated rtl/*.v and all constraints are intentional deliverables.
+impl/

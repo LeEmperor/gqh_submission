@@ -1,0 +1,15 @@
+(lang dune 3.17)
+(name hardcaml_gqh)
+(generate_opam_files true)
+(package
+ (name hardcaml_gqh)
+ (synopsis "Tang Nano 20K Hardcaml hardware-track project")
+ (depends
+  (ocaml (= 5.2.0+ox))
+  (dune (>= 3.17))
+  (core (= v0.18~preview.130.106+341))
+  (core_unix (= v0.18~preview.130.106+341))
+  (hardcaml (= v0.18~preview.130.106+341))
+  (ppx_hardcaml (= v0.18~preview.130.106+341))
+  (ppx_jane (= v0.18~preview.130.106+341))
+  (jane_rope (= v0.18~preview.130.106+341))))
