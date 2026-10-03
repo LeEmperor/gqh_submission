@@ -1,0 +1,268 @@
+"""Self-contained Phase F oracle, Cyclesim and emitted-RTL verification."""
+from pathlib import Path
+import collections
+import hashlib
+import json
+import random
+import struct
+import subprocess
+import sys
+import tempfile
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE / 'oracle'))
+from model import ReferenceModel, decode_request, encode_request, ITEM_A, ITEM_B
+
+
+def run(args):
+    subprocess.run([str(a) for a in args], check=True)
+
+
+class Trace:
+    """Test-only packet adapter and edge scoreboard. Arithmetic uses direct windows.
+
+    Public command acceptance drives the scoreboard, while published actions are
+    supplied by the unchanged independent packet oracle. No rolling-sum oracle.
+    """
+    def __init__(self, path):
+        self.file = path.open('w')
+        self.rng = random.Random(0xF20261003)
+        self.ram = [65535 - a for a in range(32)]
+        self.state = 0
+        self.pending = None
+        self.clear_scalars()
+        self.edges = 0
+        self.counts = collections.Counter()
+        self.pointer = 0
+
+    def clear_scalars(self):
+        self.windows = [[], []]
+        self.held = [0, 0]
+        self.output_action = 0
+
+    def noise(self):
+        return dict(item=self.rng.randrange(2), price=self.rng.randrange(65536),
+                    pos=self.rng.randrange(16), warm=self.rng.randrange(2))
+
+    def outputs(self, reset, clear):
+        return [int(self.state == 0 and not reset and not clear),
+                int(self.state == 3 and not reset), self.output_action]
+
+    def step(self, reset=0, clear=0, valid=0, ready=0, item=0, price=0,
+             pos=0, warm=0, answer=0):
+        inputs = [reset, clear, valid, ready, item, price, pos, warm]
+        before = self.outputs(reset, clear)
+        if reset:
+            self.counts[f'reset_state_{self.state}'] += 1
+            self.clear_scalars()
+            self.state = 0
+            self.pending = None
+        elif self.state == 0:
+            if clear:
+                self.counts['session_clear'] += 1
+                self.counts['clear_valid_collision'] += bool(valid)
+                self.clear_scalars()
+            elif valid:
+                self.pending = (item, price, pos, warm, answer)
+                self.state = 1
+                self.counts['accepted'] += 1
+        elif self.state == 1:
+            self.state = 2
+        elif self.state == 2:
+            item, price, pos, warm, answer = self.pending
+            old = self.windows[item]
+            if warm:
+                assert len(old) < 16
+                window = old + [price]
+            else:
+                assert len(old) == 16
+                old_average = sum(old) // 16
+                new_average = sum(old[1:] + [price]) // 16
+                self.counts['previous_equals_old_average'] += old[-1] == old_average
+                self.counts['price_equals_new_average'] += price == new_average
+                self.counts['truncated_average'] += bool(sum(old) % 16 or sum(old[1:] + [price]) % 16)
+                self.counts[f'held_{answer}'] += answer == self.held[item]
+                window = old[1:] + [price]
+            self.windows[item] = window
+            self.held[item] = answer
+            self.output_action = answer
+            self.ram[item * 16 + pos] = price
+            self.state = 3
+            self.counts['warmup' if warm else 'steady'] += 1
+            self.counts[f'action_{answer}'] += 1
+            self.counts['maximum_sum'] += sum(window) == 1048560
+            self.counts['zero_sum'] += sum(window) == 0
+        elif ready:
+            self.state = 0
+            self.counts['results_consumed'] += 1
+        else:
+            self.counts['result_stall_edges'] += 1
+        scalar = [sum(w) for w in self.windows]
+        scalar += [w[-1] if w else 0 for w in self.windows] + self.held
+        after = self.outputs(reset, clear)
+        self.file.write(' '.join(map(str, inputs + before + after + scalar + self.ram)) + '\n')
+        self.edges += 1
+
+    def command(self, item, price, pos, warm, answer, stall=None):
+        assert self.state == 0
+        for _ in range(self.rng.randrange(3)):
+            self.step(**self.noise(), ready=self.rng.randrange(2))
+        self.step(valid=1, ready=self.rng.randrange(2), item=item, price=price,
+                  pos=pos, warm=warm, answer=answer)
+        assert self.state == 1
+        # Change *every* captured field, and offer busy commands. Early ready
+        # must not cause a result to be consumed at its publication edge.
+        noise = dict(item=1-item, price=price ^ 65535, pos=pos ^ 15, warm=1-warm)
+        self.step(valid=1, ready=1, **noise)
+        assert self.state == 2
+        self.step(valid=1, ready=1, **noise)
+        assert self.state == 3
+        self.counts[f'latency_{"warm" if warm else "steady"}_2'] += 1
+        for _ in range(self.rng.randrange(12) if stall is None else stall):
+            self.step(valid=1, ready=0, **self.noise())
+        self.step(valid=1, ready=1, **noise)
+        assert self.state == 0
+
+    def packet(self, request, response):
+        index, id1, price1, id2, price2 = decode_request(request)
+        if index == 0:
+            self.pointer = 0
+            # Clear wins when valid is simultaneously asserted: no acceptance.
+            self.step(clear=1, valid=1, ready=1, **self.noise())
+            self.step()
+        assert self.pointer == index % 16
+        for item_id, price, answer in [(id1, price1, response[3]), (id2, price2, response[5])]:
+            self.command(int(item_id == ITEM_B), price, self.pointer, int(index < 16), answer)
+        self.pointer = (self.pointer + 1) % 16
+        self.counts['packets'] += 1
+        self.counts['warmup_swaps'] += index < 16 and id1 == ITEM_B
+        self.counts['wraps'] += self.pointer == 0
+
+
+def build_trace(path):
+    t = Trace(path)
+    t.step(reset=1, clear=1, valid=1, ready=1)
+    t.step(reset=1, valid=1)
+    t.step()
+    model = ReferenceModel()
+    supplied = 0
+    for folder in sorted((HERE / 'oracle/fixtures').iterdir()):
+        for line in (folder / 'fixture.jsonl').read_text().splitlines():
+            record = json.loads(line)
+            request = bytes.fromhex(record['request_hex'])
+            response = bytes.fromhex(record['expected_response_hex'])
+            assert model.respond(request) == response
+            t.packet(request, response)
+            supplied += 1
+    assert supplied == 800
+    # Six seeded streams with arbitrary warm-up swaps, 32 circular wraps each.
+    for seed in [0, 1, 42, 0x57214720, 0xFFFF, 20261003]:
+        rng = random.Random(seed)
+        for index in range(513):
+            bound = 65536 if seed % 2 else 128
+            a, b = rng.randrange(bound), rng.randrange(bound)
+            request = (encode_request(index, ITEM_B, b, ITEM_A, a) if rng.randrange(2)
+                       else encode_request(index, ITEM_A, a, ITEM_B, b))
+            t.packet(request, model.respond(request))
+    # Explicit equality/held crossings, maximum/zero sums, truncation changes.
+    directed = [
+        [(100, 200)]*16 + [(102,198),(103,197),(99,201),(98,202)]*24,
+        [(65535, 0)]*16 + [(65535,0),(0,65535),(1,65534),(65534,1)]*24,
+        [(100,100)]*15 + [(115,85)] + [(101,99),(100,100),(100,100)]*32,
+    ]
+    for prices in directed:
+        for index, (a, b) in enumerate(prices):
+            request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2 == 0
+                       else encode_request(index, ITEM_A, a, ITEM_B, b))
+            t.packet(request, model.respond(request))
+    # Reset at idle, after capture, after synchronous read/before commit, and
+    # with a pending committed result. Check all RAM words on every edge:
+    # a reset on the commit edge MUST suppress the write, even with valid high.
+    for target_state in range(4):
+        for item in range(2):
+            # Populate both histories and nonzero BUY/SELL before reset tests.
+            for index in range(35):
+                a, b = ((100, 200) if index < 16 else
+                        [(102,198),(103,197),(99,201),(98,202)][(index-16)%4])
+                request = encode_request(index, ITEM_A, a, ITEM_B, b)
+                t.packet(request, model.respond(request))
+            assert all(t.held) and all(sum(w) for w in t.windows)
+            if target_state:
+                response = model.respond(encode_request(35, ITEM_A, 0, ITEM_B, 65535))
+                t.step(valid=1, item=item, price=0 if item == 0 else 65535,
+                       pos=t.pointer, warm=0, answer=response[3 if item == 0 else 5])
+                if target_state >= 2:
+                    t.step(**t.noise())
+                if target_state >= 3:
+                    t.step(**t.noise())
+                    for _ in range(64):
+                        t.step(ready=0, valid=1, **t.noise())
+            assert t.state == target_state
+            t.step(reset=1, valid=1, ready=1, **t.noise())
+            t.step(reset=1, clear=1, valid=1, **t.noise())
+            t.step()
+            # Restart on the SAME engine, refill all words before first scored
+            # update. Deliberately retain stale physical RAM through reset.
+            for index in range(35):
+                request = encode_request(index, ITEM_B, 65000-index, ITEM_A, index*17)
+                t.packet(request, model.respond(request))
+    t.file.close()
+    for name in ['held_1', 'held_2', 'previous_equals_old_average',
+                 'price_equals_new_average', 'truncated_average', 'maximum_sum',
+                 'zero_sum', 'warmup_swaps', 'wraps', 'result_stall_edges']:
+        assert t.counts[name] > 0, name
+    for state in range(4):
+        assert t.counts[f'reset_state_{state}'] >= 2
+    summary = dict(sorted(t.counts.items()))
+    summary.update(supplied_fixture_records=supplied, edges=t.edges,
+                   extra_packet_records=t.counts['packets']-supplied,
+                   trace_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    print(json.dumps(summary, indent=2), flush=True)
+    return summary
+
+
+def main():
+    generator = Path(sys.argv[1]).resolve()
+    provenance = json.loads((HERE / 'oracle/SOURCE.json').read_text())
+    for entry in provenance['files']:
+        if entry['unchanged']:
+            copied = HERE / 'oracle' / entry['local_path']
+            assert hashlib.sha256(copied.read_bytes()).hexdigest() == entry['upstream_sha256'], copied
+    print('PASS: pinned unchanged oracle/factory/fixture source hashes', flush=True)
+    run([sys.executable, HERE / 'oracle/run_checks.py'])
+    with tempfile.TemporaryDirectory(prefix='phase-f-') as directory:
+        tmp = Path(directory)
+        trace = tmp / 'trace.txt'
+        summary = build_trace(trace)
+        run([generator, 'replay', trace])
+        rtl = tmp / 'engine.v'
+        run([generator, 'emit', rtl])
+        data = rtl.read_bytes()
+        run([generator, 'emit', rtl])
+        assert data == rtl.read_bytes(), 'nondeterministic engine RTL'
+        assert b'initial' not in data, 'unexpected hardware initialization'
+        assert b'reg [15:0] engine_history[0:31]' in data
+        net = tmp / 'net.json'
+        run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
+        ports = json.loads(net.read_text())['modules']['gqh_update_engine']['ports']
+        expected = {'clock':1, 'reset':1, 'session_clear':1, 'update_valid':1,
+                    'result_ready':1, 'update$item_select':1, 'update$price':16,
+                    'update$window_position':4, 'update$warmup':1,
+                    'update_ready':1, 'result_valid':1, 'action':2}
+        assert {k:len(v['bits']) for k,v in ports.items()} == expected
+        assert {k for k,v in ports.items() if v['direction']=='output'} == {'update_ready','result_valid','action'}
+        exe = tmp / 'engine_tb'
+        run(['iverilog', '-g2012', '-s', 'engine_tb', '-o', exe, rtl, HERE / 'engine_tb.v'])
+        run(['vvp', exe, f'+TRACE={trace}'])
+        print('RTL SHA256:', hashlib.sha256(data).hexdigest(), flush=True)
+        if len(sys.argv) == 3:
+            output = Path(sys.argv[2])
+            output.mkdir(parents=True, exist_ok=True)
+            (output / 'gqh_update_engine.v').write_bytes(data)
+            (output / 'coverage.json').write_text(json.dumps(summary, indent=2)+'\n')
+            (output / 'trace.sha256').write_text(summary['trace_sha256']+'\n')
+    print('PASS: Phase F independent oracle, Cyclesim, deterministic RTL, Yosys and Icarus')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,26 @@
+{
+  "actions": {
+    "BUY": 2,
+    "NONE": 0,
+    "SELL": 1
+  },
+  "format_version": 1,
+  "item_ids": {
+    "A": 17,
+    "B": 34
+  },
+  "packets_per_session": 100,
+  "price_unit": "unsigned 16-bit wire integer; no currency scaling",
+  "scenario": "random",
+  "seed": 42,
+  "sessions": 1,
+  "settings": {
+    "engine": "Python random.Random(seed), getrandbits(16) twice then getrandbits(1)",
+    "slots": "seeded random"
+  },
+  "sha256": {
+    "fixture.jsonl": "ceff7ba22b8647887a7d730788e05f830094c08264addf28567937fc17e27638",
+    "requests-session-0.csv": "04366b0c636d3c37f5f64f6e45a1d7c0e63e1a98c3b36d315265f457f5449a4a"
+  },
+  "window_size": 16
+}

@@ -427,11 +427,15 @@ then fault lockout blocks future reception. With ready low, no transfer occurs.
 Tests exercise both ready values, sticky lockout and reset recovery. These
 verification additions preserve the existing RTL behavior.
 
-### Phase E — Transport integration and manual board handoff
+### Phase E — Transport integration and manual board handoff — COMPLETE
 
 **Depends on:** B, C, D. **Owns:** transport board top, a clearly named transport
 harness, generator integration, custom host transport check, integration tests,
 and transport documentation.
+
+**Status: complete (October 3, 2026).** Local and matching-build manual
+acceptance are recorded in the Phase E closure below. No further synthesis,
+programming or board checks are required for this unchanged transport delivery.
 
 Implement a complete round trip with placeholder NONE actions and no engine.
 Keep this harness separate from the production transaction controller. Add
@@ -443,10 +447,27 @@ Retain `bringup` and `history-probe` behavior and outputs.
 no early TX, multiple stop-and-wait transactions, reset, and parameterized TX
 spacing. Run emitted-Verilog elaboration. Provide manual Gowin instructions and
 a custom host check that fails on mismatches/timeouts. Do not call placeholder
-responses an official quick/robust algorithm PASS. Board testing is pending the
-user's run, not a reason to leave local integration unfinished.
+responses an official quick/robust algorithm PASS. Board testing requires the
+user's actual results; the matching-build results are recorded in the closure
+below.
 
 ### Phase F — Independent oracle and engine
+
+**Status (October 3): Locally verified — awaiting manual checks.** Engine
+implementation, independent oracle/fixture verification, Cyclesim/emitted-RTL
+checks and matching-candidate standalone Gowin synthesis/P&R inspection have
+passed. History mapped to 8 SSRAM units; analyzed internal setup/hold timing
+passes at 27 MHz. No further standalone F implementation or synthesis run is
+required before G1/G2 progression.
+
+**Closeout dependency:** the remaining F hardware acceptance is exercised by
+G2's integrated competition build: matching full-system synthesis/timing,
+programming, startup/reset behavior, official algorithm tests and custom
+session/boundary replays. G1 may proceed using the delivered engine/interface;
+do not block it on a separate F board image or infer overall F closure from
+standalone P&R. The user acknowledged this dependency before moving G work to
+a separate context. See `results/phase-f-20261003-candidate1/HANDOFF.md` and
+`results/phase-f-20261003-candidate1/gowin-standalone-20261003-121115/REVIEW.md`.
 
 **Depends on:** A and finalized engine command contract. May proceed independently
 of transport. **Owns:** `src/engine/`, `test/engine/`, custom algorithm fixtures.
@@ -461,22 +482,114 @@ updates under result stalls, and reset/session clear. Account for memory latency
 
 ### Phase G — Full transaction controller and competition integration
 
-**Depends on:** D, E, F. **Owns:** production transaction controller, competition
-board top, generator integration, end-to-end tests, and final usage documentation.
+**Split into G1 and G2 (October 3).** G1 delivers the packet-to-engine controller;
+G2 connects the complete serial/board system and closes hardware acceptance.
+References to the overall phase **G** mean both parts. This split changes scope
+and scheduling only; it does not establish implementation or verification status.
+
+### Phase G1 — Transaction controller and engine integration
+
+**Depends on:** D and F's locally verified engine/interface. Controller tests may
+use mocks before F is ready, but G1 local acceptance requires the real engine.
+**Owns:** `src/protocol/transaction_controller.ml`, controller tests under
+`test/protocol/`, and a test-only controller/engine integration harness.
 
 Implement complete request acceptance → optional session clear → slot 1 update
 → slot 2 update → pointer advance → response handoff → response completion.
-Add `generate.exe competition` emitting `rtl/gqh_competition_top.v`, top
-`gqh_competition_top`. Do not silently change the default bring-up target.
+The controller owns retained request fields, slot/action association, the shared
+window pointer, warm-up classification, and receive-enable. On index zero, clear
+the session and reset the pointer before dispatching either slot. Route state by
+item ID and emit actions in request-slot order. Accept no new transaction until
+the response sequencer reports completion after the final TX frame drains.
 
-**Acceptance:** compare full serial transactions against the oracle, including
-swapped slots, full-range prices, repeated sessions, warm-up responses, no early
-TX, correct response count, and reset. Locally elaborate emitted RTL and preserve
-transport regressions. Then hand off official board-test commands to the user.
+Use the §5 handshakes and F's delivered engine interface. Hold command/response
+payloads stable under stalls; never assume a fixed engine cycle latency. Keep
+the existing decoder's sticky fault policy and the diagnostic transport intact.
+Board wiring, production generator changes and serial-level integration belong
+to G2. Coordinate shared interface changes with the engine/integration owner.
+
+**Local acceptance:** byte/payload-level mocks check engine command stalls,
+variable result latency, response backpressure and delayed response completion.
+Assert one session-clear event per accepted index-zero request, exactly two
+item updates per request, one pointer advance after both results, and one response.
+Check receive-enable/rearm timing and reset at every controller stage. Replay
+F's independent fixtures through the controller and real engine, covering
+warm-up, first scored update, wraparound, full-range prices, slot swaps and
+repeated sessions. Preserve protocol/engine/transport regressions.
+
+**Handoff to G2:** document the controller I/O, lifecycle/reset semantics, focused
+test command and outcomes, plus an explicit wiring map for decoder, engine and
+response sequencer. Record command/result and complete-request-to-response-ready
+cycle counts without making them interface assumptions.
+
+**Manual acceptance:** hardware acceptance of G1 is exercised in G2's matching
+full-system build; no standalone controller board image is required. G2 may
+start after G1 local acceptance. Keep G1 **locally verified — awaiting manual
+checks** until the applicable G2 synthesis/timing and board results establish
+the delivered controller's hardware behavior.
+
+### Phase G1 local evidence — October 3, 2026
+
+**Locally verified — awaiting manual checks.** The production typed transaction
+controller, independent variable-latency mocks, real-engine/oracle replay and
+byte-level composition are implemented. All 800 fixtures plus 3,414 additional
+vectors pass; 13 real-composition reset offsets add 455 fresh-session packets.
+Nine controller reset stages, earliest legal mock results, command/response
+stalls, pointer/slot association and final-drain receive lockout pass. Measured
+request-acceptance-to-response publication is 10 cycles for index zero and 8
+for warm-up/steady paths; earliest transfers are one edge later. All required
+build/test commands pass; deterministic RTL, Yosys checks and Icarus elaboration
+pass. Decoder fault policy, F's engine/interface, UART, board tops, generator,
+constraints and diagnostic transport are preserved.
+
+See [G1 candidate handoff](results/phase-g1-20261003-candidate1/HANDOFF.md)
+for exact wiring, measurement edges, source/RTL identity, command outcomes,
+coverage and G2 instructions. G2 may start. G1 hardware acceptance remains open
+and is collected through G2's matching full-system build/tests; G2, overall G,
+and unrelated phases are not marked complete.
+
+### Phase G2 — Competition board integration and full-system acceptance
+
+**Depends on:** E, locally verified F and G1, and their concrete handoffs.
+**Owns:** `src/board/competition_top.ml`, any production composition module,
+`bin/generate.ml` integration, `test/integration/`, generated competition RTL,
+and competition build/test usage documentation in README and `gowin/README.md`.
+
+Wire UART RX → decoder → G1 controller ↔ F engine → response sequencer → UART TX.
+Retain the official six board ports, direct 27 MHz baseline, reset release,
+RX synchronization and status behavior. Add `generate.exe competition` emitting
+self-contained `rtl/gqh_competition_top.v`, top `gqh_competition_top`. Preserve
+the default bringup target and the diagnostic transport/history-probe targets.
+
+**Local acceptance:** compare full serial transactions against F's independent
+oracle, including swapped slots, full-range prices, repeated index-zero sessions,
+warm-up responses, first scored update and wraparound. Verify exact response
+bytes/count, reserved zeros, no early TX, legal host pauses, fault behavior and
+startup/reset recovery. Run emitted-Verilog elaboration and meaningful serial
+simulation at the production UART divisor; verify complete hierarchy, six-port
+compatibility and reproducible generation. Preserve all earlier regressions.
+
+Reuse the factory fixtures and, after review/adaptation, the custom replay runner
+for board session/boundary checks. Include required tooling/data in this project;
+do not depend on sibling worktrees or alter the pristine official scripts beyond
+their permitted PORT setting.
+
+**Manual acceptance:** provide exact generator/Gowin inputs and user commands.
+The user synthesizes/P&Rs the competition design, reviews actual memory mapping,
+resources and timing, generates/programs its identified bitstream, and checks
+startup/reset/TX idle. Require official quick PASS and robust **84/84 packets,
+168/168 actions, zero timeouts**, plus custom warm-up/full-range/slot-swap and
+same-connection repeated-session checks. Retain candidate identity, reports,
+test outputs and latency measurements for the baseline. Diagnostic NONE-action
+transport results do not satisfy this new full-system acceptance.
+
+G2 remains **locally verified — awaiting manual checks** until the matching-build
+results are supplied. Close overall G only when G1 and G2's applicable acceptance
+checks are satisfied. H additionally requires the saved measured baseline.
 
 ### Phase H — Measured optimization, only after a correct baseline
 
-**Depends on:** G and saved correctness/resource/latency evidence.
+**Depends on:** G1/G2 acceptance and saved correctness/resource/latency evidence.
 
 Evaluate one change at a time: memory mapping, arithmetic/control area,
 clock/schedule tradeoffs after P, TX gap, then early prefetch/field-level
@@ -537,14 +650,19 @@ P2/board P2 separately so another agent can continue without guessing status.
 ### Scheduling and shared-file rules
 
 ```text
-A → B ─┐
-  → C ─┼→ E ─┐
-  → D ─┘     ├→ G → H
-  → F ───────┘
+A → B, C, D → E
+A → F
+D + F → G1
+E + F + G1 → G2 → H
 
 A–E → P1 → P2 → H's PLL experiments
-                  (full-design use also requires G and renewed correctness)
+                  (full-design use also requires G2 and renewed correctness)
 ```
+
+G1 may start against engine mocks, then complete local checks with F's engine.
+G2 owns shared board/generator/documentation edits and consumes G1's verified
+interface. G1's hardware acceptance is collected with G2, not a prerequisite
+that prevents G2 implementation from starting.
 
 Packages may run one at a time. If multiple agents are explicitly assigned in
 parallel, use these file boundaries and nominate one owner for shared files.
@@ -595,7 +713,7 @@ opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- bringup
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- history-probe
 ```
 
-The following commands become available only after packages E and G respectively:
+The following commands become available only after packages E and G2 respectively:
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- transport
@@ -622,11 +740,15 @@ alone do not establish success; full robust success requires 84/84 packets,
   startup/reset and required custom board checks recorded for the Phase C delivery.
 - [x] D: decoder/sequencer complete; local boundary coverage and unchanged-build
   transport hardware acceptance recorded in the October 3 closure.
-- [x] E: transport integrated and emitted RTL locally checked.
-- [x] E board follow-up: repeated custom transport checks pass on hardware.
+- [x] E: transport integration complete; serial simulation, emitted RTL and
+  matching-build synthesis/timing/programming/startup/reset acceptance recorded.
+- [x] E board follow-up: normal and byte-paused custom checks pass 100/100
+  with zero mismatches/timeouts or surplus bytes.
 - [ ] F: engine and independent oracle locally verified.
-- [ ] G: complete serial system locally verified and RTL generated.
-- [ ] G board follow-up: official tests and custom session/boundary tests pass.
+- [x] G1: controller locally verified with mocks and the real engine/oracle (October 3; handoff above).
+- [ ] G1 hardware follow-up: controller acceptance established by G2's build/tests.
+- [ ] G2: complete serial system locally verified and competition RTL generated.
+- [ ] G2 board follow-up: synthesis/timing/startup and official/custom tests pass.
 - [ ] Baseline synthesis/timing/latency evidence saved.
 - [ ] P1: clock-derived configuration implemented; direct-clock regressions pass.
 - [ ] P2 local: optional PLL integration and lock/reset simulations pass.
@@ -669,8 +791,9 @@ NONE-action responses only. The paused-run time includes host-inserted pauses.
 Exact programmed bitstream identity and Gowin synthesis/P&R reports were not
 captured in these runs; baseline resource/timing evidence remains pending.
 
-Next eligible package: **F**, then **G** once the engine is independently
-verified. The NONE-action transport is diagnostic only. Further manual board
+Algorithm progression: **F → G1 → G2**, using each package's local acceptance
+and handoff before downstream integration. The NONE-action transport is diagnostic
+only. Further manual board
 checks can use `gowin/README.md` and the custom host checker; transport success
 does not establish an official algorithm PASS.
 
@@ -785,3 +908,43 @@ waiver. No additional synthesis, flashing or manual checks are required for
 this verification-only follow-up. No Phase D work remains; this closes protocol
 transport acceptance only and does not establish an algorithm PASS or change
 other phases. F, followed by G, remains the algorithm implementation path.
+
+
+**Phase E closure, October 3, 2026: COMPLETE.** The user authorized closure
+using the existing local verification and matching-build transport hardware
+evidence. The diagnostic `src/protocol/transport_harness.ml` remains separate
+from the future production transaction controller; `src/board/transport_top.ml`
+connects the complete UART/decoder/sequencer hierarchy. The generator's transport
+target emits `rtl/gqh_transport_top.v`, top `gqh_transport_top`, with exactly the
+six official ports. Bringup/default and history-probe targets remain preserved.
+Manual build/programming instructions are in `gowin/README.md`; the separate
+`tools/check_transport.py` host checker fails on mismatches/timeouts and checks
+for surplus bytes. Official scripts and constraints remain pristine.
+
+Local acceptance is established by the passing `dune build` and
+`dune runtest --force` in switch `5.2.0+ox` recorded during the Phase D follow-up.
+The transport suite checks exact serial response bytes, no early TX, multiple
+stop-and-wait transactions including swapped slots, reset and parameterized
+TX gaps. Emitted production-divisor RTL passes Icarus serial/reset/fault checks
+and Yosys hierarchy/process/check, including deterministic generation and exact
+ports. Bringup and history-probe regressions also pass. See
+`test/transport/README.md` for commands and coverage.
+
+Hardware acceptance applies to the unchanged RTL candidate, whose current
+SHA-256 was rechecked at closure:
+`62cc2f314102c4d13860df1d27f187b5fe6aadfd916459890fae4e228ffd7090`.
+The recorded Phase C acceptance establishes matching-artifact Gowin synthesis/P&R,
+27 MHz timing with zero setup/hold violations, bitstream generation and
+user-confirmed programming/startup/reset/TX-idle checks for this transport build.
+The normal and `--byte-pause 0.005` custom runs each passed 100/100 with zero
+mismatches/timeouts or surplus bytes; logs and identity details are retained in
+`results/phase-c-20261003-candidate1/board-tests-20261003T174429.688210Z/`.
+Legal host pauses are demonstrated on hardware; alternate gap configurations
+and detailed fault/reset boundaries have the local coverage described above.
+PR1014 remains the accepted candidate's recorded clock-routing caveat; this
+closure reuses the same accepted evidence and existing record-keeping waiver.
+No new hardware run is claimed. This closure changes documentation only and
+requires no additional synthesis, flashing or manual tests. No Phase E work
+remains. NONE-action diagnostic transport acceptance is not an official
+algorithm PASS, and full competition resource/latency evidence remains pending.
+Next algorithm package is F, then G; no other phase status changes here.

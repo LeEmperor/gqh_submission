@@ -1,0 +1,33 @@
+{
+  "actions": {
+    "BUY": 2,
+    "NONE": 0,
+    "SELL": 1
+  },
+  "format_version": 1,
+  "item_ids": {
+    "A": 17,
+    "B": 34
+  },
+  "packets_per_session": 100,
+  "price_unit": "unsigned 16-bit wire integer; no currency scaling",
+  "scenario": "rising_falling",
+  "seed": 42,
+  "sessions": 1,
+  "settings": {
+    "base_prices": {
+      "A": 1000,
+      "B": 4000
+    },
+    "offset_rule": "phase=index%64; offset=phase if phase<32 else 63-phase",
+    "price_rule": "A=1000+10*offset; B=4000-10*offset",
+    "ramp_period": 64,
+    "slots": "alternate",
+    "step": 10
+  },
+  "sha256": {
+    "fixture.jsonl": "2f5baa0f3481f3d227b048d54eb69d4009d06459b51c6d9c5383c2cfabc234b9",
+    "requests-session-0.csv": "5c55a8f59cbdf6a0a07ba8367798bad4432f1eda457621944893f605cc99f863"
+  },
+  "window_size": 16
+}

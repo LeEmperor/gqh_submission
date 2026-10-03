@@ -421,6 +421,25 @@ the Hardcaml/Gowin path; one builds UART/packet handling; one writes the oracle
 and vectors; one prepares the repeatable test/results workflow. Agree byte and
 engine interfaces first so these tasks can progress independently.
 
+**Phase G split (October 3):** the request/response plan now assigns **G1** to
+the production transaction controller and its integration tests with F's engine,
+and **G2** to the competition board top, generator, serial end-to-end verification
+and manual full-system acceptance. Progress **F → G1 → G2 → measured H**; G2 can
+start after G1's local acceptance, with G1 hardware checks collected in G2's
+matching build. Overall G still requires both parts. See
+[REQUEST_RESPONSE_PLAN.md](REQUEST_RESPONSE_PLAN.md#phase-g--full-transaction-controller-and-competition-integration)
+for ownership and acceptance criteria. This is a planning split, not a new
+completion claim.
+
+**G1 local evidence (October 3): Locally verified — awaiting manual checks.**
+The controller and mock/real-engine/byte-composition tests pass, including all
+800 fixtures, 3,414 additional oracle vectors and 455 reset-recovery packets.
+All required local builds/regressions and emitted-RTL elaboration checks pass.
+The [G1 handoff](results/phase-g1-20261003-candidate1/HANDOFF.md) records exact
+interfaces, cycle measurements, source identity and G2 wiring instructions.
+G2 may begin; G1 hardware acceptance still comes from G2's matching full-system
+build. G2, overall G and unrelated phases remain open.
+
 ### Gate 0 initialization evidence (October 2, 2026)
 
 The project foundation is implemented: wrapped `hardcaml_gqh` library, manual

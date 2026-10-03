@@ -6,3 +6,14 @@
  (inline_tests (flags (:standard -source-tree-root .)))
  (libraries core hardcaml hardcaml_gqh)
  (preprocess (pps ppx_jane)))
+
+(executable
+ (name transaction_verify)
+ (modules transaction_verify transaction_harness)
+ (libraries core hardcaml hardcaml_gqh jane_rope)
+ (preprocess (pps ppx_hardcaml ppx_jane)))
+(rule
+ (alias runtest)
+ (deps transaction_verify.exe transaction_checks.py
+       (source_tree ../engine/oracle))
+ (action (run python3 transaction_checks.py ./transaction_verify.exe)))

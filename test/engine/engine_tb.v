@@ -1,0 +1,64 @@
+`timescale 1ns/1ps
+module engine_tb;
+  reg clock=0, reset=0, session_clear=0, update_valid=0, result_ready=0;
+  reg item=0, warm=0;
+  reg [15:0] price=0;
+  reg [3:0] pos=0;
+  wire update_ready, result_valid;
+  wire [1:0] action;
+  gqh_update_engine dut (
+    .clock(clock), .reset(reset), .session_clear(session_clear),
+    .update_valid(update_valid), .result_ready(result_ready),
+    .update$item_select(item), .update$price(price),
+    .update$window_position(pos), .update$warmup(warm),
+    .update_ready(update_ready), .result_valid(result_valid), .action(action));
+  integer fd, n, j, addr, count=0;
+  integer v [0:51];
+  reg [4095:0] trace;
+  task check;
+    input [31:0] actual;
+    input integer expected;
+    input [255:0] what;
+    begin
+      if (actual !== expected) begin
+        $display("FAIL edge %0d %0s: got %0h expected %0d", count, what, actual, expected);
+        $fatal(1);
+      end
+    end
+  endtask
+  initial begin
+    if (!$value$plusargs("TRACE=%s", trace)) $fatal(1,"missing TRACE");
+    fd=$fopen(trace,"r");
+    if (fd==0) $fatal(1,"cannot open TRACE");
+    // Test-only poison, deliberately absent from generated hardware RTL.
+    for (addr=0; addr<32; addr=addr+1) dut.engine_history[addr]=65535-addr;
+    while (!$feof(fd)) begin
+      n=$fscanf(fd,"%d",v[0]);
+      if (n==1) begin
+        for (j=1; j<52; j=j+1) begin
+          n=$fscanf(fd,"%d",v[j]);
+          if (n!=1) $fatal(1,"short trace row");
+        end
+        reset=v[0]; session_clear=v[1]; update_valid=v[2]; result_ready=v[3];
+        item=v[4]; price=v[5]; pos=v[6]; warm=v[7];
+        #1;
+        check(update_ready,v[8],"pre ready"); check(result_valid,v[9],"pre valid");
+        // Power-up register values are unspecified until the first reset edge.
+        if (count>0) check(action,v[10],"pre action");
+        clock=1; #1;
+        check(update_ready,v[11],"post ready"); check(result_valid,v[12],"post valid");
+        check(action,v[13],"post action");
+        check(dut.sum_a,v[14],"sum A"); check(dut.sum_b,v[15],"sum B");
+        check(dut.previous_a,v[16],"previous A"); check(dut.previous_b,v[17],"previous B");
+        check(dut.held_a,v[18],"held A"); check(dut.held_b,v[19],"held B");
+        for (addr=0; addr<32; addr=addr+1)
+          check(dut.engine_history[addr],v[20+addr],"RAM preservation/exact once");
+        clock=0; #1;
+        count=count+1;
+      end
+    end
+    $fclose(fd);
+    $display("PASS Icarus: %0d edges, synchronous RAM, scalar/window consistency, reset and stalled results",count);
+    $finish;
+  end
+endmodule

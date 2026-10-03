@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "BUY": 2,
+    "NONE": 0,
+    "SELL": 1
+  },
+  "format_version": 1,
+  "item_ids": {
+    "A": 17,
+    "B": 34
+  },
+  "packets_per_session": 100,
+  "price_unit": "unsigned 16-bit wire integer; no currency scaling",
+  "scenario": "constant_swapped",
+  "seed": 42,
+  "sessions": 1,
+  "settings": {
+    "prices": {
+      "A": 100,
+      "B": 200
+    },
+    "slots": "alternate"
+  },
+  "sha256": {
+    "fixture.jsonl": "d40378c43a8b885d8b60a0ae2c98c14869f40f255a6f015d2253377e82694db0",
+    "requests-session-0.csv": "09a2a134e8f5bb9bb0dab6c6287a7e6ddc8af1ed8a52a8c7bc7bcb80ecffe633"
+  },
+  "window_size": 16
+}

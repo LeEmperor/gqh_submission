@@ -1,0 +1,8 @@
+(executable
+ (name engine_verify)
+ (modules engine_verify)
+ (libraries core hardcaml hardcaml_gqh jane_rope))
+(rule
+ (alias runtest)
+ (deps engine_verify.exe run_checks.py engine_tb.v (source_tree oracle))
+ (action (run python3 run_checks.py ./engine_verify.exe)))

@@ -1,0 +1,176 @@
+{
+  "repository": "datafactory",
+  "revision": "73f42c2d3ecb8a5d178903a7c254a3f9c81d06a8",
+  "source_subdirectory": "tools/test_data_factory",
+  "source_status": "clean (read-only git status --short returned no entries)",
+  "files": [
+    {
+      "upstream_path": "README.md",
+      "upstream_sha256": "0c6032e2d19225a875f15a5587e7ea8c7c2b63b3d25b30064f0bfcf9ad4f9681",
+      "local_path": "UPSTREAM_README.md",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "check_ocaml.py",
+      "upstream_sha256": "9eb741adfd9fddb2d1cd780bdc321bd206da1d252597c595dc50aea9e139a470",
+      "local_path": "log_check.py",
+      "unchanged": false
+    },
+    {
+      "upstream_path": "factory.py",
+      "upstream_sha256": "8f13e5899f41bc3a26b2e4745cc19a11613b04a8dea154d73cf4f9ba2648ceb8",
+      "local_path": "factory.py",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/boundaries/fixture.jsonl",
+      "upstream_sha256": "3b44179bf91392d2dd5017a0e27166085c9aff285a995a57ad5b8c750673d723",
+      "local_path": "fixtures/boundaries/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/boundaries/metadata.json",
+      "upstream_sha256": "98b7d69235280a20068f09751615a1f2e76afe3d258f1006163d32d2e819149f",
+      "local_path": "fixtures/boundaries/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/boundaries/requests-session-0.csv",
+      "upstream_sha256": "02fa3e8e3aaea932481990862710f99e065be923d81ff6bd67e36df7ef1623fd",
+      "local_path": "fixtures/boundaries/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant/fixture.jsonl",
+      "upstream_sha256": "f633733a9ccbf39166eddfbe951635f62c40174eff323b0ee0c377da1bb9cdb2",
+      "local_path": "fixtures/constant/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant/metadata.json",
+      "upstream_sha256": "960274567f13aeba33204caa34a42e0cb91f20e6746fbe6ea56c26c62b10cdf3",
+      "local_path": "fixtures/constant/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant/requests-session-0.csv",
+      "upstream_sha256": "9b0a19771631617e6ad4555decd4243d8b6733f8dceec7d0f7d6118b1f184436",
+      "local_path": "fixtures/constant/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant_swapped/fixture.jsonl",
+      "upstream_sha256": "d40378c43a8b885d8b60a0ae2c98c14869f40f255a6f015d2253377e82694db0",
+      "local_path": "fixtures/constant_swapped/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant_swapped/metadata.json",
+      "upstream_sha256": "70ba3dbc5cfd2ad17f80eee7f40ecf6c234c6e326700ae766fafee8d5db9b452",
+      "local_path": "fixtures/constant_swapped/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/constant_swapped/requests-session-0.csv",
+      "upstream_sha256": "09a2a134e8f5bb9bb0dab6c6287a7e6ddc8af1ed8a52a8c7bc7bcb80ecffe633",
+      "local_path": "fixtures/constant_swapped/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/crossings/fixture.jsonl",
+      "upstream_sha256": "40d9c8b75a326af3d275269278d3ed609fb0ff3ca12b44306bdba36b1e8611fe",
+      "local_path": "fixtures/crossings/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/crossings/metadata.json",
+      "upstream_sha256": "9c9d2e7fa63830f2b4265506ce2d6ecb27ea3e5c33d6c014c1b9fcddef956931",
+      "local_path": "fixtures/crossings/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/crossings/requests-session-0.csv",
+      "upstream_sha256": "e5d10aa1f30133871f3ccc9d6abe8f5eef3a5c2379478fc00704f79621433f85",
+      "local_path": "fixtures/crossings/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/random/fixture.jsonl",
+      "upstream_sha256": "ceff7ba22b8647887a7d730788e05f830094c08264addf28567937fc17e27638",
+      "local_path": "fixtures/random/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/random/metadata.json",
+      "upstream_sha256": "5e85279dce24451ef0d69f51c2fd0f69e81e48f30310c41ee252796bbed79392",
+      "local_path": "fixtures/random/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/random/requests-session-0.csv",
+      "upstream_sha256": "04366b0c636d3c37f5f64f6e45a1d7c0e63e1a98c3b36d315265f457f5449a4a",
+      "local_path": "fixtures/random/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/repeated_sessions/fixture.jsonl",
+      "upstream_sha256": "c1c3def8227180359bb117723fd6490e58b8522d88e6b8ddc4c79b59b24f4774",
+      "local_path": "fixtures/repeated_sessions/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/repeated_sessions/metadata.json",
+      "upstream_sha256": "d23c47d1a94cc3185068ab009b0d8e71004687fc4364eb750bc8404e37cb3eac",
+      "local_path": "fixtures/repeated_sessions/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/repeated_sessions/requests-session-0.csv",
+      "upstream_sha256": "e5d10aa1f30133871f3ccc9d6abe8f5eef3a5c2379478fc00704f79621433f85",
+      "local_path": "fixtures/repeated_sessions/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/repeated_sessions/requests-session-1.csv",
+      "upstream_sha256": "09a2a134e8f5bb9bb0dab6c6287a7e6ddc8af1ed8a52a8c7bc7bcb80ecffe633",
+      "local_path": "fixtures/repeated_sessions/requests-session-1.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/rising_falling/fixture.jsonl",
+      "upstream_sha256": "2f5baa0f3481f3d227b048d54eb69d4009d06459b51c6d9c5383c2cfabc234b9",
+      "local_path": "fixtures/rising_falling/fixture.jsonl",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/rising_falling/metadata.json",
+      "upstream_sha256": "2732afbf6b1b30fe94bd651f63108c0589280a358e280d6da6846448fe572646",
+      "local_path": "fixtures/rising_falling/metadata.json",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "fixtures/rising_falling/requests-session-0.csv",
+      "upstream_sha256": "5c55a8f59cbdf6a0a07ba8367798bad4432f1eda457621944893f605cc99f863",
+      "local_path": "fixtures/rising_falling/requests-session-0.csv",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "model.py",
+      "upstream_sha256": "35ecfd2f58ddf217ea6f8c0fc9f281a40ae84e4bad00f64a1525f3bb95f405a5",
+      "local_path": "model.py",
+      "unchanged": true
+    },
+    {
+      "upstream_path": "run_checks.py",
+      "upstream_sha256": "27b2df8678560fc237b6e3e5b3ed54a144ceeb6ae97d917dc457649d85e18eeb",
+      "local_path": "run_checks.py",
+      "unchanged": false
+    },
+    {
+      "upstream_path": "test_factory.py",
+      "upstream_sha256": "046105ebbf813a90a086d99acffb97b88bd32b24e6544efb341b904989e2934d",
+      "local_path": "test_factory.py",
+      "unchanged": false
+    }
+  ]
+}
