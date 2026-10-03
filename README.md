@@ -33,18 +33,17 @@ five-run median latency** (within 5% tied), in that order.
 
 ## Current status
 
-The direct **27 MHz competition system is Locally verified — awaiting manual
-checks**. F's update engine, G1's transaction controller and G2's production
-board composition are implemented and locally tested. The A–E transport history
-and reported manual checks are recorded in REQUEST_RESPONSE_PLAN.md. Competition
-synthesis/P&R, whole-design resources/memory mapping/timing, matching bitstream,
-remaining startup/reset/status checks, robust/full-range PASS and custom replays remain
-pending. F, G1, G2, overall G and the measured baseline are not marked complete.
-The old blinky, diagnostic transport and independent PLL project are preserved.
+**F, G1, G2 and overall G are COMPLETE**, explicitly accepted by the user after
+fresh synthesis/programming and passing local/board tests. Official quick,
+normal robust and full-range practice pass; custom replay passes all 1,394 rows
+across 13 sessions; fault/reset recovery and fresh startup also pass. Evidence
+and the precise user-authorized closure are in REQUEST_RESPONSE_PLAN.md.
+The user waives remaining build-identity bookkeeping and a separate physical
+TX-idle measurement as F/G closure requirements; those were not performed.
+Resource-first optimization (H), optional PLL work (P), and final submission
+packaging remain open. The old blinky and diagnostic/PLL projects are preserved.
 
-Latest G2 board follow-up: official **quick PASS** is saved, with heartbeat and
-no-fault LED behavior reported. Robust/full-range/custom acceptance and resource
-measurements remain open. The new placement rule uses **Resource Usage Summary
+The new placement rule uses **Resource Usage Summary
 total logic** (including ALUs), then total registers; BSRAM is excluded from
 logic. Judges rebuild with **Gowin V1.9.11.03** and committed project settings.
 The guide's synthesis-LUT and average-latency limits still govern qualification.
@@ -227,8 +226,9 @@ extra gap; every stop bit is full length. All logic runs directly on `sys_clk`.
 See [test/integration/README.md](test/integration/README.md) for serial verification
 and [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for
 source/RTL identity, measured core latency, commands and manual acceptance.
-The candidate's status is **Locally verified — awaiting manual checks**. Local
-simulation establishes neither board correctness nor Gowin mapping/timing.
+F–G status is **COMPLETE under the user-authorized closure**. The candidate
+handoff retains its historical local-only status; subsequent board evidence and
+closure are recorded in REQUEST_RESPONSE_PLAN.md.
 Official scripts must run against this competition image, with their actual PASS
 outputs/counts preserved; diagnostic NONE responses cannot satisfy acceptance.
 

@@ -70,7 +70,8 @@ checks for transport, bringup and history-probe RTL. The focused
 
 ## Phase G1 transaction controller
 
-Status: **Locally verified — awaiting manual checks** (October 3, 2026).
+Status: **COMPLETE under the user-authorized F–G closure** (October 3, 2026).
+See REQUEST_RESPONSE_PLAN.md for integrated board results and waived closure items.
 The production module is `Hardcaml_gqh.Protocol.Transaction_controller`;
 `transaction_controller.mli` documents every direction, width and lifecycle rule.
 Engine, decoder and sequencer instances remain outside it. The diagnostic
@@ -121,5 +122,5 @@ The precise G2 wiring, measurement edges, candidate identity, preservation
 manifest, command results and remaining hardware checks are in
 [`results/phase-g1-20261003-candidate1/HANDOFF.md`](../../results/phase-g1-20261003-candidate1/HANDOFF.md).
 That evidence directory is ignored by Git; retain it and the untracked source
-files when transferring this local candidate. G2 may start; G1 hardware
-acceptance still depends on G2's matching full-system build/tests.
+files when transferring this local candidate. That was the historical G1 handoff. G1/G2 integrated board acceptance is now
+closed under the user-authorized F–G closure in REQUEST_RESPONSE_PLAN.md.

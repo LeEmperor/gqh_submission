@@ -92,9 +92,9 @@ with margin, then select measured candidates by the ranking order above.
 | `viv25_proj/test_proj1/src/blinky.v` | A six-LED counter in Verilog; starting point for device/tool bring-up. |
 | `viv25_proj/test_proj1/test_proj1.gprj` | Gowin project for `GW2AR-LV18QN88C8/I7`. |
 | Blinky `.cst`, `.sdc`, and `impl/` | Saved synthesis/P&R reports and `.fs` exist; report names Gowin V1.9.11.03 Education. These establish saved build evidence, not verified board operation. |
-| Competition implementation | Hardcaml UART/protocol foundation, F engine, G1 controller and G2 competition board system exist. REQUEST_RESPONSE_PLAN.md records A–E evidence and F/G1/G2 local verification. Competition whole-design Gowin/board checks and measured baseline remain pending. PLL validation is separate. |
+| Competition implementation | Hardcaml UART/protocol foundation, F engine, G1 controller and G2 competition board system exist. REQUEST_RESPONSE_PLAN.md records A–E evidence and F/G1/G2 local verification. F/G board correctness acceptance is complete under the user-authorized closure in REQUEST_RESPONSE_PLAN.md. H and final submission packaging remain open; PLL validation is separate. |
 | Organizer inputs | All three files are available in the sibling `../GQH-Hardware-Track-Submission/` checkout; exact paths and reviewed behavior below. Copy pinned inputs into the team project during integration. |
-| Results | Official quick PASS is preserved in `results/phase-g2-board-20261003-142516-thv362qq/`; robust/full-range acceptance and whole-design resource/latency baseline remain pending. Blinky resource counts are not a competition baseline. |
+| Results | Official quick, normal robust, full-range practice, 1,394-packet custom replay, fault/reset and fresh-startup checks pass; evidence is under `results/phase-g2-board-20261003-142516-thv362qq/`. An earlier build’s whole-design reports are archived. Matching final source/report/bitstream identity is deferred by the user until pre-submission freeze; physical TX-idle measurement remains unconfirmed. |
 
 The directory is a Git worktree on `bpurtell/base_testing`; at review time only
 the old README was tracked, and the supplied plans, PDFs, and Gowin project were
@@ -496,6 +496,14 @@ F/G1 retain local status, and G2, overall G and H's measured baseline remain ope
 Missing historical F/G1 result directories were not recreated as evidence.
 
 
+**F–G closure (October 3): COMPLETE, explicitly authorized by the user.**
+Fresh synthesis/programming, official quick/normal robust/full-range tests,
+1,394-packet custom replay, fault/reset recovery and fresh startup pass. The user
+accepts these results and waives remaining identity bookkeeping/separate TX-idle
+measurement as F/G closure requirements; neither is falsely reported as performed.
+See REQUEST_RESPONSE_PLAN.md's F–G closure. Earlier pending statuses above are
+historical. H optimization, optional P and final submission freeze remain open.
+
 ### Gate 0 initialization evidence (October 2, 2026)
 
 The project foundation is implemented: wrapped `hardcaml_gqh` library, manual
@@ -559,8 +567,10 @@ Keep enough latency/timing margin to qualify repeatedly on the judging host.
 
 1. **Measure the complete baseline first:** use Gowin V1.9.11.03 and preserve
    Resource Usage Summary total logic/registers, synthesis LUTs, BSRAM mapping,
-   timing and project settings. Current quick PASS does not establish the LUT
-   limit or complete qualification. Attribute costs before choosing experiments.
+   timing and project settings. Quick, robust/full-range and custom practice tests
+   now pass; final matching-build identity remains deferred. Archived report
+   counts describe that earlier image, not automatically the newly flashed one.
+   Attribute costs before choosing experiments.
 2. **History and state storage:** prove the 32 × 16 history maps to BSRAM;
    BSRAM is excluded from placement logic. If inference fails, compare a vendor
    primitive wrapper. Experiment with additional item state in BSRAM where the

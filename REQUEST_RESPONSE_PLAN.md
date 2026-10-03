@@ -461,14 +461,15 @@ below.
 
 ### Phase F — Independent oracle and engine
 
-**Status (October 3): Locally verified — awaiting manual checks.** Engine
+**Status: COMPLETE (user-authorized F–G closure, October 3).** Engine
 implementation, independent oracle/fixture verification, Cyclesim/emitted-RTL
 checks and matching-candidate standalone Gowin synthesis/P&R inspection have
 passed. History mapped to 8 SSRAM units; analyzed internal setup/hold timing
 passes at 27 MHz. No further standalone F implementation or synthesis run is
 required before G1/G2 progression.
 
-**Closeout dependency:** the remaining F hardware acceptance is exercised by
+**Historical closeout dependency (now satisfied under the F–G closure below):**
+F hardware acceptance is exercised by
 G2's integrated competition build: matching full-system synthesis/timing,
 programming, startup/reset behavior, official algorithm tests and custom
 session/boundary replays. G1 may proceed using the delivered engine/interface;
@@ -496,6 +497,8 @@ References to the overall phase **G** mean both parts. This split changes scope
 and scheduling only; it does not establish implementation or verification status.
 
 ### Phase G1 — Transaction controller and engine integration
+
+**Status: COMPLETE (user-authorized F–G closure, October 3).**
 
 **Depends on:** D and F's locally verified engine/interface. Controller tests may
 use mocks before F is ready, but G1 local acceptance requires the real engine.
@@ -558,6 +561,8 @@ and unrelated phases are not marked complete.
 
 ### Phase G2 — Competition board integration and full-system acceptance
 
+**Status: COMPLETE (user-authorized F–G closure, October 3).**
+
 **Depends on:** E, locally verified F and G1, and their concrete handoffs.
 **Owns:** `src/board/competition_top.ml`, any production composition module,
 `bin/generate.ml` integration, `test/integration/`, generated competition RTL,
@@ -593,9 +598,9 @@ Retain candidate identity, reports,
 test outputs and latency measurements for the baseline. Diagnostic NONE-action
 transport results do not satisfy this new full-system acceptance.
 
-G2 remains **locally verified — awaiting manual checks** until the matching-build
-results are supplied. Close overall G only when G1 and G2's applicable acceptance
-checks are satisfied. H additionally requires the saved measured baseline.
+The user-authorized F–G closure below records G2 and overall G as complete,
+including the waived bookkeeping/physical-probe preconditions. H separately
+requires measured resource/latency comparisons; submission packaging remains open.
 
 ### Phase G2 local evidence — October 3, 2026
 
@@ -698,6 +703,31 @@ until tomorrow before submission. Preserve historical passing tests; final freez
 will associate matching source/RTL/reports/.fs and final runs with one candidate.
 Do not pursue deferred identity work now. Status remains **Locally verified —
 awaiting manual checks**; no F/G1/G2/G/H completion is inferred.
+
+### F–G closure — user-authorized, October 3, 2026
+
+**F, G1, G2 and overall G: COMPLETE.** The user explicitly requested closure
+based on fresh synthesis/programming and the passing local and board tests.
+Official quick PASS; normal robust and full-range practice each pass 84/84 scored
+packets, 168/168 actions and zero timeouts; custom replay passes 1,394/1,394 rows
+across 13 sessions with no unsolicited/trailing bytes. Physical busy-fault/reset
+recovery and fresh SRAM startup without button reset also pass. Evidence is in
+`results/phase-g2-board-20261003-142516-thv362qq/`.
+
+The user waives remaining SHA/source/report/bitstream association bookkeeping
+and a separate physical TX-idle measurement as F/G closure preconditions, accepting
+the functional results. Physical TX idle remains unmeasured; exact association
+of the latest .fs with the earlier report archive remains unresolved. These
+items are not falsely recorded as performed. PR1014 remains the documented
+routing caveat acknowledged by the user. No additional published grader run is
+required to close F/G; unpublished judge qualification remains an event result,
+not an agent-run acceptance step.
+
+This explicit user decision supersedes earlier pending F/G statuses and their
+closure requirements for the accepted direct 27 MHz implementation. Historical
+logs/status entries remain intact. Final submission-image packaging remains
+scheduled for tomorrow at the user's direction; H's optimization/baseline work,
+optional P and submission freeze are not marked complete by this closure.
 
 ### Phase H — Resource-first optimization after a qualification baseline
 
@@ -873,11 +903,12 @@ Preserve five-run latency evidence for resource-tied candidates. See PLAN.md.
   matching-build synthesis/timing/programming/startup/reset acceptance recorded.
 - [x] E board follow-up: normal and byte-paused custom checks pass 100/100
   with zero mismatches/timeouts or surplus bytes.
-- [ ] F: engine and independent oracle locally verified.
+- [x] F: engine/oracle implementation, local tests and integrated board acceptance complete (user-authorized closure).
 - [x] G1: controller locally verified with mocks and the real engine/oracle (October 3; handoff above).
-- [ ] G1 hardware follow-up: controller acceptance established by G2's build/tests.
-- [x] G2 local verification: complete serial system and competition RTL generated (October 3; manual acceptance remains open).
-- [ ] G2 board follow-up: synthesis/timing/startup and official/custom tests pass.
+- [x] G1 hardware follow-up: accepted through passing G2 board tests and user-authorized closure.
+- [x] G2 local verification: complete serial system and competition RTL generated.
+- [x] G2 board follow-up: user accepts fresh synthesis/programming and passing official/custom/startup/fault-reset tests; remaining formal preconditions waived.
+- [x] Overall G: COMPLETE under the explicit F–G closure.
 - [ ] Baseline synthesis/timing/latency evidence saved.
 - [ ] Qualification rehearsal: 100/100-equivalent normal run, then perfect
   full-range practice without reset/reprogramming; custom warm-up/session checks pass.

@@ -103,3 +103,28 @@ Keep all earlier passing test evidence historical; final freeze must tie source,
 RTL, reports, programmed .fs and final acceptance runs to the selected image.
 No new report/bitstream archive or source comparison was performed in this update.
 G2 remains locally verified — awaiting the deferred final manual checks.
+
+### F–G closure — user-authorized, October 3, 2026
+
+**F, G1, G2 and overall G: COMPLETE.** The user explicitly requested closure
+based on fresh synthesis/programming and the passing local and board tests.
+Official quick PASS; normal robust and full-range practice each pass 84/84 scored
+packets, 168/168 actions and zero timeouts; custom replay passes 1,394/1,394 rows
+across 13 sessions with no unsolicited/trailing bytes. Physical busy-fault/reset
+recovery and fresh SRAM startup without button reset also pass. Evidence is in
+`results/phase-g2-board-20261003-142516-thv362qq/`.
+
+The user waives remaining SHA/source/report/bitstream association bookkeeping
+and a separate physical TX-idle measurement as F/G closure preconditions, accepting
+the functional results. Physical TX idle remains unmeasured; exact association
+of the latest .fs with the earlier report archive remains unresolved. These
+items are not falsely recorded as performed. PR1014 remains the documented
+routing caveat acknowledged by the user. No additional published grader run is
+required to close F/G; unpublished judge qualification remains an event result,
+not an agent-run acceptance step.
+
+This explicit user decision supersedes earlier pending F/G statuses and their
+closure requirements for the accepted direct 27 MHz implementation. Historical
+logs/status entries remain intact. Final submission-image packaging remains
+scheduled for tomorrow at the user's direction; H's optimization/baseline work,
+optional P and submission freeze are not marked complete by this closure.

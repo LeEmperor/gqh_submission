@@ -1,6 +1,7 @@
 # G2 production serial verification
 
-Status: **Locally verified — awaiting manual checks**. From the repository root:
+Status: **COMPLETE under the user-authorized F–G closure (October 3)**; see
+REQUEST_RESPONSE_PLAN.md for passing board tests and the waived closure items. From the repository root:
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest

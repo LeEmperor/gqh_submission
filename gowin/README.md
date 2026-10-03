@@ -8,7 +8,7 @@ constraints or top modules into one build.
 
 | Project | Top module | Purpose |
 | --- | --- | --- |
-| `gqh_competition.gprj` | `gqh_competition_top` | Complete six-port competition design; direct 27 MHz baseline. Locally verified — awaiting manual checks. |
+| `gqh_competition.gprj` | `gqh_competition_top` | Complete six-port competition design; direct 27 MHz baseline. COMPLETE under the user-authorized F–G closure. |
 | `gqh_engine.gprj` | `gqh_update_engine` | Standalone engine synthesis/timing experiment. It has no board pin constraints and cannot be programmed as a complete board design. |
 | `gqh_transport.gprj` | `gqh_transport_top` | Six-port, 27 MHz board diagnostic with UART request/response transport. It returns NONE actions and is not the final competition design. |
 | `gqh_pll_test.gprj` | `top` | Independent 270 MHz Gowin rPLL and divided-clock output experiment. It uses the PLL branch's CST because that file additionally assigns `clk_test` to pin 73. |
@@ -123,7 +123,8 @@ official quick/robust algorithm tests require the competition target.
 
 ## Competition handoff (G2)
 
-Status: **Locally verified — awaiting manual checks**. Generate with:
+Status: **COMPLETE under the user-authorized F–G closure**; see
+REQUEST_RESPONSE_PLAN.md for evidence and waived preconditions. Generate with:
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition
@@ -172,4 +173,5 @@ for exact identity, local results, and concrete board commands. In order:
    connection or resetting the board. Keep runner outputs and metadata separate
    from official scoring-style outputs; check unsolicited-byte fields too.
 6. Preserve `.fs`, reports, outputs, latency measurements and full build identity.
-   Supply results before F/G1/G2/overall G or the measured baseline can close.
+   F/G1/G2/overall G are now closed by explicit user acceptance. Final submission
+   packaging and measured optimization remain separate work.

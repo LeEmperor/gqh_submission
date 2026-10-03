@@ -1,6 +1,7 @@
 # Phase F engine verification
 
-Status: **Locally verified — awaiting manual checks**. This package implements
+Status: **COMPLETE under the user-authorized F–G closure (October 3)**; see
+REQUEST_RESPONSE_PLAN.md for passing board tests and the waived closure items. This package implements
 `Hardcaml_gqh.Engine.Update`, independently of UART and the diagnostic transport.
 This standalone F package does not own the competition top or controller;
 those are now delivered by G1/G2 (see ../integration/README.md).
