@@ -1,0 +1,186 @@
+{
+  "description": "Placeholder fixture for the custom runner until Beginner 1's fixtures land. Same 21 packets as the organizers' 21_quick_uart_test.py.",
+  "generator": "21_quick_uart_test.py packet list + its Reference model (organizer-supplied)",
+  "seed": null,
+  "settings": {
+    "prices_a": [
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      80,
+      85,
+      85,
+      20,
+      15
+    ],
+    "prices_b": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      60,
+      55,
+      55,
+      130,
+      140
+    ],
+    "swapped_indices": [
+      16,
+      19,
+      20
+    ]
+  },
+  "records": [
+    {
+      "session": 0,
+      "index": 0,
+      "request_hex": "0000110032220064",
+      "expected_response_hex": "0000110022000000"
+    },
+    {
+      "session": 0,
+      "index": 1,
+      "request_hex": "0001110032220064",
+      "expected_response_hex": "0001110022000000"
+    },
+    {
+      "session": 0,
+      "index": 2,
+      "request_hex": "0002110032220064",
+      "expected_response_hex": "0002110022000000"
+    },
+    {
+      "session": 0,
+      "index": 3,
+      "request_hex": "0003110032220064",
+      "expected_response_hex": "0003110022000000"
+    },
+    {
+      "session": 0,
+      "index": 4,
+      "request_hex": "0004110032220064",
+      "expected_response_hex": "0004110022000000"
+    },
+    {
+      "session": 0,
+      "index": 5,
+      "request_hex": "0005110032220064",
+      "expected_response_hex": "0005110022000000"
+    },
+    {
+      "session": 0,
+      "index": 6,
+      "request_hex": "0006110032220064",
+      "expected_response_hex": "0006110022000000"
+    },
+    {
+      "session": 0,
+      "index": 7,
+      "request_hex": "0007110032220064",
+      "expected_response_hex": "0007110022000000"
+    },
+    {
+      "session": 0,
+      "index": 8,
+      "request_hex": "0008110032220064",
+      "expected_response_hex": "0008110022000000"
+    },
+    {
+      "session": 0,
+      "index": 9,
+      "request_hex": "0009110032220064",
+      "expected_response_hex": "0009110022000000"
+    },
+    {
+      "session": 0,
+      "index": 10,
+      "request_hex": "000a110032220064",
+      "expected_response_hex": "000a110022000000"
+    },
+    {
+      "session": 0,
+      "index": 11,
+      "request_hex": "000b110032220064",
+      "expected_response_hex": "000b110022000000"
+    },
+    {
+      "session": 0,
+      "index": 12,
+      "request_hex": "000c110032220064",
+      "expected_response_hex": "000c110022000000"
+    },
+    {
+      "session": 0,
+      "index": 13,
+      "request_hex": "000d110032220064",
+      "expected_response_hex": "000d110022000000"
+    },
+    {
+      "session": 0,
+      "index": 14,
+      "request_hex": "000e110032220064",
+      "expected_response_hex": "000e110022000000"
+    },
+    {
+      "session": 0,
+      "index": 15,
+      "request_hex": "000f110032220064",
+      "expected_response_hex": "000f110022000000"
+    },
+    {
+      "session": 0,
+      "index": 16,
+      "request_hex": "001022003c110050",
+      "expected_response_hex": "0010220111020000"
+    },
+    {
+      "session": 0,
+      "index": 17,
+      "request_hex": "0011110055220037",
+      "expected_response_hex": "0011110222010000"
+    },
+    {
+      "session": 0,
+      "index": 18,
+      "request_hex": "0012110055220037",
+      "expected_response_hex": "0012110222010000"
+    },
+    {
+      "session": 0,
+      "index": 19,
+      "request_hex": "0013220082110014",
+      "expected_response_hex": "0013220211010000"
+    },
+    {
+      "session": 0,
+      "index": 20,
+      "request_hex": "001422008c11000f",
+      "expected_response_hex": "0014220211010000"
+    }
+  ]
+}
