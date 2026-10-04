@@ -34,6 +34,7 @@ module Byte = struct
   module O = struct
     type 'a t =
       { tx_data : 'a [@bits 8]; tx_valid : 'a; protocol_fault : 'a
+      ; retained_request : 'a P.Types.Request.t
       ; controller : 'a C.O.t; request_valid : 'a; response_done : 'a }
     [@@deriving hardcaml]
   end
@@ -55,6 +56,7 @@ module Byte = struct
     receive_enable <-- h.controller.receive_enable;
     ready <-- s.response_ready; done_ <-- s.response_done;
     { O.tx_data = s.tx_data; tx_valid = s.tx_valid; protocol_fault = d.protocol_fault
+    ; retained_request = d.request
     ; controller = h.controller; request_valid = d.request_valid
     ; response_done = s.response_done }
 end

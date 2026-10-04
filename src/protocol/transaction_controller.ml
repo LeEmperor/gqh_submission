@@ -30,7 +30,6 @@ end
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
   let sm = State_machine.create (module State) spec in
-  let request = Payload.Request.Of_always.reg spec in
   let pointer = Variable.reg spec ~width:4 in
   let action1 = Variable.reg spec ~width:2 in
   let action2 = Variable.reg spec ~width:2 in
@@ -40,11 +39,9 @@ let create _scope (i : _ I.t) =
   compile
     [ sm.switch
         [ Idle, [ when_ accept
-            (Payload.Request.to_list (Payload.Request.map2 request i.request
-               ~f:(fun dst src -> dst <-- src))
-             @ [ if_ (i.request.index ==:. 0)
+             [ if_ (i.request.index ==:. 0)
                    [ pointer <--. 0; sm.set_next Await_clear_idle ]
-                   [ sm.set_next Dispatch1 ] ]) ]
+                   [ sm.set_next Dispatch1 ] ] ]
         (* Observe readiness BEFORE clear: clear suppresses engine readiness.
            No engine command is offered in these states. With exclusive engine
            ownership, observed idle remains idle for the following clear edge. *)
@@ -61,7 +58,10 @@ let create _scope (i : _ I.t) =
         ; Response, [ when_ i.response_ready [ sm.set_next Drain ] ]
         ; Drain, [ when_ i.response_done [ sm.set_next Idle ] ]
         ] ];
-  let p = Payload.Request.map request ~f:(fun v -> v.value) in
+  (* Borrow decoder storage: acceptance disables reception until response_done.
+     The producer must retain ALL fields through that drain edge, even after
+     request_valid drops or a sticky fault occurs. Shared reset aborts the loan. *)
+  let p = i.request in
   let second = sm.is Dispatch2 |: sm.is Result2 in
   let id = mux2 second p.slot2_id p.slot1_id in
   { O.request_ready; receive_enable = request_ready

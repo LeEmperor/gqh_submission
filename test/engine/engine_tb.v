@@ -45,7 +45,7 @@ module engine_tb;
         check(update_ready,v[8],"pre ready"); check(result_valid,v[9],"pre valid");
         // Power-up register values are unspecified until the first reset edge.
         if (count>0) check(action,v[10],"pre action");
-        check(dut.engine_commit,v[54],"exact commit/write pulse");
+        check((dut.engine_state==2 && !reset),v[54],"exact commit/write pulse");
         clock=1; #1;
         check(update_ready,v[11],"post ready"); check(result_valid,v[12],"post valid");
         check(action,v[13],"post action");

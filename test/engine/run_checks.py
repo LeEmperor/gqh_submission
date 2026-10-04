@@ -42,7 +42,6 @@ class Trace:
         self.ram = [65535 - a for a in range(32)]
         self.state = 0
         self.pending = None
-        self.chunk = 0
         self.clear_scalars()
         self.edges = 0
         self.counts = collections.Counter()
@@ -59,13 +58,13 @@ class Trace:
 
     def outputs(self, reset, clear):
         return [int(self.state == 0 and not reset and not clear),
-                int(self.state == 5 and not reset), self.output_action]
+                int(self.state == 3 and not reset), self.output_action]
 
     def step(self, reset=0, clear=0, valid=0, ready=0, item=0, price=0,
              pos=0, warm=0, answer=0):
         inputs = [reset, clear, valid, ready, item, price, pos, warm]
         before = self.outputs(reset, clear)
-        commit = int(self.state == 4 and not reset)
+        commit = int(self.state == 2 and not reset)
         if reset:
             self.counts[f'reset_state_{self.state}'] += 1
             self.clear_scalars()
@@ -81,15 +80,8 @@ class Trace:
                 self.state = 1
                 self.counts['accepted'] += 1
         elif self.state == 1:
-            self.state = 6
-        elif self.state in (6, 7):
-            self.chunk = 0
-            self.state = 3 if self.state == 7 or self.pending[3] else 2
-        elif self.state in (2, 3):
-            if self.chunk == 4:
-                self.state = 7 if self.state == 2 else 4
-            self.chunk += 1
-        elif self.state == 4:
+            self.state = 2
+        elif self.state == 2:
             item, price, pos, warm, answer = self.pending
             old = self.windows[item]
             if warm:
@@ -115,7 +107,7 @@ class Trace:
             self.held[item] = answer
             self.output_action = answer
             self.ram[item * 16 + pos] = price
-            self.state = 5
+            self.state = 3
             self.counts['warmup' if warm else 'steady'] += 1
             self.counts[f'action_{answer}'] += 1
             self.counts['maximum_sum'] += sum(window) == 1048560
@@ -142,15 +134,14 @@ class Trace:
         # must not cause a result to be consumed at its publication edge.
         noise = dict(item=1-item, price=price ^ 65535, pos=pos ^ 15, warm=1-warm)
         latency = 0
-        # Explicit expected stages: synchronous read, optional subtract, add,
-        # commit. Busy clear is illegal and must not disturb the accepted work.
-        stages = ([6, 3] + [3]*4 + [4, 5] if warm else
-                  [6, 2] + [2]*4 + [7, 3] + [3]*4 + [4, 5])
+        # Accepted H2 schedule: synchronous read then commit. Busy clear
+        # is illegal and must not disturb the accepted work.
+        stages = [2, 3]
         for expected_stage in stages:
             self.step(valid=1, ready=1, clear=1, **noise)
             latency += 1
             assert self.state == expected_stage
-        assert latency == (8 if warm else 14)
+        assert latency == 2
         self.counts[f'latency_{"warm" if warm else "steady"}_{latency}'] += 1
         for _ in range(self.rng.randrange(12) if stall is None else stall):
             self.step(valid=1, ready=0, **self.noise())
@@ -222,11 +213,11 @@ def build_trace(path):
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2 == 0
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
             t.packet(request, model.respond(request), model._windows)
-    # Reset at every state, including subtraction, addition and final commit,
+    # Reset at every H2 state, including read and commit,
     # with both warm-up and rolling commands and a pending committed result. Check all RAM words on every edge:
     # a reset on the commit edge MUST suppress the write, even with valid high.
     for warm in [0, 1]:
-      for target_state in ([0, 1, 6, 3, 4, 5] if warm else range(8)):
+      for target_state in range(4):
         for item in range(2):
             # Populate both histories and nonzero BUY/SELL before reset tests.
             for index in range(35):
@@ -249,7 +240,7 @@ def build_trace(path):
                     if t.state == target_state:
                         break
                     t.step(**t.noise())
-                if target_state == 5:
+                if target_state == 3:
                     for _ in range(64):
                         t.step(ready=0, valid=1, **t.noise())
             assert t.state == target_state
@@ -273,7 +264,7 @@ def build_trace(path):
         for new in ["below", "equal", "above"]:
             assert t.counts[f"transition_{old}_{new}"] > 0
             assert t.counts[f"first_scored_{old}_{new}"] > 0
-    for state in range(8):
+    for state in range(4):
         assert t.counts[f'reset_state_{state}'] >= 2
     summary = dict(sorted(t.counts.items()))
     summary.update(supplied_fixture_records=supplied, edges=t.edges,
@@ -284,10 +275,10 @@ def build_trace(path):
 
 
 def build_quick_trace(path):
-    """H3c resource-screen check using the existing per-edge window/RAM oracle.
+    """H2 resource-screen check using the existing per-edge window/RAM oracle.
 
     Directed carries/borrows, top digit, relation transitions, and reset at
-    every edge (including all five digits of both operations). No serial run.
+    every processing edge. No serial run.
     """
     t = Trace(path)
     t.step(reset=1, valid=1, ready=1)
@@ -314,7 +305,7 @@ def build_quick_trace(path):
     # Offset zero is READ immediately after acceptance; the final offset is
     # RESULT. Reset on COMMIT must suppress RAM and all scalar writes.
     for warm in (0, 1):
-        for offset in range((8 if warm else 14) + 1):
+        for offset in range(3):
             for index in range(18):
                 packet(index, 4096 if index < 16 else 0,
                        65535 if index < 16 else 1)
@@ -340,12 +331,12 @@ def build_quick_trace(path):
         packet(index, index*17, 65535-index)
     t.file.close()
     for name in ('maximum_sum', 'zero_sum', 'result_stall_edges',
-                 'latency_warm_8', 'latency_steady_14'):
+                 'latency_warm_2', 'latency_steady_2'):
         assert t.counts[name] > 0, name
     for old in ('below', 'equal', 'above'):
         for new in ('below', 'equal', 'above'):
             assert t.counts[f'first_scored_{old}_{new}'] > 0
-    print(f'H3c quick trace: {t.counts["packets"]} packets / {t.edges} edges', flush=True)
+    print(f'H2 quick trace: {t.counts["packets"]} packets / {t.edges} edges', flush=True)
     return dict(t.counts, edges=t.edges)
 
 
@@ -375,25 +366,6 @@ def main():
         net = tmp / 'net.json'
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
         module = json.loads(net.read_text())['modules']['gqh_update_engine']
-        arithmetic_cells = [c for c in module['cells'].values()
-                            if c['type'] in ('$add', '$sub')
-                            and len(c['connections']['Y']) > 3]
-        assert len(arithmetic_cells) == 1, arithmetic_cells
-        cell = arithmetic_cells[0]
-        assert cell['type'] == '$add'
-        # The only sum datapath is four operand bits plus carry-out and a
-        # guard bit. The independent 3-bit chunk-counter increment is allowed.
-        assert len(cell['connections']['A']) == len(cell['connections']['B']) == 6
-        assert len(cell['connections']['Y']) == 6
-        assert cell['connections']['A'][0] == cell['connections']['B'][0]
-        assert cell['connections']['A'][1:5] == module['netnames']['arithmetic_lhs']['bits']
-        assert cell['connections']['B'][1:5] == module['netnames']['arithmetic_rhs']['bits']
-        assert cell['connections']['A'][5] == cell['connections']['B'][5] == '0'
-        assert cell['connections']['Y'] == module['netnames']['arithmetic_with_carry']['bits']
-        assert len(module['netnames']['arithmetic_operand']['bits']) == 16
-        summary['arithmetic_structure'] = dict(add_cells=1, sub_cells=0,
-            encoded_width=6, digit_width=4, carry_output=True)
-        print('PASS arithmetic structure: one 4-bit digit addition with carry; no full-width sum arithmetic')
         ports = module['ports']
         for suffix in ['a', 'b']:
             assert 'previous_' + suffix not in module['netnames']

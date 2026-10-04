@@ -28,6 +28,10 @@ end
     - Decoder supplies [request] (index16, IDs8, prices16), [request_valid];
       controller supplies [request_ready], [receive_enable]. No fault input:
       sticky lockout and acceptance-edge collisions remain decoder-owned.
+      Borrowed-storage contract: after request acceptance, the producer must
+      retain ALL request fields through the response_done consumption edge,
+      regardless of request_valid or faults. The controller disables reception
+      until then. Shared reset aborts the transaction and releases the storage.
     - Engine receives [update] (item_select1, price16, window_position4, warmup1),
       [update_valid], [result_ready], [session_clear]; supplies [update_ready],
       [result_valid], [action] (2 bits). A=0x11 maps to 0, B=0x22 maps to 1.

@@ -19,8 +19,8 @@ let begin_edge sim = Cyclesim.cycle_check sim; Cyclesim.cycle_before_clock_edge 
 let end_edge sim = Cyclesim.cycle_at_clock_edge sim; Cyclesim.cycle_after_clock_edge sim
 
 (* Independent variable-latency endpoint plus transaction/event scoreboard.
-   Requests remain offered while busy and every live payload changes after
-   acceptance. Distinct actions depend on command ordinal, not item order. *)
+   Requests remain offered while busy, with borrowed payload retained through
+   final drain as required by the controller contract. Distinct actions depend on command ordinal, not item order. *)
 let mocks () =
   let module S = Cyclesim.With_interface(C.I)(C.O) in
   let sim = S.create (C.create (scope ())) in
@@ -48,7 +48,7 @@ let mocks () =
       let swapped = index % 2 = 0 in
       let offered = [index; (if swapped then 34 else 17); Random.State.int rng 65536;
                      (if swapped then 17 else 34); Random.State.int rng 65536] in
-      set_req i.request offered; set i.request_valid 1; set i.reset (Bool.to_int reset);
+      set_req i.request (if !stage = 0 then offered else !stored); set i.request_valid 1; set i.reset (Bool.to_int reset);
       let ur = !engine = 0 && !stage <> 2 && Random.State.int rng 4 = 0
         && not (waiting_target && List.mem [1;3;5] reset_target ~equal:Int.equal) in
       let rv = !engine = 2
@@ -145,7 +145,8 @@ let replay ?(reset_sweep=true) path =
     set_req i.request fields; set i.request_valid 1;
     set i.response_ready 0; set i.response_done 0;
     let ready,_,_,_,_,_,_,_,_ = tick () in check "request acceptance" ready 1;
-    set_req i.request [65535;34;65535;17;65535]; (* all fields change *)
+    (* Retain borrowed request fields until response_done; valid may drop. *)
+    set i.request_valid 0;
     let elapsed = ref 0 and update_count = ref 0 and result_count = ref 0 and clear_count = ref 0 in
     let response_seen = ref false and publication = ref (-1) in
     while not !response_seen do
@@ -173,8 +174,8 @@ let replay ?(reset_sweep=true) path =
     done;
     check "publication versus transfer edge" !elapsed (!publication + 1);
     let key = if v.(0)=0 then "session_start" else if v.(0)<16 then "warmup" else "steady" in
-    check "H3c bounded path latency" !elapsed
-      (if v.(0)=0 then 23 else if v.(0)>=16 then 33 else 21);
+    check "H2 parent path latency" !elapsed
+      (if v.(0)=0 then 11 else 9);
     Hashtbl.update counts key ~f:(function None -> !elapsed | Some n -> check "path latency" !elapsed n; n);
     for _ = 1 to 7 do
       let ready,valid,response,_,_,_,_,_,_ = tick () in
@@ -197,7 +198,7 @@ let replay ?(reset_sweep=true) path =
      This verifies controller + engine reset together, with stale physical RAM. *)
   if reset_sweep then begin
   for index = 0 to 1 do
-   for offset = 0 to (if index = 0 then 24 else 34) do
+   for offset = 0 to (if index = 0 then 12 else 10) do
     (* Refill a full window before the rolling reset sweep, on this instance. *)
     if index = 1 then List.iter (List.take lines 35) ~f:process;
     set_req i.request (if index = 0 then [0;34;65535;17;0] else [35;34;65535;17;0]);
@@ -205,7 +206,7 @@ let replay ?(reset_sweep=true) path =
     set i.response_ready 0; set i.response_done 0;
     ignore (tick ());
     for elapsed = 1 to offset do
-      if elapsed = (if index = 0 then 24 else 34) then set i.response_ready 1;
+      if elapsed = (if index = 0 then 12 else 10) then set i.response_ready 1;
       ignore (tick ())
     done;
     set i.reset 1;
@@ -238,10 +239,21 @@ let bytes path =
   let i = Cyclesim.inputs sim in
   let received = ref [] and accepts = ref 0 and updates = ref 0 and clears = ref 0 in
   let completions = ref 0 in
+  let retained = ref None in
   let tick () =
     begin_edge sim;
     let o = Cyclesim.outputs ~clock_edge:Before sim in
     let c = o.controller in
+    let fields = List.map (P.Types.Request.to_list o.retained_request) ~f:get in
+    if get i.reset = 1 then retained := None
+    else begin
+      Option.iter !retained ~f:(fun expected ->
+        assert ([%equal: int list] fields expected));
+      if get o.request_valid = 1 && get c.request_ready = 1
+      then retained := Some fields;
+      (* Verify through the edge consuming done, then release the loan. *)
+      if get o.response_done = 1 then retained := None
+    end;
     if get o.tx_valid = 1 && get i.tx_ready = 1 then received := !received @ [get o.tx_data];
     if get o.request_valid = 1 && get c.request_ready = 1 then incr accepts;
     if get c.update_valid = 1 then incr updates;
@@ -313,9 +325,22 @@ let bytes path =
     check "fault blocks further request" !accepts (if framing then 0 else 1);
     reset (); send_request v; finish [0;0;34;0;17;0;0;0]);
   (* A fault during work permits the accepted transaction to finish. *)
-  reset (); send_request v; idle (); send_byte 99;
-  finish [0;0;34;0;17;0;0;0];
-  let _,fault,_ = tick () in check "busy-byte fault" fault 1;
+  let distinct = [|0;34;0x1234;17;0xfedc;0;0|] in
+  List.iter [false;true] ~f:(fun framing ->
+    reset (); send_request distinct; idle ();
+    (* Hold TX stalled while injecting busy input/framing error. *)
+    set i.byte_data 99; set i.byte_valid 1;
+    set i.framing_error (Bool.to_int framing); ignore (tick ());
+    set i.byte_valid 0; set i.framing_error 0;
+    for _ = 1 to 40 do
+      let enabled,fault,_ = tick () in
+      assert (enabled=0 && fault=1 && List.is_empty !received)
+    done;
+    finish [0;0;34;0;17;0;0;0];
+    let _,fault,_ = tick () in check "busy fault remains sticky" fault 1;
+    List.iter (wire_request v) ~f:send_byte;
+    check "fault prevents another acceptance" !accepts 1;
+    reset (); send_request v; finish [0;0;34;0;17;0;0;0]);
   reset (); List.iter (List.take (wire_request v) 7) ~f:send_byte;
   set i.byte_valid 1; set i.framing_error 1; ignore (tick ());
   set i.byte_valid 0; set i.framing_error 0;

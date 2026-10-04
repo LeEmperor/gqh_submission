@@ -18,7 +18,11 @@ module O = struct
 end
 
 (* Sticky fault belongs here; the harness/controller owns receive_enable.
-   No byte counter timeout: arbitrarily long pauses are legal. *)
+   No byte counter timeout: arbitrarily long pauses are legal.
+   Payload is complete after byte 8 and retained beyond request acceptance:
+   only enabled reception writes fields; busy bytes/framing faults leave them
+   intact. The production controller holds receive_enable low through final TX
+   drain and shares reset, which aborts the retained transaction. *)
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
   let payload = Payload.Request.Of_always.reg spec in

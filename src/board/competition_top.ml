@@ -16,7 +16,9 @@ let create ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles scope (i : _ I
   let tx = Uart.Tx.hierarchical ~instance:"uart_tx" ?cycles_per_bit ?extra_idle_cycles scope
     { Uart.Tx.I.clock = i.sys_clk; reset = reset.reset; tx_data; tx_valid } in
   (* Feedback wires connect exclusively owned components; all transfers use
-     their valid/ready contracts, including final-frame response_done. *)
+     their valid/ready contracts, including final-frame response_done. Decoder
+     fields are borrowed by the controller: receive_enable stays low from
+     acceptance through final drain, retaining payload even on sticky faults. *)
   let request_ready = wire 1 and receive_enable = wire 1 in
   let decoder = Protocol.Request_decoder.hierarchical ~instance:"request_decoder" scope
     { Protocol.Request_decoder.I.clock = i.sys_clk; reset = reset.reset
