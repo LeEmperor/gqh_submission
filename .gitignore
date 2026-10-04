@@ -31,3 +31,6 @@ gowin/**/*.log
 # Generated rtl/*.v and all constraints are intentional deliverables.
 impl/
 results/
+# Archived parser fixtures are required by the regression suite.
+!test/gowin/fixtures/vendor-g2/impl/
+!test/gowin/fixtures/vendor-g2/impl/**

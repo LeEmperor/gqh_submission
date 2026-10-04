@@ -1,3 +1,9 @@
 # Preserve fixture bytes, including intentional CRLF and malformed CSV inputs.
 external/databento_audit/fixtures/** -text whitespace=cr-at-eol
 tools/test_data_factory/fixtures/** -text
+# Preserve exact vendor bytes and avoid treating programming images as source.
+bitstream/*.fs binary
+gowin/bsram_candidate/evidence/*.html -text -diff
+gowin/bsram_candidate/evidence/*.xml -text whitespace=-blank-at-eol,cr-at-eol
+gowin/bsram_candidate/evidence/*.txt -text whitespace=-blank-at-eol,cr-at-eol
+test/gowin/fixtures/vendor-g2/** -text whitespace=-blank-at-eol,cr-at-eol
