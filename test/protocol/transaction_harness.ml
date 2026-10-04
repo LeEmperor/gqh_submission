@@ -16,13 +16,13 @@ module O = struct
   type 'a t = { controller : 'a C.O.t; engine : 'a U.O.t }
   [@@deriving hardcaml]
 end
-let create scope (i : _ I.t) =
+let create ?state_encoding ?borrow_request scope (i : _ I.t) =
   let ready = wire 1 and valid = wire 1 and action = wire 2 in
-  let c = C.hierarchical ~instance:"controller" scope
+  let c = C.hierarchical ~instance:"controller" ?state_encoding ?borrow_request scope
     { C.I.clock = i.clock; reset = i.reset; request = i.request
     ; request_valid = i.request_valid; update_ready = ready; result_valid = valid
     ; action; response_ready = i.response_ready; response_done = i.response_done } in
-  let e = U.hierarchical ~instance:"engine" scope
+  let e = U.hierarchical ~instance:"engine" ~borrow_command:true scope
     { U.I.clock = i.clock; reset = i.reset; session_clear = c.session_clear
     ; update = c.update; update_valid = c.update_valid; result_ready = c.result_ready } in
   ready <-- e.update_ready; valid <-- e.result_valid; action <-- e.action;
@@ -37,17 +37,17 @@ module Byte = struct
       ; controller : 'a C.O.t; request_valid : 'a; response_done : 'a }
     [@@deriving hardcaml]
   end
-  let create scope (i : _ I.t) =
+  let create ?controller_encoding ?sequencer_encoding ?borrow_request ?borrow_response scope (i : _ I.t) =
     let request_ready = wire 1 and receive_enable = wire 1 in
     let d = P.Request_decoder.hierarchical ~instance:"decoder" scope
       { P.Request_decoder.I.clock = i.clock; reset = i.reset; receive_enable
       ; byte_data = i.byte_data; byte_valid = i.byte_valid
       ; framing_error = i.framing_error; request_ready } in
     let ready = wire 1 and done_ = wire 1 in
-    let h = create scope
+    let h = create ?state_encoding:controller_encoding ?borrow_request scope
       { Payload_I.clock = i.clock; reset = i.reset; request = d.request
       ; request_valid = d.request_valid; response_ready = ready; response_done = done_ } in
-    let s = P.Response_sequencer.hierarchical ~instance:"sequencer" scope
+    let s = P.Response_sequencer.hierarchical ~instance:"sequencer" ?state_encoding:sequencer_encoding ?borrow_response scope
       { P.Response_sequencer.I.clock = i.clock; reset = i.reset
       ; response = h.controller.response; response_valid = h.controller.response_valid
       ; tx_ready = i.tx_ready; tx_busy = i.tx_busy } in

@@ -1,0 +1,15 @@
+(rule
+ (alias runtest)
+ (deps test_run_gowin.py ../../tools/run_gowin.py
+  ../../gowin/competition-options.json ../../gowin/competition.tcl
+  ../../constraints/19_tang_nano_20k.cst ../../constraints/tang_nano_20k.sdc
+  ../../rtl/gqh_competition_top.v
+  (source_tree fixtures/vendor-g2))
+ (action (run python3 test_run_gowin.py)))
+
+(rule
+ (alias runtest)
+ (deps test_run_open_gowin.py ../../tools/run_open_gowin.py
+  fixtures/h1-nextpnr-summary.json
+  ../../constraints/19_tang_nano_20k.cst ../../constraints/tang_nano_20k.sdc)
+ (action (run python3 test_run_open_gowin.py)))

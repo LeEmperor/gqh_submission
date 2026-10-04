@@ -1,0 +1,44 @@
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+Generated /tmp/phase-g2-o__4k_ct/gqh_competition_top.v (top module gqh_competition_top)
+Generated /tmp/phase-g2-o__4k_ct/gqh_competition_top.v (top module gqh_competition_top)
+PASS: 1394 production-divisor serial oracle packets; core latency session=18 other=16 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and heartbeat
+/home/srijan/gqh_submission/results/phase-i-20261004/integration-workspace/test/integration/packet_ram_tb.v:227: $finish called at 3152464702692 (1ps)
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "latency": {
+    "endpoint": "accept_to_first_tx_accept_cycles",
+    "session_cycles": 18,
+    "other_cycles": 16,
+    "samples": 1394
+  },
+  "rtl_sha256": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  }
+}
+PASS G2: Cyclesim serial oracle, production-timing RTL serial, resets/faults, deterministic hierarchy and six ports

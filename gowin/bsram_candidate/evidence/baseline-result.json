@@ -1,0 +1,19 @@
+{
+  "logic": 363,
+  "registers": 235,
+  "bsram": 1,
+  "ssram": 0,
+  "synthesis_luts": 289,
+  "setup_violated_endpoints": 0,
+  "hold_violated_endpoints": 0,
+  "paths_analyzed": 725,
+  "worst_setup_slack_ns": 24.927,
+  "tool_version": "V1.9.11.03 Education",
+  "part": "GW2AR-LV18QN88C8/I7",
+  "warning_codes": [
+    "PR1014"
+  ],
+  "rtl_sha256": "cbd88a4e72e8476fa7e22acd464c6e3e596d8c81a89ca3a5d5c4192a10ebe818",
+  "bitstream_sha256": "9d6af1361e8eed6acfdb63f11252c731c0e410cfdcbb15e914e93e3d9b7f0e75",
+  "source_windows": "/mnt/c/Users/srija/Downloads/gowin-manual-H2-H4/gowin-manual-H2-H4"
+}

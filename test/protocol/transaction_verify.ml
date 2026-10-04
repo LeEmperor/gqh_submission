@@ -21,9 +21,9 @@ let end_edge sim = Cyclesim.cycle_at_clock_edge sim; Cyclesim.cycle_after_clock_
 (* Independent variable-latency endpoint plus transaction/event scoreboard.
    Requests remain offered while busy and every live payload changes after
    acceptance. Distinct actions depend on command ordinal, not item order. *)
-let mocks () =
+let mocks ?state_encoding () =
   let module S = Cyclesim.With_interface(C.I)(C.O) in
-  let sim = S.create (C.create (scope ())) in
+  let sim = S.create (C.create ?state_encoding (scope ())) in
   let i = Cyclesim.inputs sim in
   let rng = Random.State.make [|0x612026|] in
   let total_commands = ref 0 and total_packets = ref 0 and total_clears = ref 0 in
@@ -124,9 +124,9 @@ let mocks () =
   printf "PASS mocks: nine reset stages, %d responses, %d commands, %d clear pulses, %d earliest-result commands; random stalls/latency and held offers\n"
     !total_packets !total_commands !total_clears !earliest
 
-let replay path =
+let replay ?state_encoding ?(borrow_request = false) path =
   let module S = Cyclesim.With_interface(H.I)(H.O) in
-  let sim = S.create ~config:Cyclesim.Config.trace_all (H.create (scope ())) in
+  let sim = S.create ~config:Cyclesim.Config.trace_all (H.create ?state_encoding ~borrow_request (scope ())) in
   let i = Cyclesim.inputs sim in
   let tick () = begin_edge sim; let before = Cyclesim.outputs ~clock_edge:Before sim in
     let c = before.controller in
@@ -145,7 +145,8 @@ let replay path =
     set_req i.request fields; set i.request_valid 1;
     set i.response_ready 0; set i.response_done 0;
     let ready,_,_,_,_,_,_,_,_ = tick () in check "request acceptance" ready 1;
-    set_req i.request [65535;34;65535;17;65535]; (* all fields change *)
+    if borrow_request then set i.request_valid 0
+    else set_req i.request [65535;34;65535;17;65535]; (* capture-mode disturbance *)
     let elapsed = ref 0 and update_count = ref 0 and result_count = ref 0 and clear_count = ref 0 in
     let response_seen = ref false and publication = ref (-1) in
     while not !response_seen do
@@ -223,9 +224,10 @@ let emit kind path =
     | _ -> failwith "unknown emit kind" in
   Out_channel.write_all path ~data:(Rtl.create Verilog [circuit] |> Rtl.full_hierarchy |> Rope.to_string)
 
-let bytes path =
+let bytes ?controller_encoding ?sequencer_encoding
+  ?(borrow_request = false) ?(borrow_response = false) path =
   let module S = Cyclesim.With_interface(H.Byte.I)(H.Byte.O) in
-  let sim = S.create (H.Byte.create (scope ())) in
+  let sim = S.create (H.Byte.create ?controller_encoding ?sequencer_encoding ~borrow_request ~borrow_response (scope ())) in
   let i = Cyclesim.inputs sim in
   let received = ref [] and accepts = ref 0 and updates = ref 0 and clears = ref 0 in
   let completions = ref 0 in
@@ -317,6 +319,15 @@ let bytes path =
     reset (); List.iter (List.take (wire_request v) position) ~f:send_byte;
     reset (); send_request v; finish [0;0;34;0;17;0;0;0]
   done;
+  (* Shared reset aborts every processing edge and every sending byte for all
+     retention combinations; the same instance refills its stale engine RAM. *)
+  for offset = 0 to 25 do
+    reset (); send_request v; set i.tx_ready 1; set i.tx_busy 1;
+    for _ = 1 to offset do ignore (tick ()) done;
+    reset (); for _ = 1 to 5 do idle () done;
+    assert (!completions=0 && List.is_empty !received);
+    send_request v; finish [0;0;34;0;17;0;0;0]
+  done;
   (* Reset during final drain must discard pending completion and recover. *)
   reset (); send_request v; set i.tx_ready 1; set i.tx_busy 0;
   while List.length !received < 8 do ignore (tick ()) done;
@@ -327,9 +338,25 @@ let bytes path =
   send_request v; finish [0;0;34;0;17;0;0;0];
   printf "PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery\n"
 
+let encoding = function
+  | "binary" -> Always.State_machine.Encoding.Binary
+  | "onehot" -> Always.State_machine.Encoding.Onehot
+  | _ -> failwith "bad encoding"
 let () = match Array.to_list (Sys.get_argv ()) with
   | [_; "mocks"] -> mocks ()
   | [_; "replay"; path] -> replay path
   | [_; "bytes"; path] -> bytes path
+  | [_; "borrow-replay"; path] -> replay ~borrow_request:true path
+  | [_; "encoding-mocks"; state] -> mocks ~state_encoding:(encoding state) ()
+  | [_; "encoding-replay"; state; path] ->
+    replay ~state_encoding:(encoding state) ~borrow_request:true path
+  | [_; "encoding-bytes"; block; state; path] ->
+    let state = encoding state in
+    (match block with
+     | "controller" -> bytes ~controller_encoding:state ~borrow_request:true ~borrow_response:true path
+     | "sequencer" -> bytes ~sequencer_encoding:state ~borrow_request:true ~borrow_response:true path
+     | _ -> failwith "bad encoding block")
+  | [_; "borrow-bytes"; request; response; path] ->
+    bytes ~borrow_request:(Bool.of_string request) ~borrow_response:(Bool.of_string response) path
   | [_; "emit"; kind; path] -> emit kind path
   | _ -> failwith "usage: transaction_verify (mocks | replay TRACE | bytes TRACE | emit KIND RTL)"

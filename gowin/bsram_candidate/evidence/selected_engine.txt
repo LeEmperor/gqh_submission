@@ -1,0 +1,105 @@
+PASS: pinned unchanged oracle/factory/fixture source hashes
+Running: /usr/bin/python3 -m unittest discover -s /home/srijan/gqh_submission/test/engine/oracle -p test_factory.py -v
+test_all_scenarios_wire_answers_csv_and_metadata (test_factory.FactoryTests.test_all_scenarios_wire_answers_csv_and_metadata) ... ok
+test_boundary_prices_and_reset_fixture (test_factory.FactoryTests.test_boundary_prices_and_reset_fixture) ... ok
+test_constant_and_alternating_fixtures_hand_checked (test_factory.FactoryTests.test_constant_and_alternating_fixtures_hand_checked) ... ok
+test_existing_output_is_preserved (test_factory.FactoryTests.test_existing_output_is_preserved) ... ok
+test_invalid_settings_do_not_leave_output (test_factory.FactoryTests.test_invalid_settings_do_not_leave_output) ... ok
+test_ramp_moves_each_item_in_both_directions (test_factory.FactoryTests.test_ramp_moves_each_item_in_both_directions) ... ok
+test_random_seed_changes_prices (test_factory.FactoryTests.test_random_seed_changes_prices) ... ok
+test_repeated_session_clears_prior_nonzero_actions (test_factory.FactoryTests.test_repeated_session_clears_prior_nonzero_actions) ... ok
+test_same_settings_are_byte_identical (test_factory.FactoryTests.test_same_settings_are_byte_identical) ... ok
+test_verifier_catches_changed_action_even_with_updated_hash (test_factory.FactoryTests.test_verifier_catches_changed_action_even_with_updated_hash) ... ok
+test_accepts_hand_checked_complete_response (test_factory.OfflineLogCheckerTests.test_accepts_hand_checked_complete_response) ... ok
+test_rejects_seven_byte_response (test_factory.OfflineLogCheckerTests.test_rejects_seven_byte_response) ... ok
+test_rejects_timeout_with_empty_response (test_factory.OfflineLogCheckerTests.test_rejects_timeout_with_empty_response) ... ok
+test_rejects_wrong_action (test_factory.OfflineLogCheckerTests.test_rejects_wrong_action) ... ok
+test_constant_and_swapped_answers (test_factory.ProtocolAndModelTests.test_constant_and_swapped_answers) ... ok
+test_floor_average_equal_is_not_a_crossing (test_factory.ProtocolAndModelTests.test_floor_average_equal_is_not_a_crossing) ... ok
+test_hand_checked_big_endian_bytes (test_factory.ProtocolAndModelTests.test_hand_checked_big_endian_bytes) ... ok
+test_hand_checked_crossings_and_held_actions (test_factory.ProtocolAndModelTests.test_hand_checked_crossings_and_held_actions) ... ok
+test_model_rejects_skipped_index_without_consuming_packet (test_factory.ProtocolAndModelTests.test_model_rejects_skipped_index_without_consuming_packet) ... ok
+test_rejects_invalid_fields_and_requests (test_factory.ProtocolAndModelTests.test_rejects_invalid_fields_and_requests) ... ok
+test_seeded_random_against_complete_history_oracle (test_factory.ProtocolAndModelTests.test_seeded_random_against_complete_history_oracle) ... ok
+test_session_zero_resets_prices_and_actions (test_factory.ProtocolAndModelTests.test_session_zero_resets_prices_and_actions) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.051s
+
+OK
+Running: /usr/bin/python3 /home/srijan/gqh_submission/test/engine/oracle/factory.py --verify-dir /home/srijan/gqh_submission/test/engine/oracle/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+Running: /usr/bin/python3 /home/srijan/gqh_submission/test/engine/oracle/factory.py --output-dir /tmp/tickweave-fixture-check-a1fxlw4f/fixtures --scenario all --seed 42 --packets 100
+Generated /tmp/tickweave-fixture-check-a1fxlw4f/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+PASS: saved fixtures reproduce byte for byte
+PASS: all requested fixture checks completed
+{
+  "accepted": 9962,
+  "action_0": 2315,
+  "action_1": 3699,
+  "action_2": 3944,
+  "clear_valid_collision": 45,
+  "first_scored_above_above": 12,
+  "first_scored_above_below": 5,
+  "first_scored_above_equal": 4,
+  "first_scored_below_above": 9,
+  "first_scored_below_below": 18,
+  "first_scored_below_equal": 1,
+  "first_scored_equal_above": 16,
+  "first_scored_equal_below": 15,
+  "first_scored_equal_equal": 10,
+  "held_0": 875,
+  "held_1": 1887,
+  "held_2": 2121,
+  "latency_steady_2": 8516,
+  "latency_warm_2": 1440,
+  "maximum_sum": 3,
+  "packets": 4978,
+  "previous_equals_old_average": 665,
+  "price_equals_new_average": 635,
+  "relation_above": 5314,
+  "relation_below": 3929,
+  "relation_equal": 715,
+  "reset_state_0": 12,
+  "reset_state_1": 2,
+  "reset_state_2": 2,
+  "reset_state_3": 2,
+  "result_stall_edges": 55039,
+  "results_consumed": 9956,
+  "scored_wrap_previous_above": 248,
+  "scored_wrap_previous_below": 278,
+  "scored_wrap_previous_equal": 78,
+  "session_clear": 45,
+  "steady": 8518,
+  "transition_above_above": 3313,
+  "transition_above_below": 1842,
+  "transition_above_equal": 115,
+  "transition_below_above": 1818,
+  "transition_below_below": 2051,
+  "transition_below_equal": 25,
+  "transition_equal_above": 183,
+  "transition_equal_below": 36,
+  "transition_equal_equal": 575,
+  "truncated_average": 7887,
+  "warmup": 1440,
+  "warmup_final_above": 21,
+  "warmup_final_below": 28,
+  "warmup_final_equal": 41,
+  "warmup_swaps": 354,
+  "wraps": 305,
+  "zero_sum": 41,
+  "variant": "h2_or_shared20",
+  "acceptance_to_publication_cycles": 2,
+  "earliest_result_transfer_cycles": 3,
+  "earliest_next_acceptance_cycles": 4,
+  "supplied_fixture_records": 800,
+  "edges": 104927,
+  "extra_packet_records": 4178,
+  "trace_sha256": "b60922998e80a6744dfa5c67b7d425c2bfdd178e068ef7e1a56af32e0ab98f64"
+}
+PASS Cyclesim: 104927 edges, handshake, actions, scalars and all known RAM cells
+PASS Icarus: 104927 edges, synchronous RAM, scalar/window consistency, reset and stalled results
+/home/srijan/gqh_submission/test/engine/engine_tb.v:89: $finish called at 314781000 (1ps)
+RTL SHA256: 46648113f1e3e5da64a4e13c43940cd87317729171a5bc38e96d2bacb8bd7e54
+PASS: Phase F independent oracle, Cyclesim, deterministic RTL, Yosys and Icarus

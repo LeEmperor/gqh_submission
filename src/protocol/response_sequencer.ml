@@ -22,10 +22,20 @@ module State = struct
   [@@deriving sexp_of, compare ~localize, enumerate]
 end
 
-let create _scope (i : _ I.t) =
+(* [borrow_response] defaults to capture behavior. In borrowed mode the upstream
+   owns retained fields and must hold them through response_done or shared reset;
+   response_valid may fall after acceptance. No byte starts before acceptance. *)
+let create ?state_encoding ?(borrow_response = false) _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
-  let sm = State_machine.create (module State) spec in
-  let payload = Payload.Response.Of_always.reg spec in
+  let sm = match state_encoding with
+    | None -> State_machine.create (module State) spec
+    | Some encoding -> State_machine.create ~encoding ~attributes:[] (module State) spec in
+  let p, capture =
+    if borrow_response then i.response, [] else (
+      let payload = Payload.Response.Of_always.reg spec in
+      Payload.Response.map payload ~f:(fun v -> v.value),
+      Payload.Response.to_list (Payload.Response.map2 payload i.response
+        ~f:(fun dst src -> dst <-- src))) in
   let position = Variable.reg spec ~width:3 in
   let done_ = Variable.reg spec ~width:1 in
   compile
@@ -33,8 +43,7 @@ let create _scope (i : _ I.t) =
     ; sm.switch
         [ Idle,
           [ when_ i.response_valid
-              (Payload.Response.to_list (Payload.Response.map2 payload i.response
-                 ~f:(fun dst src -> dst <-- src))
+              (capture
                @ [ position <--. 0; sm.set_next Send ]) ]
         ; Send,
           [ when_ i.tx_ready
@@ -43,7 +52,6 @@ let create _scope (i : _ I.t) =
         ; Drain, [ when_ (~:(i.tx_busy)) [ done_ <--. 1; sm.set_next Idle ] ]
         ]
     ];
-  let p = Payload.Response.map payload ~f:(fun v -> v.value) in
   { O.response_ready = sm.is Idle &: ~:(i.reset)
   ; response_done = done_.value
   ; tx_valid = sm.is Send &: ~:(i.reset)
@@ -53,6 +61,6 @@ let create _scope (i : _ I.t) =
       ; p.slot2_id; uresize p.slot2_action ~width:8; zero 8; zero 8 ]
   }
 
-let hierarchical ?instance scope i =
+let hierarchical ?instance ?state_encoding ?borrow_response scope i =
   let module H = Hierarchy.In_scope (I) (O) in
-  H.hierarchical ?instance ~scope ~name:"gqh_response_sequencer" create i
+  H.hierarchical ?instance ~scope ~name:"gqh_response_sequencer" (create ?state_encoding ?borrow_response) i

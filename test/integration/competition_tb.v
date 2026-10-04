@@ -1,4 +1,9 @@
 `timescale 1ns/1ps
+// Default covers the historical four-state engine. Candidate runners may
+// select extended states and digit-by-digit reset coverage with these defines.
+`ifndef HOPT_ENGINE_RESULT_STATE
+`define HOPT_ENGINE_RESULT_STATE 3
+`endif
 module competition_tb;
   // Independent wall-time host: 234.375 core clocks/bit at nominal 115200.
   localparam real CORE = 1000.0/27.0;
@@ -173,21 +178,33 @@ module competition_tb;
     end
     // Reset during each real engine phase on first and second slots.
     for (integer slot=0;slot<2;slot=slot+1) begin
-      for (integer state=1;state<=3;state=state+1) begin
-        base=seen;
-        fork
-          send_request(requests[17],0);
-          begin
-            if (slot==1) begin
-              wait(dut.engine.engine_state==3); wait(dut.engine.engine_state==0);
+      for (integer state=1;state<=`HOPT_ENGINE_RESULT_STATE;state=state+1) begin
+        for (integer digit=0;digit<
+`ifdef HOPT_ENGINE_SERIAL_DIGITS
+            ((state==2 || state==4) ? `HOPT_ENGINE_SERIAL_DIGITS : 1)
+`else
+            1
+`endif
+            ;digit=digit+1) begin
+          base=seen;
+          fork
+            send_request(requests[17],0);
+            begin
+              if (slot==1) begin
+                wait(dut.engine.engine_state==`HOPT_ENGINE_RESULT_STATE);
+                wait(dut.engine.engine_state==0);
+              end
+              wait(dut.engine.engine_state==state);
+`ifdef HOPT_ENGINE_SERIAL_DIGITS
+              if (state==2 || state==4) wait(dut.engine.engine_digit==digit);
+`endif
+              @(negedge sys_clk); reset_board();
             end
-            wait(dut.engine.engine_state==state);
-            @(negedge sys_clk); reset_board();
-          end
-        join
-        #(HOST_BIT*85);
-        if (seen != base) $fatal(1,"stale processing response");
-        populate();
+          join
+          #(HOST_BIT*85);
+          if (seen != base) $fatal(1,"stale processing response");
+          populate();
+        end
       end
     end
     // Reset during data bits of each response frame; drop the partial frame.

@@ -1,0 +1,37 @@
+{
+  "status": "locally_verified_and_vendor_resource_measured",
+  "board_acceptance": "pending",
+  "rtl_sha256": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+  "checks": {
+    "full_dune": {
+      "artifact": "full_dune.txt",
+      "sha256": "88d802d51ee1c025b3c26d508eaf107027fb7c0fa9d26b90a27e7fd5c22ca058",
+      "status": "passed"
+    },
+    "selected_engine": {
+      "artifact": "selected_engine.txt",
+      "sha256": "819098de6d16e3bfd34dfaf13688c60cf7d8a176e38ac2eb5fcc1c7ea9874dbd",
+      "status": "passed"
+    },
+    "selected_serial": {
+      "artifact": "selected_serial.txt",
+      "sha256": "4aabe3755696d23d841676de6e4951b70c94f90c36f70ecb9f9eeaa91901fb18",
+      "status": "passed"
+    },
+    "selected_serial_coverage": {
+      "artifact": "selected_serial_coverage.json",
+      "sha256": "9edcd8409f339f159ede5a95e9aa2cbbddf9818338a1c5c6c663735789c1ffd0",
+      "status": "passed"
+    },
+    "mapped_memory": {
+      "artifact": "mapped_memory.json",
+      "sha256": "03c5b61cc8d322b98930deaf7b8c20f84072399538f2303d18d672c6e2a3d98e",
+      "status": "passed"
+    },
+    "mapped_memory_log": {
+      "artifact": "mapped_memory_log.txt",
+      "sha256": "52b7325d6728b6322da5f5438e6d28fa936ad1b3ec7b12e8b906e90540137591",
+      "status": "passed"
+    }
+  }
+}

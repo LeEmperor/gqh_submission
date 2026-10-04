@@ -9,8 +9,8 @@ let eq label actual expected =
 let scope () = Scope.create ~flatten_design:true ()
 module S = Cyclesim.With_interface (Uart.Tx.I) (Uart.Tx.O)
 
-let check_timing period gap =
-  let sim = S.create (Uart.Tx.create ~cycles_per_bit:period ~extra_idle_cycles:gap (scope ())) in
+let check_timing ?factored_timer ?state_encoding ?shift_register period gap =
+  let sim = S.create (Uart.Tx.create ?factored_timer ?state_encoding ?shift_register ~cycles_per_bit:period ~extra_idle_cycles:gap (scope ())) in
   let i = Cyclesim.inputs sim and o = Cyclesim.outputs sim in
   let cycle () = Cyclesim.cycle sim in
   let idle () =
@@ -84,7 +84,11 @@ let () =
      side of counter-width transitions; include the production divisor. *)
   List.iter [1,0; 1,1; 1,2; 2,0; 2,1; 3,3; 7,0; 7,13;
              8,7; 8,8; 8,9; 9,0; 9,16; 234,0; 234,256]
-    ~f:(fun (period, gap) -> check_timing period gap);
+    ~f:(fun (period, gap) ->
+      check_timing period gap; check_timing ~factored_timer:true period gap;
+      List.iter [Always.State_machine.Encoding.Binary; Onehot] ~f:(fun state_encoding ->
+        check_timing ~state_encoding period gap;
+        check_timing ~state_encoding ~shift_register:true period gap));
   List.iter [0,0; -1,0; 1,-1] ~f:(fun (period, gap) ->
     match Uart.Tx.create ~cycles_per_bit:period ~extra_idle_cycles:gap (scope ())
       (Uart.Tx.I.map Uart.Tx.I.port_names_and_widths ~f:(fun (name, width) ->

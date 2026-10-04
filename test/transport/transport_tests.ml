@@ -7,9 +7,9 @@ let eq what actual expected =
   if actual <> expected then failwithf "%s: got %d expected %d" what actual expected ()
 let scope () = Scope.create ~flatten_design:true ()
 
-let rx_tests () =
+let rx_tests ?factored_timer ?state_encoding () =
   let module S = Cyclesim.With_interface (Uart.Rx.I) (Uart.Rx.O) in
-  let sim = S.create (Uart.Rx.create ~cycles_per_bit:100 (scope ())) in
+  let sim = S.create (Uart.Rx.create ?factored_timer ?state_encoding ~cycles_per_bit:100 (scope ())) in
   let i = Cyclesim.inputs sim and o = Cyclesim.outputs sim in
   let bytes = ref [] and errors = ref 0 in
   let previous_valid = ref 0 in
@@ -176,6 +176,8 @@ let integration gap =
   transact 0x1234 0x22 0x11
 
 let () =
-  rx_tests (); tx_tests 0; tx_tests 13; decoder_tests (); sequencer_tests ();
+  rx_tests (); rx_tests ~factored_timer:true ();
+  rx_tests ~state_encoding:Always.State_machine.Encoding.Binary ();
+  rx_tests ~state_encoding:Always.State_machine.Encoding.Onehot (); tx_tests 0; tx_tests 13; decoder_tests (); sequencer_tests ();
   integration 0; integration 21;
   printf "PASS: independent RX/TX timing, packet handshakes/faults, serial round trips\n"

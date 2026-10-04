@@ -1,5 +1,22 @@
 # Manual Gowin handoff
 
+The latest [BSRAM candidate](../docs/bsram-register-optimization.md) is measured
+at **302 Logic / 109 Registers / 3 BSRAM**, with the original heartbeat and zero
+setup/hold violations. Its complete measured project is preserved under
+`results/phase-i-20261004/vendor-measurements/I-packet-records-arithmetic`;
+the portable checked-in project and reports are under
+[bsram_candidate](bsram_candidate/README.md).
+Generate matching RTL with `dune exec bin/generate.exe -- competition-bsram`
+inside the existing switch. Use the separate
+`gowin/bsram_candidate/gqh_competition.gprj` project;
+the ordinary root project continues to reference the 363/235 fallback.
+Programming and board acceptance remain user-operated and pending.
+
+For reproducible competition builds, use [Windows Gowin automation](AUTOMATION.md)
+or the [pinned open-source flow](OPEN_SOURCE_AUTOMATION.md). Open-source counts
+are separate from Gowin qualification. See the [H2–H5 evidence](../docs/h2-h5-optimization.md)
+for the current candidate and preserved accepted fallback.
+
 ## Root-level project files
 
 The repository contains four independent Gowin project files at its root. Open
@@ -8,7 +25,7 @@ constraints or top modules into one build.
 
 | Project | Top module | Purpose |
 | --- | --- | --- |
-| `gqh_competition.gprj` | `gqh_competition_top` | Complete six-port competition design; direct 27 MHz baseline. COMPLETE under the user-authorized F–G closure. |
+| `gqh_competition.gprj` | `gqh_competition_top` | Six-port 363/235 fallback; direct 27 MHz, locally verified, new board acceptance pending. Historical F–G acceptance belongs to its preserved historical image. |
 | `gqh_engine.gprj` | `gqh_update_engine` | Standalone engine synthesis/timing experiment. It has no board pin constraints and cannot be programmed as a complete board design. |
 | `gqh_transport.gprj` | `gqh_transport_top` | Six-port, 27 MHz board diagnostic with UART request/response transport. It returns NONE actions and is not the final competition design. |
 | `gqh_pll_test.gprj` | `top` | Independent 270 MHz Gowin rPLL and divided-clock output experiment. It uses the PLL branch's CST because that file additionally assigns `clk_test` to pin 73. |
@@ -47,7 +64,7 @@ actually use for this new design.
 After editing Hardcaml, rerun `dune exec bin/generate.exe` (in the configured
 switch) or the explicit bringup command from the README. It overwrites the same
 `rtl/gqh_top.v`. Reload the updated file and rerun synthesis/P&R in the IDE.
-No IDE or programmer automation is supplied.
+The competition build runner automates synthesis and P&R; programming remains manual.
 
 ## Reset and startup checks
 

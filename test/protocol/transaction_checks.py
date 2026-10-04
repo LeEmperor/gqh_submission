@@ -102,6 +102,14 @@ def main():
         run([exe, 'mocks'])
         run([exe, 'replay', trace])
         run([exe, 'bytes', trace])
+        run([exe, 'borrow-replay', trace])
+        for request, response in [('false', 'true'), ('true', 'false'), ('true', 'true')]:
+            run([exe, 'borrow-bytes', request, response, trace])
+        for state in ['binary', 'onehot']:
+            run([exe, 'encoding-mocks', state])
+            run([exe, 'encoding-replay', state, trace])
+            for block in ['controller', 'sequencer']:
+                run([exe, 'encoding-bytes', block, state, trace])
         for kind, top in [('controller','gqh_transaction_controller'),
                           ('payload','gqh_transaction_test'),('byte','gqh_byte_test')]:
             rtl = tmp / f'{top}.v'

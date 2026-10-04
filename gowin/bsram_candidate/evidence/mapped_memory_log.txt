@@ -1,0 +1,3 @@
+PASS: 35 production-divisor serial oracle packets; mapped pin-level packets
+PASS mapped candidate: startup, legal pauses, full stops, framing/busy lockout, first-byte RX and TX reset recovery; independent SPX9 model scope
+results/phase-i-20261004/combined/packet-records-arithmetic-borrow/vendor-mapped-smoke-v2/mapped_smoke_tb.v:172: $finish called at 156333604665 (1ps)

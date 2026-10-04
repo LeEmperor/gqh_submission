@@ -5,6 +5,23 @@ moving-average crossing algorithm** on the Tang Nano 20K. Qualify with **100/100
 plus a perfect full-range run**, then minimize **total logic → registers →
 five-run median latency** (within 5% tied), in that order.
 
+The new [BSRAM competition candidate](docs/bsram-register-optimization.md) measures
+**302 Gowin Logic / 109 Registers / 3 BSRAM**, including the unchanged heartbeat,
+with zero reported setup/hold violations. Generate it with
+`opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition-bsram`.
+Its RTL is `rtl/gqh_competition_bsram_top.v`; board acceptance remains pending.
+The existing `competition` target retains the exact 363/235 fallback.
+
+For handoff, open [the selected Gowin project](gowin/bsram_candidate/gqh_competition.gprj).
+The [build/board instructions](gowin/bsram_candidate/README.md),
+[matching vendor bitstream](bitstream/gqh_competition_bsram.fs),
+[input hashes](gowin/bsram_candidate/manifest.json), and
+[resource/timing evidence](gowin/bsram_candidate/evidence) are included in this branch.
+Run `opam exec --switch=5.2.0+ox -- dune runtest` for regressions and
+`opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest-bsram`
+for the selected production-divisor serial test. HDL prerequisites are documented
+in [tools/HOPT_TOOLCHAIN.md](tools/HOPT_TOOLCHAIN.md).
+
 ## Start here
 
 - **[PLAN.md](PLAN.md)** — the active implementation plan, exact protocol and
@@ -30,8 +47,18 @@ five-run median latency** (within 5% tied), in that order.
   artifacts imported from the Nano20k PLL branch.
 - **[Root-level Gowin projects](gowin/README.md#root-level-project-files)** —
   separate competition, engine, UART diagnostic, and PLL test projects with canonical paths.
+- **[BSRAM/register optimization](docs/bsram-register-optimization.md)** — current
+  302/109 candidate, qualification, reproduction and register/resource comparisons.
+- **[H2–H5 optimization history](docs/h2-h5-optimization.md)** — preceding search,
+  rejected experiments, reproducible builds, and preserved fallback identities.
 
 ## Current status
+
+The working competition source now contains the H2–H5 optimization work.
+Its local verification and open-source resource screens are documented above;
+fresh Gowin qualification and board acceptance remain pending. The accepted
+original and history-only H1 fallback are preserved separately. The following
+F–G acceptance describes that historical implementation, not the new bitstream.
 
 **F, G1, G2 and overall G are COMPLETE**, explicitly accepted by the user after
 fresh synthesis/programming and passing local/board tests. Official quick,

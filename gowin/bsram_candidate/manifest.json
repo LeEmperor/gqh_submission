@@ -1,0 +1,17 @@
+{
+  "candidate": "I-packet-records-arithmetic",
+  "top": "gqh_competition_top",
+  "part": "GW2AR-LV18QN88C8/I7",
+  "logic": 302,
+  "registers": 109,
+  "bsram": 3,
+  "board_acceptance": "pending",
+  "files": {
+    "rtl/gqh_competition_bsram_top.v": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+    "bitstream/gqh_competition_bsram.fs": "2bc4ab11ad486deac4180d1843429ccf85507aebfd8749d58cd5c9d4b4022e7a",
+    "gowin/bsram_candidate/gqh_competition.gprj": "2b81a72a8c32c521c3a3bbd67be49e270b9836d78c18bacdc97b3617fa55df0d",
+    "gowin/bsram_candidate/process-config-reference.json": "cfb793e4fb9e2d7b6e59e84c4cc4f7be63ffc343b0d164cdecd854999b8eb83b",
+    "constraints/19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+    "constraints/tang_nano_20k.sdc": "b7e2d8d942dd52547d289668ebf1393175ebbf80b8b7bdaff2c544a365292a2a"
+  }
+}

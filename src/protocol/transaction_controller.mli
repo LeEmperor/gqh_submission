@@ -45,5 +45,11 @@ end
     the same position. Results are captured once in slot order; pointer advances
     modulo 16 on the second result transfer. Payload/valid hold through stalls.
     Only one transaction can be outstanding, through final response drain. *)
-val create : Scope.t -> Signal.t I.t -> Signal.t O.t
-val hierarchical : ?instance:string -> Scope.t -> Signal.t I.t -> Signal.t O.t
+(** [borrow_request] defaults to false (capture at acceptance). If true, the
+    decoder/upstream must retain every request field through [response_done]
+    or shared reset, including during framing and busy-input faults. Competition
+    wiring enforces this by keeping receive rearm disabled through TX drain. *)
+(** [state_encoding] selects an experimental structural FSM encoding; omitted
+    preserves historical encoding and synthesis attributes. *)
+val create : ?state_encoding:Always.State_machine.Encoding.t -> ?borrow_request:bool -> Scope.t -> Signal.t I.t -> Signal.t O.t
+val hierarchical : ?instance:string -> ?state_encoding:Always.State_machine.Encoding.t -> ?borrow_request:bool -> Scope.t -> Signal.t I.t -> Signal.t O.t

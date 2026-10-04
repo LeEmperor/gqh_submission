@@ -3,6 +3,7 @@ from pathlib import Path
 import collections
 import hashlib
 import json
+import os
 import random
 import struct
 import subprocess
@@ -10,8 +11,34 @@ import sys
 import tempfile
 
 HERE = Path(__file__).resolve().parent
+VARIANT = os.environ.get('HOPT_ENGINE', 'h2')
+BORROW_COMMAND = os.environ.get('HOPT_BORROW_COMMAND') == '1'
+RECORDS_IN_BRAM = os.environ.get('HOPT_RECORDS_IN_BRAM') == '1'
+if VARIANT in ['h2', 'h3_shared20']:
+    LATENCY = 2
+elif VARIANT == 'h3_compare':
+    LATENCY = 4
+elif VARIANT.startswith('h3_serial'):
+    DIGIT_WIDTH = int(VARIANT.removeprefix('h3_serial'))
+    LATENCY = 2 * ((20 + DIGIT_WIDTH - 1) // DIGIT_WIDTH) + 3
+else:
+    raise ValueError(VARIANT)
+RESULT_STATE = LATENCY + 1
+COMMIT_STATE = LATENCY
 sys.path.insert(0, str(HERE / 'oracle'))
 from model import ReferenceModel, decode_request, encode_request, ITEM_A, ITEM_B
+
+
+def relation(window):
+    """Last price versus floor(sum(direct window)/16), including warm-up."""
+    price = window[-1] if window else 0
+    average = sum(window) // 16
+    return int(price < average), int(price > average)
+
+
+def relation_name(window):
+    below, above = relation(window)
+    return "below" if below else "above" if above else "equal"
 
 
 def run(args):
@@ -46,10 +73,12 @@ class Trace:
 
     def outputs(self, reset, clear):
         return [int(self.state == 0 and not reset and not clear),
-                int(self.state == 3 and not reset), self.output_action]
+                int(self.state == RESULT_STATE and not reset), self.output_action]
 
     def step(self, reset=0, clear=0, valid=0, ready=0, item=0, price=0,
              pos=0, warm=0, answer=0):
+        if BORROW_COMMAND and not reset and 1 <= self.state <= COMMIT_STATE:
+            item, price, pos, warm, _ = self.pending
         inputs = [reset, clear, valid, ready, item, price, pos, warm]
         before = self.outputs(reset, clear)
         if reset:
@@ -66,9 +95,9 @@ class Trace:
                 self.pending = (item, price, pos, warm, answer)
                 self.state = 1
                 self.counts['accepted'] += 1
-        elif self.state == 1:
-            self.state = 2
-        elif self.state == 2:
+        elif self.state < COMMIT_STATE:
+            self.state += 1
+        elif self.state == COMMIT_STATE:
             item, price, pos, warm, answer = self.pending
             old = self.windows[item]
             if warm:
@@ -83,11 +112,18 @@ class Trace:
                 self.counts['truncated_average'] += bool(sum(old) % 16 or sum(old[1:] + [price]) % 16)
                 self.counts[f'held_{answer}'] += answer == self.held[item]
                 window = old[1:] + [price]
+            before_relation, after_relation = relation_name(old), relation_name(window)
+            self.counts[f'relation_{after_relation}'] += 1
+            self.counts[f'transition_{before_relation}_{after_relation}'] += 1
+            if warm and len(window) == 16:
+                self.counts[f'warmup_final_{after_relation}'] += 1
+            if not warm and pos == 0:
+                self.counts[f'scored_wrap_previous_{before_relation}'] += 1
             self.windows[item] = window
             self.held[item] = answer
             self.output_action = answer
             self.ram[item * 16 + pos] = price
-            self.state = 3
+            self.state = RESULT_STATE
             self.counts['warmup' if warm else 'steady'] += 1
             self.counts[f'action_{answer}'] += 1
             self.counts['maximum_sum'] += sum(window) == 1048560
@@ -98,7 +134,7 @@ class Trace:
         else:
             self.counts['result_stall_edges'] += 1
         scalar = [sum(w) for w in self.windows]
-        scalar += [w[-1] if w else 0 for w in self.windows] + self.held
+        scalar += [flag for w in self.windows for flag in relation(w)] + self.held
         after = self.outputs(reset, clear)
         self.file.write(' '.join(map(str, inputs + before + after + scalar + self.ram)) + '\n')
         self.edges += 1
@@ -113,17 +149,16 @@ class Trace:
         # Change *every* captured field, and offer busy commands. Early ready
         # must not cause a result to be consumed at its publication edge.
         noise = dict(item=1-item, price=price ^ 65535, pos=pos ^ 15, warm=1-warm)
-        self.step(valid=1, ready=1, **noise)
-        assert self.state == 2
-        self.step(valid=1, ready=1, **noise)
-        assert self.state == 3
-        self.counts[f'latency_{"warm" if warm else "steady"}_2'] += 1
+        for _ in range(LATENCY):
+            self.step(valid=1, ready=1, **noise)
+        assert self.state == RESULT_STATE
+        self.counts[f'latency_{"warm" if warm else "steady"}_{LATENCY}'] += 1
         for _ in range(self.rng.randrange(12) if stall is None else stall):
             self.step(valid=1, ready=0, **self.noise())
         self.step(valid=1, ready=1, **noise)
         assert self.state == 0
 
-    def packet(self, request, response):
+    def packet(self, request, response, oracle_windows):
         index, id1, price1, id2, price2 = decode_request(request)
         if index == 0:
             self.pointer = 0
@@ -132,7 +167,14 @@ class Trace:
             self.step()
         assert self.pointer == index % 16
         for item_id, price, answer in [(id1, price1, response[3]), (id2, price2, response[5])]:
-            self.command(int(item_id == ITEM_B), price, self.pointer, int(index < 16), answer)
+            item = int(item_id == ITEM_B)
+            previous_relation = relation_name(self.windows[item])
+            self.command(item, price, self.pointer, int(index < 16), answer)
+            if index == 16:
+                self.counts[f'first_scored_{previous_relation}_{relation_name(self.windows[item])}'] += 1
+            # Tie direct-window scalar/flag expectations to the unchanged oracle,
+            # independently of DUT arithmetic and physical circular RAM order.
+            assert self.windows[item] == oracle_windows[item_id]
         self.pointer = (self.pointer + 1) % 16
         self.counts['packets'] += 1
         self.counts['warmup_swaps'] += index < 16 and id1 == ITEM_B
@@ -152,7 +194,7 @@ def build_trace(path):
             request = bytes.fromhex(record['request_hex'])
             response = bytes.fromhex(record['expected_response_hex'])
             assert model.respond(request) == response
-            t.packet(request, response)
+            t.packet(request, response, model._windows)
             supplied += 1
     assert supplied == 800
     # Six seeded streams with arbitrary warm-up swaps, 32 circular wraps each.
@@ -163,38 +205,43 @@ def build_trace(path):
             a, b = rng.randrange(bound), rng.randrange(bound)
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if rng.randrange(2)
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
-            t.packet(request, model.respond(request))
+            t.packet(request, model.respond(request), model._windows)
     # Explicit equality/held crossings, maximum/zero sums, truncation changes.
     directed = [
         [(100, 200)]*16 + [(102,198),(103,197),(99,201),(98,202)]*24,
         [(65535, 0)]*16 + [(65535,0),(0,65535),(1,65534),(65534,1)]*24,
         [(100,100)]*15 + [(115,85)] + [(101,99),(100,100),(100,100)]*32,
     ]
+    # Force every relation at the last warm-up commit and every destination
+    # relation at index 16. Last=99 is equal with sum remainder 15.
+    for last in [98, 100, 102, 99]:
+        for incoming in [98, 100, 102]:
+            directed.append([(100, 200)]*15 + [(last, 2*last)]
+                            + [(incoming, 2*incoming)])
     for prices in directed:
         for index, (a, b) in enumerate(prices):
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2 == 0
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
-            t.packet(request, model.respond(request))
+            t.packet(request, model.respond(request), model._windows)
     # Reset at idle, after capture, after synchronous read/before commit, and
     # with a pending committed result. Check all RAM words on every edge:
     # a reset on the commit edge MUST suppress the write, even with valid high.
-    for target_state in range(4):
+    for target_state in range(RESULT_STATE + 1):
         for item in range(2):
             # Populate both histories and nonzero BUY/SELL before reset tests.
             for index in range(35):
                 a, b = ((100, 200) if index < 16 else
                         [(102,198),(103,197),(99,201),(98,202)][(index-16)%4])
                 request = encode_request(index, ITEM_A, a, ITEM_B, b)
-                t.packet(request, model.respond(request))
+                t.packet(request, model.respond(request), model._windows)
             assert all(t.held) and all(sum(w) for w in t.windows)
             if target_state:
                 response = model.respond(encode_request(35, ITEM_A, 0, ITEM_B, 65535))
                 t.step(valid=1, item=item, price=0 if item == 0 else 65535,
                        pos=t.pointer, warm=0, answer=response[3 if item == 0 else 5])
-                if target_state >= 2:
+                for _ in range(target_state - 1):
                     t.step(**t.noise())
-                if target_state >= 3:
-                    t.step(**t.noise())
+                if target_state == RESULT_STATE:
                     for _ in range(64):
                         t.step(ready=0, valid=1, **t.noise())
             assert t.state == target_state
@@ -205,16 +252,25 @@ def build_trace(path):
             # update. Deliberately retain stale physical RAM through reset.
             for index in range(35):
                 request = encode_request(index, ITEM_B, 65000-index, ITEM_A, index*17)
-                t.packet(request, model.respond(request))
+                t.packet(request, model.respond(request), model._windows)
     t.file.close()
     for name in ['held_1', 'held_2', 'previous_equals_old_average',
                  'price_equals_new_average', 'truncated_average', 'maximum_sum',
                  'zero_sum', 'warmup_swaps', 'wraps', 'result_stall_edges']:
         assert t.counts[name] > 0, name
-    for state in range(4):
+    for old in ["below", "equal", "above"]:
+        assert t.counts[f"warmup_final_{old}"] > 0
+        assert t.counts[f"scored_wrap_previous_{old}"] > 0
+        for new in ["below", "equal", "above"]:
+            assert t.counts[f"transition_{old}_{new}"] > 0
+            assert t.counts[f"first_scored_{old}_{new}"] > 0
+    for state in range(RESULT_STATE + 1):
         assert t.counts[f'reset_state_{state}'] >= 2
     summary = dict(sorted(t.counts.items()))
-    summary.update(supplied_fixture_records=supplied, edges=t.edges,
+    summary.update(variant=VARIANT, acceptance_to_publication_cycles=LATENCY,
+                   earliest_result_transfer_cycles=LATENCY+1,
+                   earliest_next_acceptance_cycles=LATENCY+2,
+                   supplied_fixture_records=supplied, edges=t.edges,
                    extra_packet_records=t.counts['packets']-supplied,
                    trace_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     print(json.dumps(summary, indent=2), flush=True)
@@ -222,7 +278,17 @@ def build_trace(path):
 
 
 def main():
+    global LATENCY, RESULT_STATE, COMMIT_STATE, VARIANT
     generator = Path(sys.argv[1]).resolve()
+    measured = int(subprocess.check_output([str(generator), 'latency'], text=True))
+    if 'HOPT_ENGINE' in os.environ:
+        assert measured == LATENCY, f'configured schedule {LATENCY} differs from hardware {measured}'
+    else:
+        VARIANT = {2:'h2_or_shared20', 4:'h3_compare', 9:'h3_serial8',
+                   13:'h3_serial4', 23:'h3_serial2', 43:'h3_serial1'}[measured]
+    LATENCY = measured
+    RESULT_STATE = LATENCY + 1
+    COMMIT_STATE = LATENCY
     provenance = json.loads((HERE / 'oracle/SOURCE.json').read_text())
     for entry in provenance['files']:
         if entry['unchanged']:
@@ -242,9 +308,23 @@ def main():
         assert data == rtl.read_bytes(), 'nondeterministic engine RTL'
         assert b'initial' not in data, 'unexpected hardware initialization'
         assert b'reg [15:0] engine_history[0:31]' in data
+        assert data.count(b'syn_ramstyle="block_ram"') == (2 if RECORDS_IN_BRAM else 1)
+        assert b'(* syn_ramstyle="block_ram" *)\n    reg [15:0] engine_history[0:31]' in data
         net = tmp / 'net.json'
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
-        ports = json.loads(net.read_text())['modules']['gqh_update_engine']['ports']
+        module = json.loads(net.read_text())['modules']['gqh_update_engine']
+        ports = module['ports']
+        if RECORDS_IN_BRAM:
+            assert b'reg [23:0] engine_records[0:1]' in data
+            for suffix in ['a', 'b']:
+                for absent in ['sum_', 'previous_below_', 'previous_above_', 'held_']:
+                    assert absent + suffix not in module['netnames']
+                assert len(module['netnames']['record_valid_' + suffix]['bits']) == 1
+        else:
+            for suffix in ['a', 'b']:
+                assert 'previous_' + suffix not in module['netnames']
+                for flag in ['below', 'above']:
+                    assert len(module['netnames'][f'previous_{flag}_{suffix}']['bits']) == 1
         expected = {'clock':1, 'reset':1, 'session_clear':1, 'update_valid':1,
                     'result_ready':1, 'update$item_select':1, 'update$price':16,
                     'update$window_position':4, 'update$warmup':1,
@@ -252,7 +332,7 @@ def main():
         assert {k:len(v['bits']) for k,v in ports.items()} == expected
         assert {k for k,v in ports.items() if v['direction']=='output'} == {'update_ready','result_valid','action'}
         exe = tmp / 'engine_tb'
-        run(['iverilog', '-g2012', '-s', 'engine_tb', '-o', exe, rtl, HERE / 'engine_tb.v'])
+        run(['iverilog', '-g2012', *(['-DHOPT_RECORDS_IN_BRAM'] if RECORDS_IN_BRAM else []), '-s', 'engine_tb', '-o', exe, rtl, HERE / 'engine_tb.v'])
         run(['vvp', exe, f'+TRACE={trace}'])
         print('RTL SHA256:', hashlib.sha256(data).hexdigest(), flush=True)
         if len(sys.argv) == 3:

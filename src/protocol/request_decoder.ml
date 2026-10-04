@@ -18,7 +18,10 @@ module O = struct
 end
 
 (* Sticky fault belongs here; the harness/controller owns receive_enable.
-   No byte counter timeout: arbitrarily long pauses are legal. *)
+   No byte counter timeout: arbitrarily long pauses are legal.
+   Retained request fields change only on an enabled, nonfaulting byte or reset.
+   After acceptance, a controller may borrow them while keeping receive_enable
+   low through response completion. Framing/busy-input faults do not erase them. *)
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
   let payload = Payload.Request.Of_always.reg spec in

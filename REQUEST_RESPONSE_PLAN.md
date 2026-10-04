@@ -731,6 +731,13 @@ optional P and submission freeze are not marked complete by this closure.
 
 ### Phase H — Resource-first optimization after a qualification baseline
 
+October 4 H2–H5 implementation and open-source screening are recorded in
+[the optimization report](docs/h2-h5-optimization.md). The working tree selects
+H2 plus both H4 boundaries; H3/H5 alternatives and all measured rejections are
+preserved. H0/H1 historical acceptance stands. The selected new image still
+requires vendor resource qualification and identified-image board checks;
+open-source counts and mapped simulation do not close those gates.
+
 **Depends on:** G1/G2 acceptance and saved qualification/resource/latency evidence.
 Add normal robust → `tools/22_robust_uart_test_fullrange.py` practice without
 intervening reset/reprogramming to board acceptance, retaining exact custom
@@ -1112,3 +1119,19 @@ requires no additional synthesis, flashing or manual tests. No Phase E work
 remains. NONE-action diagnostic transport acceptance is not an official
 algorithm PASS, and full competition resource/latency evidence remains pending.
 Next algorithm package is F, then G; no other phase status changes here.
+
+## Optional BSRAM competition composition
+
+The `competition-bsram` generator selects an 8×8 synchronous packet RAM in place
+of the decoder/controller/sequencer payload banks. Packet bytes remain owned by
+the controller through the last complete TX stop bit. ID/high-price/low-price
+reads precede each engine dispatch; the high byte is latched while RAM Q holds
+the low byte. All engine fields remain stable through result transfer, allowing
+command borrowing through commit. Echo fields reuse the same retained bytes.
+Reset aborts the partial transaction and requires eight new writes before read
+or dispatch; busy/framing faults preserve an accepted response while locking out
+new input. Standalone protocol modules and diagnostic defaults are unchanged.
+The engine optionally moves sum/relation/held-action state to two 24-bit BSRAM
+records, invalidated by two resettable bits. See
+[BSRAM/register evidence](docs/bsram-register-optimization.md) for exact field
+lifetimes, qualification and the measured 302-logic / 109-register candidate.

@@ -1,0 +1,548 @@
+{
+  "vendor_baseline": {
+    "logic": 363,
+    "registers": 235,
+    "bsram": 1,
+    "ssram": 0,
+    "synthesis_luts": 289,
+    "setup_violated_endpoints": 0,
+    "hold_violated_endpoints": 0,
+    "paths_analyzed": 725,
+    "worst_setup_slack_ns": 24.927,
+    "tool_version": "V1.9.11.03 Education",
+    "part": "GW2AR-LV18QN88C8/I7",
+    "warning_codes": [
+      "PR1014"
+    ],
+    "rtl_sha256": "cbd88a4e72e8476fa7e22acd464c6e3e596d8c81a89ca3a5d5c4192a10ebe818",
+    "bitstream_sha256": "9d6af1361e8eed6acfdb63f11252c731c0e410cfdcbb15e914e93e3d9b7f0e75",
+    "source_windows": "/mnt/c/Users/srija/Downloads/gowin-manual-H2-H4/gowin-manual-H2-H4"
+  },
+  "vendor_candidates": [
+    {
+      "logic": 302,
+      "registers": 155,
+      "bsram": 2,
+      "ssram": 0,
+      "synthesis_luts": 242,
+      "setup_violated_endpoints": 0,
+      "hold_violated_endpoints": 0,
+      "paths_analyzed": 473,
+      "worst_setup_slack_ns": 25.433,
+      "tool_version": "V1.9.11.03 Education",
+      "part": "GW2AR-LV18QN88C8/I7",
+      "warning_codes": [
+        "PR1014"
+      ],
+      "candidate": "I-packet-arithmetic-rx",
+      "rtl_sha256": "608620f46f67e172c5d49d0f598448e00be8671ae2a065a3361ee3a4046ac530",
+      "bitstream_sha256": "f5fd8e629f34e286424ea8b3946f21c9ce36b48feee45cfa3f71c436f1059110",
+      "source_windows": "/mnt/c/Users/srija/Downloads/gowin-manual-I-packet-arithmetic-rx/gowin-manual-I-packet-arithmetic-rx",
+      "board_acceptance": "pending",
+      "pnr_luts": 242,
+      "pnr_alus": 60,
+      "rom16": 0,
+      "settings_equal_baseline": true,
+      "heartbeat_module_sha256": "97b8a9c4a01283bbf785b53b12a7d4fd7f88b19ce23e13a3364284bf3bf38303",
+      "heartbeat_unchanged": true,
+      "synthesis_heartbeat": [
+        {
+          "name": "heartbeat",
+          "Register": "25",
+          "Lut": "44",
+          "T_Register": "25(25)",
+          "T_Lut": "44(44)"
+        }
+      ],
+      "artifact_hashes": {
+        "README.txt": "218c7455d8526d7c992c647ce64d05b2ba52dfb7de57b9dc453a013b3f878382",
+        "baseline-process-config-reference.json": "cfb793e4fb9e2d7b6e59e84c4cc4f7be63ffc343b0d164cdecd854999b8eb83b",
+        "constraints/19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+        "constraints/tang_nano_20k.sdc": "b7e2d8d942dd52547d289668ebf1393175ebbf80b8b7bdaff2c544a365292a2a",
+        "gqh_competition.gprj": "4ea4a0d23fb820bf9a7108bb16286eab558720c1e5b3b4852381e825aecd0964",
+        "gqh_competition.gprj.user": "c01b0811296470fc72cc652b15cb51f31174c2f719ec58b87245e97685d2848c",
+        "impl/gqh_competition_process_config.json": "cfb793e4fb9e2d7b6e59e84c4cc4f7be63ffc343b0d164cdecd854999b8eb83b",
+        "impl/gwsynthesis/gqh_competition.log": "15909bb67695a884315e51000afdcdeb43f6f3876c1a9a85ade8a62f73a18bfb",
+        "impl/gwsynthesis/gqh_competition.prj": "1b2cc2627d248f2939dd48bbb9c3c1c035bce19c8bfd999fa3266fd06d8b60d7",
+        "impl/gwsynthesis/gqh_competition.vg": "70ec8299bc35476781561a2662e0409992ca80dfb9820b94845d32d9d561b3dd",
+        "impl/gwsynthesis/gqh_competition_syn.rpt.html": "829a98304465e6353a4335c676b2648b6d53e6704e365a4312e4d3ee195da1b1",
+        "impl/gwsynthesis/gqh_competition_syn_resource.html": "d232f2aeb6d15ddd0530c2ac3c7bc5f620b9a6d32afb61af9cb7d3629ee38e06",
+        "impl/gwsynthesis/gqh_competition_syn_rsc.xml": "e14d8292d8db98544510b15b6e74bb9bf145d513265fe9ea68d200d87b58c1d9",
+        "impl/pnr/cmd.do": "c61dc40a5ecf4840bc2962e360762017e0d432a9c480e833dbff703bcf000262",
+        "impl/pnr/device.cfg": "c49c1e5cda05b7fed84a3394e1af25db224b302aaefa76fdf9f3a0b2f6db9e5d",
+        "impl/pnr/gqh_competition.bin": "5c7b826e1289231936434e0b75e01bd8c4d5623de8d7d8a50dc6d4433bfa1ff2",
+        "impl/pnr/gqh_competition.binx": "63b428e911133eb19177ddbdca3cf501c367e143dce68b25de06a1d665240254",
+        "impl/pnr/gqh_competition.db": "3d0d749614996887b3dcfdc6acf525c6fc87fc225a3d4bc40d07425a2bdaecbd",
+        "impl/pnr/gqh_competition.fs": "f5fd8e629f34e286424ea8b3946f21c9ce36b48feee45cfa3f71c436f1059110",
+        "impl/pnr/gqh_competition.log": "0b4d69521d2d7b79ebc10e5d36f442ba100ce1bd43ece6ad5401e1ecdda45c2b",
+        "impl/pnr/gqh_competition.pin.html": "b2967a7f0c80092654893835836dfbadfb896a8ae35a1d0d5711ebe40ccf09af",
+        "impl/pnr/gqh_competition.power.html": "e1c9050a8916c5df61592775eaeb0187ae421b23ce45deb304a21781590c10eb",
+        "impl/pnr/gqh_competition.rpt.html": "cb47deb3cd772d7d97f4b8aa1799f049a8329872412975b37c40c7d70dc02833",
+        "impl/pnr/gqh_competition.rpt.txt": "3f9042375fb9d1fc6b22c6eff8bcb2a4244225395aa8f4075be1024f60c26d0b",
+        "impl/pnr/gqh_competition.timing_paths": "44251a98745a69af56557f9ffb530ccf5c45a8ae0a4b6d604202330071d043e9",
+        "impl/pnr/gqh_competition.tr.html": "66e895e1406cc3a43131be0e05113917cbf2022bf104a3797697fbb6237f021b",
+        "impl/pnr/gqh_competition_tr_cata.html": "83e5e9a0b8ad587655923a7d02dda2e90b5a50903d74fee024bb6c37c77895ea",
+        "impl/pnr/gqh_competition_tr_content.html": "222fba4296898ceeb508b22dc24b0812b8dd25334c5588a54d768607cf602ba6",
+        "impl/temp/rtl_parser.result": "b34cb62385cf45e41c8d6ba5edf9eb94421f11ad9e2022275c0ab2b7b8db7195",
+        "impl/temp/rtl_parser_arg.json": "9781b602e05469571cdda9159563ab7b60cbcea929efa9087c8d28af6e00258c",
+        "input-manifest.json": "ec636e94e2d1100e652000666f7c2d2231619ce1f2400c0fd12b1b00ebd3472e",
+        "reference-options.json": "8201aebd5e139ac22f1f08b14cc975f0439fff9dde102407e65cf9ea56602bd9",
+        "rtl/gqh_competition_top.v": "608620f46f67e172c5d49d0f598448e00be8671ae2a065a3361ee3a4046ac530"
+      }
+    },
+    {
+      "logic": 302,
+      "registers": 109,
+      "bsram": 3,
+      "ssram": 0,
+      "synthesis_luts": 242,
+      "setup_violated_endpoints": 0,
+      "hold_violated_endpoints": 0,
+      "paths_analyzed": 370,
+      "worst_setup_slack_ns": 24.321,
+      "tool_version": "V1.9.11.03 Education",
+      "part": "GW2AR-LV18QN88C8/I7",
+      "warning_codes": [
+        "PR1014"
+      ],
+      "candidate": "I-packet-records-arithmetic",
+      "rtl_sha256": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+      "bitstream_sha256": "2bc4ab11ad486deac4180d1843429ccf85507aebfd8749d58cd5c9d4b4022e7a",
+      "source_windows": "/mnt/c/Users/srija/Downloads/gowin-manual-I-packet-records-arithmetic/gowin-manual-I-packet-records-arithmetic",
+      "board_acceptance": "pending",
+      "pnr_luts": 242,
+      "pnr_alus": 60,
+      "rom16": 0,
+      "settings_equal_baseline": true,
+      "heartbeat_module_sha256": "97b8a9c4a01283bbf785b53b12a7d4fd7f88b19ce23e13a3364284bf3bf38303",
+      "heartbeat_unchanged": true,
+      "synthesis_heartbeat": [
+        {
+          "name": "heartbeat",
+          "Register": "25",
+          "Lut": "45",
+          "T_Register": "25(25)",
+          "T_Lut": "45(45)"
+        }
+      ],
+      "artifact_hashes": {
+        "README.txt": "aa02eec4070b7934d4ff45d170739480513be6e1f8946c4cc7b0079d0626e5b2",
+        "baseline-process-config-reference.json": "cfb793e4fb9e2d7b6e59e84c4cc4f7be63ffc343b0d164cdecd854999b8eb83b",
+        "constraints/19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+        "constraints/tang_nano_20k.sdc": "b7e2d8d942dd52547d289668ebf1393175ebbf80b8b7bdaff2c544a365292a2a",
+        "gqh_competition.gprj": "4ea4a0d23fb820bf9a7108bb16286eab558720c1e5b3b4852381e825aecd0964",
+        "gqh_competition.gprj.user": "56d5b06264e3c71084aa8de6043024614fbf64b2d9873a93afad2e24868ccbae",
+        "impl/gqh_competition_process_config.json": "cfb793e4fb9e2d7b6e59e84c4cc4f7be63ffc343b0d164cdecd854999b8eb83b",
+        "impl/gwsynthesis/gqh_competition.log": "a103a536e1626876e4288a270594acb0c238e90c48c0bd04343bfd80c73fcf06",
+        "impl/gwsynthesis/gqh_competition.prj": "3b6301b95b1955e915086efe03d686e1abefc6968e524e2dd883227b97f21c93",
+        "impl/gwsynthesis/gqh_competition.vg": "1af1d6b8033ad000b5d03eedf6c15e64ee156fa50365443739f1ee40450ff3f8",
+        "impl/gwsynthesis/gqh_competition_syn.rpt.html": "9b994fbfcf1b3b29d011e79540fb49af1b1fe73e5aee2cfe769e619a249ef513",
+        "impl/gwsynthesis/gqh_competition_syn_resource.html": "4d7928275d5b4cfd44af4b3215a0a14c6149d14d279f19abd8bb2994860740c7",
+        "impl/gwsynthesis/gqh_competition_syn_rsc.xml": "defc51eba1a12abfd0c212c6285be2bb312b4ef64ab85174558fe4285b8987ee",
+        "impl/pnr/cmd.do": "8e6fea9987edf435799befdc773db1eb44e9a16e0505dafb11f877f7ddeedb2d",
+        "impl/pnr/device.cfg": "c49c1e5cda05b7fed84a3394e1af25db224b302aaefa76fdf9f3a0b2f6db9e5d",
+        "impl/pnr/gqh_competition.bin": "8b9458188f6fd7ed4f855038a0138ce7c8d21dee8da5221767dfd2fb865590ed",
+        "impl/pnr/gqh_competition.binx": "813e60849cd0fbf348d873776ee33e34e592fe00b80817ac2a6d232b72ebc151",
+        "impl/pnr/gqh_competition.db": "d3bb523e4a407edd7a00810996362e79eed1be2a08494f9ed3743d279bdc3f0f",
+        "impl/pnr/gqh_competition.fs": "2bc4ab11ad486deac4180d1843429ccf85507aebfd8749d58cd5c9d4b4022e7a",
+        "impl/pnr/gqh_competition.log": "1b3ef39e2d3aa3c8083ba2129b9d7979c2891f49676ed0b7c8dfa39ff1251928",
+        "impl/pnr/gqh_competition.pin.html": "abca236e0e08d4c0a7c08d19f707b598a257c2e21ab4b764e7dd9de89cdb7c6d",
+        "impl/pnr/gqh_competition.power.html": "46faea0594060db4fed3f9a003ebe548b06e4da404553039a4ead51cc938bc76",
+        "impl/pnr/gqh_competition.rpt.html": "48f8d4f0bcfb678f10d4e283704d6cc26fbc9d01e92305410d875d3f06fc78ef",
+        "impl/pnr/gqh_competition.rpt.txt": "1b01b9b740dd2b2879f36bb5dee30c8d0406e512f3e54e273625bbbdcc396be3",
+        "impl/pnr/gqh_competition.timing_paths": "2853371e32111386d61d5f897413376f39313e537ccdaf85bf08fcec0ba5722c",
+        "impl/pnr/gqh_competition.tr.html": "66e895e1406cc3a43131be0e05113917cbf2022bf104a3797697fbb6237f021b",
+        "impl/pnr/gqh_competition_tr_cata.html": "83e5e9a0b8ad587655923a7d02dda2e90b5a50903d74fee024bb6c37c77895ea",
+        "impl/pnr/gqh_competition_tr_content.html": "de69fded76a788408243681e7e0581ed92a1251ab84f18d190f02716ae35a87b",
+        "impl/temp/rtl_parser.result": "f5bf8e9edf655dd4ab5e5fbd959f6f65c08f9254f0e9101fe9320c0fd9cdd3cb",
+        "impl/temp/rtl_parser_arg.json": "c57865bab706d339a328327d345b4b57ae225ecd41b2da8d986a3063ab6dab85",
+        "input-manifest.json": "96f32c882b197f820944313844973202c62da0a640417960f9b9c75aa0bad4e2",
+        "reference-options.json": "8201aebd5e139ac22f1f08b14cc975f0439fff9dde102407e65cf9ea56602bd9",
+        "rtl/gqh_competition_top.v": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87"
+      }
+    }
+  ],
+  "selected_vendor_candidate": "I-packet-records-arithmetic",
+  "open_source_baseline": {
+    "logic_proxy": 585,
+    "dff": 247,
+    "bsram": 1,
+    "manifest": "../phase-h-final-20261004/native/manifest.json"
+  },
+  "ranking": "Within qualifying candidates of the same tool flow: logic, registers, five-run board median latency.",
+  "note": "Open-source counts are not Gowin Logic/Register counts. Invalid routes have no accepted measurement; diagnostic reports remain beside each manifest. Board acceptance pending for every new candidate.",
+  "candidates": [
+    {
+      "candidate": "I-borrow-delta17-difference-relation",
+      "parent": "I-borrow-delta17",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:09:49.369035+00:00",
+      "manifest": "arithmetic-workspace/builds/all/manifest.json",
+      "manifest_sha256": "b7219155dd7f3e563711dbba6f680ef1d703e2660cbdb4c571de3c96a948ff00",
+      "open_source": {
+        "logic_proxy": 558,
+        "lut4": 418,
+        "alu": 140,
+        "dff": 225,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-borrow-command",
+      "parent": "H2-H4-cbd88a4",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:05:13.671249+00:00",
+      "manifest": "arithmetic-workspace/builds/borrow/manifest.json",
+      "manifest_sha256": "43cdc5ac009b7d8e8f159397d64f906cfde466d56471e3d0141c55b0156cd322",
+      "open_source": {
+        "logic_proxy": 609,
+        "lut4": 465,
+        "alu": 144,
+        "dff": 225,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-borrow-delta17",
+      "parent": "I-borrow-command",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:06:13.865631+00:00",
+      "manifest": "arithmetic-workspace/builds/borrow-delta/manifest.json",
+      "manifest_sha256": "68f0f6c4b39a4dfa1fff793849b154ea4e7a8cbd2ba7129ae3c63b24e32fe3b6",
+      "open_source": {
+        "logic_proxy": 589,
+        "lut4": 449,
+        "alu": 140,
+        "dff": 225,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-borrow-command",
+      "parent": "H2-H4-cbd88a4",
+      "status": "invalid",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:04:32.116257+00:00",
+      "manifest": "arithmetic-workspace/builds/borrow-invalid-evidence/manifest.json",
+      "manifest_sha256": "3f283c32a0a5f0b4c2590925c1663d10686642892c65c06c9a3a332c3bcb8b49",
+      "open_source": null,
+      "failure": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "candidate": "I-borrow-difference-relation",
+      "parent": "I-borrow-command",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:09:22.096327+00:00",
+      "manifest": "arithmetic-workspace/builds/borrow-relation/manifest.json",
+      "manifest_sha256": "6c879094768f82b89e207bd1168efdeb2d887dde4ae8a773ff62e0161bd08284",
+      "open_source": {
+        "logic_proxy": 574,
+        "lut4": 430,
+        "alu": 144,
+        "dff": 225,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-delta17",
+      "parent": "H2-H4-cbd88a4",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:05:45.737959+00:00",
+      "manifest": "arithmetic-workspace/builds/delta/manifest.json",
+      "manifest_sha256": "6849ecfa7e59cbb5b4ca996a6b56b193da17c9b8c6f849ef57f5379698eb53e5",
+      "open_source": {
+        "logic_proxy": 592,
+        "lut4": 452,
+        "alu": 140,
+        "dff": 247,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-delta17-difference-relation-captured",
+      "parent": "I-difference-relation",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:13:38.103991+00:00",
+      "manifest": "arithmetic-workspace/builds/delta-relation/manifest.json",
+      "manifest_sha256": "8bc072919e3d704250afe70ce8dc99d0ed121034b3459a321e6f29d89a968f3a",
+      "open_source": {
+        "logic_proxy": 541,
+        "lut4": 401,
+        "alu": 140,
+        "dff": 247,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-difference-relation",
+      "parent": "H2-H4-cbd88a4",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:08:49.465625+00:00",
+      "manifest": "arithmetic-workspace/builds/relation/manifest.json",
+      "manifest_sha256": "2956693dc8cf4b018f98aba509ea7a032e8a7d375c80e29c74ae848fd10d24db",
+      "open_source": {
+        "logic_proxy": 563,
+        "lut4": 419,
+        "alu": 144,
+        "dff": 247,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-protocol-packet-ram",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:11:43.630384+00:00",
+      "manifest": "protocol-workspace/builds/packet-ram/manifest.json",
+      "manifest_sha256": "524b1f37779565ea093ad76f5dcf325229feb9bf7084640acbc692b712393682",
+      "open_source": {
+        "logic_proxy": 482,
+        "lut4": 350,
+        "alu": 132,
+        "dff": 190,
+        "bsram": 2,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-protocol-rx-timer",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:11:57.543879+00:00",
+      "manifest": "protocol-workspace/builds/rx-timer/manifest.json",
+      "manifest_sha256": "32c4c057efb28b423af1304c140443668424da78c034f0f30e3a5b1e48b6d12e",
+      "open_source": {
+        "logic_proxy": 581,
+        "lut4": 437,
+        "alu": 144,
+        "dff": 247,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "I-protocol-tx-timer",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "locally_verified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:12:09.111101+00:00",
+      "manifest": "protocol-workspace/builds/tx-timer/manifest.json",
+      "manifest_sha256": "994d7d0b55dc40a25805f4169072965823a886f795ecd9d1affcb1438e35170d",
+      "open_source": {
+        "logic_proxy": 599,
+        "lut4": 455,
+        "alu": 144,
+        "dff": 247,
+        "bsram": 1,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "i1-records-parallel",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:07:23.289149+00:00",
+      "manifest": "engine-candidates/i1-records-parallel/open-gowin/manifest.json",
+      "manifest_sha256": "d2420769af0d2e99a29394cb8261d72b7d3a96e96a024f251bc76df2c6be626d",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i2-records-borrow",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:15:57.656702+00:00",
+      "manifest": "engine-candidates/i2-records-borrow/open-gowin/manifest.json",
+      "manifest_sha256": "94cc256319f5bd88ae2878e5cc04de236b47a05c20e9d7b8ce3f1e7803cbf348",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i3-records-relation",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:16:07.766483+00:00",
+      "manifest": "engine-candidates/i3-records-relation/open-gowin/manifest.json",
+      "manifest_sha256": "003c10172fc555014f67c671567cc5a9844022987d4b92590928cd585ee9a63f",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i4-records-borrow-relation",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:16:13.767900+00:00",
+      "manifest": "engine-candidates/i4-records-borrow-relation/open-gowin/manifest.json",
+      "manifest_sha256": "93abeeb9561a77a78f8aba492d00ec12eed5ffa727e835f60abe526054c5ced3",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i5-records-all3",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:16:19.758056+00:00",
+      "manifest": "engine-candidates/i5-records-all3/open-gowin/manifest.json",
+      "manifest_sha256": "c6d395e2a0f51b00ef2df75608d5e3801d914e5a946b116a0664a68da8b3bb8a",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i6-records-delta-relation",
+      "parent": "H2-H4-combined",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:18:14.686836+00:00",
+      "manifest": "engine-candidates/i6-records-delta-relation/open-gowin/manifest.json",
+      "manifest_sha256": "9ec6220393b0a3d075d13131e9ffdd0501e586e17391549dadac310d4e37625e",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "i7-records-all3-inverted",
+      "parent": "i5-records-all3",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:35:29.206487+00:00",
+      "manifest": "engine-candidates/i7-records-all3-inverted/open-gowin/manifest.json",
+      "manifest_sha256": "7751a0380374619ce16d7cc897cd784c7d9141fbd0a67fcfba7972f4a7b246d1",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "packet-arithmetic",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:19:15.252462+00:00",
+      "manifest": "combined/packet-arithmetic/open-gowin/manifest.json",
+      "manifest_sha256": "e326c45a4581f9401b4c0ac6cb570078ee6352fe4dbec1e2503b514537dc60d8",
+      "open_source": {
+        "logic_proxy": 445,
+        "lut4": 317,
+        "alu": 128,
+        "dff": 190,
+        "bsram": 2,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "packet-arithmetic-borrow",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:26:36.462337+00:00",
+      "manifest": "combined/packet-arithmetic-borrow/open-gowin/manifest.json",
+      "manifest_sha256": "82baf88c667d13934d297bda27bd82f14c35f3d2c869d32ce4122258b23c08bc",
+      "open_source": {
+        "logic_proxy": 422,
+        "lut4": 294,
+        "alu": 128,
+        "dff": 168,
+        "bsram": 2,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "packet-arithmetic-borrow-rx",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:26:54.160012+00:00",
+      "manifest": "combined/packet-arithmetic-borrow-rx/open-gowin/manifest.json",
+      "manifest_sha256": "42a0d55b924912731c6428b2a55edcfc2e66fa97645cc7b9545172c338c31b4d",
+      "open_source": {
+        "logic_proxy": 420,
+        "lut4": 292,
+        "alu": 128,
+        "dff": 168,
+        "bsram": 2,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "packet-arithmetic-rx",
+      "parent": "H2-H4-selected",
+      "status": "open_source_screened",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:26:45.370319+00:00",
+      "manifest": "combined/packet-arithmetic-rx/open-gowin/manifest.json",
+      "manifest_sha256": "685e85073f3d135514450a832589ad04d109faa22c44bd38f42aafc7c03ef616",
+      "open_source": {
+        "logic_proxy": 440,
+        "lut4": 312,
+        "alu": 128,
+        "dff": 190,
+        "bsram": 2,
+        "timing_pass": true
+      }
+    },
+    {
+      "candidate": "packet-records-arithmetic",
+      "parent": "H2-H4-selected",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:26:57.488883+00:00",
+      "manifest": "combined/packet-records-arithmetic/open-gowin/manifest.json",
+      "manifest_sha256": "963df4e4693086dec59d06577abb956dfdc9339670939e1cd8103580a10708ef",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    },
+    {
+      "candidate": "packet-records-arithmetic-borrow",
+      "parent": "H2-H4-selected",
+      "status": "invalid",
+      "verification_status": "unverified",
+      "board_acceptance": "pending",
+      "finished_utc": "2026-10-04T03:27:00.626408+00:00",
+      "manifest": "combined/packet-records-arithmetic-borrow/open-gowin/manifest.json",
+      "manifest_sha256": "575feca68fe7139e8811a537bb4c577bc38248a9e157559d901f2b7543fbe8b1",
+      "open_source": null,
+      "failure": "Tool failed with exit status 1: /home/srijan/gqh_submission/results/local-toolchains/oss-cad-suite-20261003/oss-cad-suite/lib/ld-linux-x86-64.so.2"
+    }
+  ]
+}

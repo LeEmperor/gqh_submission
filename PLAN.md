@@ -559,6 +559,15 @@ their `PORT` setting. Retain each local robust-test CSV.
 
 ## 6. Resource-first optimization and measurement discipline
 
+**October 4 local H2–H5 update:** the working tree selects H2 comparison flags
+and both H4 packet-copy removals after twenty pinned open-source whole-design
+screens. H3 arithmetic and H5 control alternatives remain preserved with tests
+and rejection evidence. See [the optimization report](docs/h2-h5-optimization.md).
+The Windows Gowin rebuild failed without a valid measurement; the open-source
+585-cell proxy and 247 DFFs are not official Gowin Logic/Register counts.
+H0/H1 historical acceptance is preserved. Fresh vendor qualification and board
+acceptance of this working-tree image remain pending; Phase H is not complete.
+
 **Qualification is a constraint; placement is lexicographic.** Among reliably
 qualifying candidates, fewer total logic elements wins even with more registers
 or slower latency. Compare registers only at equal total logic; compare five-run
@@ -694,3 +703,20 @@ small reviewable interfaces, clear ownership, and reproducible measured results.
 The original Tickweave proposal and prior handoff are preserved in
 [archive/](archive/README.md). Their earlier task lists and authority statements
 are historical; **update this file for current implementation decisions**.
+
+## October 4 BSRAM/register search result
+
+The exact H2/H4 parent was reproduced manually with Gowin V1.9.11.03 Education
+at 363 Logic / 235 Registers / 1 BSRAM. The selected new candidate combines
+packet-byte BSRAM, two 24-bit engine-state records, borrowed engine commands,
+signed delta arithmetic and shared comparison subtraction. The matching manual
+Gowin build measures **302 Logic / 109 Registers / 3 BSRAM**, with zero reported
+setup/hold violations and the unchanged heartbeat. Its two-BSRAM alternative
+measures 302/155, so the third BSRAM wins the register tie-break.
+
+`competition-bsram` emits the selected RTL; `competition` retains the exact
+363/235 fallback until board promotion. Historical H0 completion and H1 board
+acceptance are unchanged. See [implementation/evidence](docs/bsram-register-optimization.md)
+and `results/phase-i-20261004/candidate-ledger.json`. This selection uses actual
+Gowin results; nextpnr hold failures for the same three-BSRAM source remain
+recorded as invalid open-source routes. Physical board acceptance is pending.

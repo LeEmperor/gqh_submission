@@ -1,0 +1,10 @@
+{
+  "source": "results/phase-g2-board-20261003-142516-thv362qq/gowin-build-observed",
+  "scope": "Archived reports only; fixture is not a new H1 or optimization measurement.",
+  "files": {
+    "impl/pnr/test_proj1.rpt.txt": "60442ae857a628036e6662937b872792ecb6e89ad340248dd563c416d82d25fb",
+    "impl/pnr/test_proj1_tr_content.html": "2c168e1c9ad83d1501dc06900700685d1232682937ad612756a1a20fc88869f3",
+    "impl/gwsynthesis/test_proj1_syn.rpt.html": "dd3047a6b1a65bd85f83019f2f5acf62a61ddbc071d4bca5e039cba69997f9da",
+    "impl/pnr/test_proj1.log": "4fa734cd9957dc6f6154898ed7ab8a9383c3e5f74e632d46790a2be523ce930b"
+  }
+}

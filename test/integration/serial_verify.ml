@@ -9,7 +9,36 @@ let bytes hex = List.init 8 ~f:(fun n -> Int.of_string ("0x" ^ String.sub hex ~p
 let () =
   let module S = Cyclesim.With_interface (Board.Competition_top.I) (Board.Competition_top.O) in
   let period = 16 in
-  let sim = S.create (Board.Competition_top.create ~cycles_per_bit:period
+  (* Multiple flags select the exact measured parent combination. Omitted
+     settings inherit competition defaults, including a selected TX shifter. *)
+  let variants = List.drop (Array.to_list (Sys.get_argv ())) 2 in
+  let controller_encoding, sequencer_encoding, rx_encoding, tx_encoding, tx_shift_register =
+    List.fold variants ~init:(None,None,None,None,None)
+      ~f:(fun (controller,sequencer,rx,tx,shift) variant ->
+        let binary = Some Always.State_machine.Encoding.Binary
+        and onehot = Some Always.State_machine.Encoding.Onehot in
+        match variant with
+        | "packet-ram" | "rx-factored-timer" | "tx-factored-timer" | "default" -> controller,sequencer,rx,tx,shift
+        | "controller-binary" -> binary,sequencer,rx,tx,shift
+        | "controller-onehot" -> onehot,sequencer,rx,tx,shift
+        | "sequencer-binary" -> controller,binary,rx,tx,shift
+        | "sequencer-onehot" -> controller,onehot,rx,tx,shift
+        | "rx-binary" -> controller,sequencer,binary,tx,shift
+        | "rx-onehot" -> controller,sequencer,onehot,tx,shift
+        | "tx-binary" -> controller,sequencer,rx,binary,shift
+        | "tx-onehot" -> controller,sequencer,rx,onehot,shift
+        | "tx-shift" -> controller,sequencer,rx,tx,Some true
+        | "tx-indexed" -> controller,sequencer,rx,tx,Some false
+        | _ -> failwith "unknown serial optimization variant") in
+  let enabled name = String.equal (Option.value (Sys.getenv name) ~default:"0") "1" in
+  let sim = S.create (Board.Competition_top.create
+    ~records_in_bram:(enabled "HOPT_RECORDS_IN_BRAM")
+    ~borrow_command:(enabled "HOPT_BORROW_COMMAND")
+    ~delta_arithmetic:(enabled "HOPT_DELTA_ARITHMETIC")
+    ~difference_relation:(enabled "HOPT_DIFFERENCE_RELATION") ~packet_ram:(List.mem variants "packet-ram" ~equal:String.equal)
+    ~rx_factored_timer:(List.mem variants "rx-factored-timer" ~equal:String.equal)
+    ~tx_factored_timer:(List.mem variants "tx-factored-timer" ~equal:String.equal) ~cycles_per_bit:period
+    ?controller_encoding ?sequencer_encoding ?rx_encoding ?tx_encoding ?tx_shift_register
     ~half_period_cycles:11 (Scope.create ~flatten_design:true ())) in
   let i = Cyclesim.inputs sim and o = Cyclesim.outputs sim in
   let samples = ref [] in

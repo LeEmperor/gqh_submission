@@ -17,3 +17,8 @@
  (deps transaction_verify.exe transaction_checks.py
        (source_tree ../engine/oracle))
  (action (run python3 transaction_checks.py ./transaction_verify.exe)))
+
+(test
+ (name packet_ram_tests)
+ (modules packet_ram_tests)
+ (libraries core hardcaml hardcaml_gqh))

@@ -27,10 +27,17 @@ module State = struct
   [@@deriving sexp_of, compare ~localize, enumerate]
 end
 
-let create _scope (i : _ I.t) =
+let create ?state_encoding ?(borrow_request = false) _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
-  let sm = State_machine.create (module State) spec in
-  let request = Payload.Request.Of_always.reg spec in
+  let sm = match state_encoding with
+    | None -> State_machine.create (module State) spec
+    | Some encoding -> State_machine.create ~encoding ~attributes:[] (module State) spec in
+  let p, capture =
+    if borrow_request then i.request, [] else (
+      let request = Payload.Request.Of_always.reg spec in
+      Payload.Request.map request ~f:(fun v -> v.value),
+      Payload.Request.to_list (Payload.Request.map2 request i.request
+        ~f:(fun dst src -> dst <-- src))) in
   let pointer = Variable.reg spec ~width:4 in
   let action1 = Variable.reg spec ~width:2 in
   let action2 = Variable.reg spec ~width:2 in
@@ -40,8 +47,7 @@ let create _scope (i : _ I.t) =
   compile
     [ sm.switch
         [ Idle, [ when_ accept
-            (Payload.Request.to_list (Payload.Request.map2 request i.request
-               ~f:(fun dst src -> dst <-- src))
+            (capture
              @ [ if_ (i.request.index ==:. 0)
                    [ pointer <--. 0; sm.set_next Await_clear_idle ]
                    [ sm.set_next Dispatch1 ] ]) ]
@@ -61,7 +67,6 @@ let create _scope (i : _ I.t) =
         ; Response, [ when_ i.response_ready [ sm.set_next Drain ] ]
         ; Drain, [ when_ i.response_done [ sm.set_next Idle ] ]
         ] ];
-  let p = Payload.Request.map request ~f:(fun v -> v.value) in
   let second = sm.is Dispatch2 |: sm.is Result2 in
   let id = mux2 second p.slot2_id p.slot1_id in
   { O.request_ready; receive_enable = request_ready
@@ -78,6 +83,6 @@ let create _scope (i : _ I.t) =
       ; slot1_action = action1.value; slot2_action = action2.value }
   ; response_valid = sm.is Response &: active }
 
-let hierarchical ?instance scope i =
+let hierarchical ?instance ?state_encoding ?borrow_request scope i =
   let module H = Hierarchy.In_scope (I) (O) in
-  H.hierarchical ?instance ~scope ~name:"gqh_transaction_controller" create i
+  H.hierarchical ?instance ~scope ~name:"gqh_transaction_controller" (create ?state_encoding ?borrow_request) i
