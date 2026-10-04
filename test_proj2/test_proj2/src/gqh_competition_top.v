@@ -21,22 +21,17 @@ module gqh_uart_tx (
     wire signal_not_1;
     wire signal_eq_1;
     wire signal_and;
-    wire gnd;
-    wire signal_select;
-    wire signal_select_1;
-    wire signal_select_2;
-    wire signal_select_3;
-    wire signal_select_4;
-    wire signal_select_5;
-    wire signal_select_6;
     wire [7:0] signal_const;
-    wire [7:0] signal_wire;
+    wire [6:0] signal_select;
+    wire gnd;
+    wire [7:0] signal_cat;
     wire [7:0] signal_mux;
+    wire [7:0] signal_wire;
+    wire [7:0] signal_mux_1;
     reg [7:0] signal_cases;
     wire [7:0] signal_wire_1;
     reg [7:0] signal_reg;
-    wire signal_select_7;
-    reg signal_mux_1;
+    wire signal_select_1;
     wire vdd;
     wire signal_eq_2;
     wire signal_mux_2;
@@ -89,20 +84,19 @@ module gqh_uart_tx (
     assign signal_not_1 = ~ signal_wire_7;
     assign signal_eq_1 = signal_const_1 == signal_reg_3;
     assign signal_and = signal_eq_1 & signal_not_1;
-    assign gnd = 1'b0;
-    assign signal_select = signal_reg[7:7];
-    assign signal_select_1 = signal_reg[6:6];
-    assign signal_select_2 = signal_reg[5:5];
-    assign signal_select_3 = signal_reg[4:4];
-    assign signal_select_4 = signal_reg[3:3];
-    assign signal_select_5 = signal_reg[2:2];
-    assign signal_select_6 = signal_reg[1:1];
     assign signal_const = 8'b00000000;
+    assign signal_select = signal_reg[7:1];
+    assign gnd = 1'b0;
+    assign signal_cat = { gnd,
+                          signal_select };
+    assign signal_mux = signal_eq_4 ? signal_cat : signal_reg;
     assign signal_wire = tx_data;
-    assign signal_mux = signal_wire_5 ? signal_wire : signal_reg;
+    assign signal_mux_1 = signal_wire_5 ? signal_wire : signal_reg;
     always @* begin
         case (signal_reg_3)
         3'b000:
+            signal_cases <= signal_mux_1;
+        3'b010:
             signal_cases <= signal_mux;
         default:
             signal_cases <= signal_reg;
@@ -115,30 +109,10 @@ module gqh_uart_tx (
         else
             signal_reg <= signal_wire_1;
     end
-    assign signal_select_7 = signal_reg[0:0];
-    always @* begin
-        case (signal_reg_1)
-        0:
-            signal_mux_1 <= signal_select_7;
-        1:
-            signal_mux_1 <= signal_select_6;
-        2:
-            signal_mux_1 <= signal_select_5;
-        3:
-            signal_mux_1 <= signal_select_4;
-        4:
-            signal_mux_1 <= signal_select_3;
-        5:
-            signal_mux_1 <= signal_select_2;
-        6:
-            signal_mux_1 <= signal_select_1;
-        default:
-            signal_mux_1 <= signal_select;
-        endcase
-    end
+    assign signal_select_1 = signal_reg[0:0];
     assign vdd = 1'b1;
     assign signal_eq_2 = signal_const_14 == signal_reg_3;
-    assign signal_mux_2 = signal_eq_2 ? signal_mux_1 : vdd;
+    assign signal_mux_2 = signal_eq_2 ? signal_select_1 : vdd;
     assign signal_const_1 = 3'b000;
     assign signal_mux_3 = signal_eq_4 ? signal_const_1 : signal_reg_3;
     assign signal_mux_4 = signal_eq_4 ? signal_const_1 : signal_reg_3;

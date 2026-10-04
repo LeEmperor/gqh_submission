@@ -41,6 +41,10 @@ let create ?(cycles_per_bit = Config.cycles_per_bit)
         ; Data,
           [ if_ expire
               [ timer <--. (cycles_per_bit - 1)
+              (* Shift the captured byte only after a complete data-bit period.
+                 The first bit remains in place throughout Start and caller
+                 changes cannot affect any accepted byte. *)
+              ; data <-- concat_msb [ gnd; select data.value ~high:7 ~low:1 ]
               ; if_ (bit_index.value ==:. 7) [ sm.set_next Stop ]
                   [ bit_index <-- bit_index.value +:. 1 ] ]
               [ timer <-- timer.value -:. 1 ] ]
@@ -54,7 +58,7 @@ let create ?(cycles_per_bit = Config.cycles_per_bit)
         ]
     ];
   { O.tx = mux2 i.reset vdd
-      (mux2 (sm.is Start) gnd (mux2 (sm.is Data) (mux bit_index.value (bits_lsb data.value)) vdd))
+      (mux2 (sm.is Start) gnd (mux2 (sm.is Data) (lsb data.value) vdd))
   ; tx_ready = ready
   ; tx_busy = ~:(sm.is Idle)
   }
