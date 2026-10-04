@@ -1753,115 +1753,111 @@ module gqh_competition_top (
     output led1_n;
 
     wire signal_select;
-    wire signal_not;
-    wire signal_select_1;
     wire signal_wire;
+    wire signal_select_1;
     wire signal_select_2;
     wire signal_select_3;
-    wire signal_select_4;
+    wire [1:0] signal_select_4;
     wire [1:0] signal_select_5;
-    wire [1:0] signal_select_6;
+    wire [7:0] signal_select_6;
     wire [7:0] signal_select_7;
-    wire [7:0] signal_select_8;
-    wire signal_select_9;
+    wire signal_select_8;
     wire signal_wire_1;
-    wire signal_select_10;
+    wire signal_select_9;
     wire signal_wire_2;
-    wire [1:0] signal_select_11;
+    wire [1:0] signal_select_10;
     wire [1:0] signal_wire_3;
-    wire signal_select_12;
+    wire signal_select_11;
     wire signal_wire_4;
+    wire signal_select_12;
     wire signal_select_13;
     wire signal_select_14;
-    wire signal_select_15;
-    wire [3:0] signal_select_16;
-    wire [15:0] signal_select_17;
+    wire [3:0] signal_select_15;
+    wire [15:0] signal_select_16;
+    wire signal_select_17;
     wire signal_select_18;
-    wire signal_select_19;
     wire [3:0] signal_inst;
-    wire signal_select_20;
+    wire signal_select_19;
     wire signal_wire_5;
-    wire signal_select_21;
-    wire [15:0] signal_select_22;
-    wire [7:0] signal_select_23;
-    wire [15:0] signal_select_24;
-    wire [7:0] signal_select_25;
-    wire signal_select_26;
+    wire signal_select_20;
+    wire [15:0] signal_select_21;
+    wire [7:0] signal_select_22;
+    wire [15:0] signal_select_23;
+    wire [7:0] signal_select_24;
+    wire signal_select_25;
     wire signal_wire_6;
+    wire signal_select_26;
     wire signal_select_27;
-    wire signal_select_28;
     wire vdd;
     wire signal_wire_7;
     reg signal_reg = 1'b1;
     reg signal_reg_1 = 1'b1;
     wire [9:0] signal_inst_1;
-    wire [7:0] signal_select_29;
-    wire signal_select_30;
+    wire [7:0] signal_select_28;
+    wire signal_select_29;
     wire signal_wire_8;
     wire [65:0] signal_inst_2;
-    wire [15:0] signal_select_31;
+    wire [15:0] signal_select_30;
     wire [63:0] signal_inst_3;
-    wire [15:0] signal_select_32;
+    wire [15:0] signal_select_31;
     wire [10:0] signal_inst_4;
-    wire [7:0] signal_select_33;
+    wire [7:0] signal_select_32;
     wire [7:0] signal_wire_9;
     wire signal_wire_10;
     wire signal_inst_5;
     wire signal_wire_11;
     wire signal_wire_12;
     wire [2:0] signal_inst_6;
-    wire signal_select_34;
-    assign signal_select = signal_inst_2[65:65];
-    assign signal_not = ~ signal_select;
-    assign signal_select_1 = signal_inst_4[10:10];
-    assign signal_wire = signal_select_1;
-    assign signal_select_2 = signal_inst_6[2:2];
-    assign signal_select_3 = signal_inst_6[1:1];
-    assign signal_select_4 = signal_inst_3[63:63];
-    assign signal_select_5 = signal_inst_3[62:61];
-    assign signal_select_6 = signal_inst_3[60:59];
-    assign signal_select_7 = signal_inst_3[58:51];
-    assign signal_select_8 = signal_inst_3[50:43];
-    assign signal_select_9 = signal_inst_4[1:1];
-    assign signal_wire_1 = signal_select_9;
-    assign signal_select_10 = signal_inst_4[0:0];
-    assign signal_wire_2 = signal_select_10;
-    assign signal_select_11 = signal_inst[3:2];
-    assign signal_wire_3 = signal_select_11;
-    assign signal_select_12 = signal_inst[1:1];
-    assign signal_wire_4 = signal_select_12;
-    assign signal_select_13 = signal_inst_3[25:25];
-    assign signal_select_14 = signal_inst_3[24:24];
-    assign signal_select_15 = signal_inst_3[23:23];
-    assign signal_select_16 = signal_inst_3[22:19];
-    assign signal_select_17 = signal_inst_3[18:3];
-    assign signal_select_18 = signal_inst_3[2:2];
-    assign signal_select_19 = signal_inst_3[26:26];
+    wire signal_select_33;
+    assign signal_select = signal_inst_4[10:10];
+    assign signal_wire = signal_select;
+    assign signal_select_1 = signal_inst_6[2:2];
+    assign signal_select_2 = signal_inst_6[1:1];
+    assign signal_select_3 = signal_inst_3[63:63];
+    assign signal_select_4 = signal_inst_3[62:61];
+    assign signal_select_5 = signal_inst_3[60:59];
+    assign signal_select_6 = signal_inst_3[58:51];
+    assign signal_select_7 = signal_inst_3[50:43];
+    assign signal_select_8 = signal_inst_4[1:1];
+    assign signal_wire_1 = signal_select_8;
+    assign signal_select_9 = signal_inst_4[0:0];
+    assign signal_wire_2 = signal_select_9;
+    assign signal_select_10 = signal_inst[3:2];
+    assign signal_wire_3 = signal_select_10;
+    assign signal_select_11 = signal_inst[1:1];
+    assign signal_wire_4 = signal_select_11;
+    assign signal_select_12 = signal_inst_3[25:25];
+    assign signal_select_13 = signal_inst_3[24:24];
+    assign signal_select_14 = signal_inst_3[23:23];
+    assign signal_select_15 = signal_inst_3[22:19];
+    assign signal_select_16 = signal_inst_3[18:3];
+    assign signal_select_17 = signal_inst_3[2:2];
+    assign signal_select_18 = signal_inst_3[26:26];
     gqh_update_engine
         engine
         ( .clock(signal_wire_12),
           .reset(signal_wire_11),
-          .session_clear(signal_select_19),
-          .update$item_select(signal_select_18),
-          .update$price(signal_select_17),
-          .update$window_position(signal_select_16),
-          .update$warmup(signal_select_15),
-          .update_valid(signal_select_14),
-          .result_ready(signal_select_13),
+          .session_clear(signal_select_18),
+          .update$item_select(signal_select_17),
+          .update$price(signal_select_16),
+          .update$window_position(signal_select_15),
+          .update$warmup(signal_select_14),
+          .update_valid(signal_select_13),
+          .result_ready(signal_select_12),
           .update_ready(signal_inst[0:0]),
           .result_valid(signal_inst[1:1]),
           .action(signal_inst[3:2]) );
-    assign signal_select_20 = signal_inst[0:0];
-    assign signal_wire_5 = signal_select_20;
-    assign signal_select_21 = signal_inst_2[64:64];
-    assign signal_select_22 = signal_inst_2[63:48];
-    assign signal_select_23 = signal_inst_2[47:40];
-    assign signal_select_24 = signal_inst_2[39:24];
-    assign signal_select_25 = signal_inst_2[23:16];
-    assign signal_select_26 = signal_inst_3[0:0];
-    assign signal_wire_6 = signal_select_26;
-    assign signal_select_27 = signal_inst_1[9:9];
-    assign signal_select_28 = signal_inst_1[8:8];
+    assign signal_select_19 = signal_inst[0:0];
+    assign signal_wire_5 = signal_select_19;
+    assign signal_select_20 = signal_inst_2[64:64];
+    assign signal_select_21 = signal_inst_2[63:48];
+    assign signal_select_22 = signal_inst_2[47:40];
+    assign signal_select_23 = signal_inst_2[39:24];
+    assign signal_select_24 = signal_inst_2[23:16];
+    assign signal_select_25 = signal_inst_3[0:0];
+    assign signal_wire_6 = signal_select_25;
+    assign signal_select_26 = signal_inst_1[9:9];
+    assign signal_select_27 = signal_inst_1[8:8];
     assign vdd = 1'b1;
     assign signal_wire_7 = uart_rx_i;
     always @(posedge signal_wire_12) begin
@@ -1884,17 +1880,17 @@ module gqh_competition_top (
           .byte_data(signal_inst_1[7:0]),
           .byte_valid(signal_inst_1[8:8]),
           .framing_error(signal_inst_1[9:9]) );
-    assign signal_select_29 = signal_inst_1[7:0];
-    assign signal_select_30 = signal_inst_3[1:1];
-    assign signal_wire_8 = signal_select_30;
+    assign signal_select_28 = signal_inst_1[7:0];
+    assign signal_select_29 = signal_inst_3[1:1];
+    assign signal_wire_8 = signal_select_29;
     gqh_request_decoder
         request_decoder
         ( .clock(signal_wire_12),
           .reset(signal_wire_11),
           .receive_enable(signal_wire_8),
-          .byte_data(signal_select_29),
-          .byte_valid(signal_select_28),
-          .framing_error(signal_select_27),
+          .byte_data(signal_select_28),
+          .byte_valid(signal_select_27),
+          .framing_error(signal_select_26),
           .request_ready(signal_wire_6),
           .request$index(signal_inst_2[15:0]),
           .request$slot1_id(signal_inst_2[23:16]),
@@ -1903,17 +1899,17 @@ module gqh_competition_top (
           .request$slot2_price(signal_inst_2[63:48]),
           .request_valid(signal_inst_2[64:64]),
           .protocol_fault(signal_inst_2[65:65]) );
-    assign signal_select_31 = signal_inst_2[15:0];
+    assign signal_select_30 = signal_inst_2[15:0];
     gqh_transaction_controller
         controller
         ( .clock(signal_wire_12),
           .reset(signal_wire_11),
-          .request$index(signal_select_31),
-          .request$slot1_id(signal_select_25),
-          .request$slot1_price(signal_select_24),
-          .request$slot2_id(signal_select_23),
-          .request$slot2_price(signal_select_22),
-          .request_valid(signal_select_21),
+          .request$index(signal_select_30),
+          .request$slot1_id(signal_select_24),
+          .request$slot1_price(signal_select_23),
+          .request$slot2_id(signal_select_22),
+          .request$slot2_price(signal_select_21),
+          .request_valid(signal_select_20),
           .update_ready(signal_wire_5),
           .result_valid(signal_wire_4),
           .action(signal_wire_3),
@@ -1934,25 +1930,25 @@ module gqh_competition_top (
           .response$slot1_action(signal_inst_3[60:59]),
           .response$slot2_action(signal_inst_3[62:61]),
           .response_valid(signal_inst_3[63:63]) );
-    assign signal_select_32 = signal_inst_3[42:27];
+    assign signal_select_31 = signal_inst_3[42:27];
     gqh_response_sequencer
         response_sequencer
         ( .clock(signal_wire_12),
           .reset(signal_wire_11),
-          .response$index(signal_select_32),
-          .response$slot1_id(signal_select_8),
-          .response$slot2_id(signal_select_7),
-          .response$slot1_action(signal_select_6),
-          .response$slot2_action(signal_select_5),
-          .response_valid(signal_select_4),
-          .tx_ready(signal_select_3),
-          .tx_busy(signal_select_2),
+          .response$index(signal_select_31),
+          .response$slot1_id(signal_select_7),
+          .response$slot2_id(signal_select_6),
+          .response$slot1_action(signal_select_5),
+          .response$slot2_action(signal_select_4),
+          .response_valid(signal_select_3),
+          .tx_ready(signal_select_2),
+          .tx_busy(signal_select_1),
           .response_ready(signal_inst_4[0:0]),
           .response_done(signal_inst_4[1:1]),
           .tx_data(signal_inst_4[9:2]),
           .tx_valid(signal_inst_4[10:10]) );
-    assign signal_select_33 = signal_inst_4[9:2];
-    assign signal_wire_9 = signal_select_33;
+    assign signal_select_32 = signal_inst_4[9:2];
+    assign signal_wire_9 = signal_select_32;
     assign signal_wire_10 = reset_btn;
     gqh_reset_release
         reset_release
@@ -1970,9 +1966,9 @@ module gqh_competition_top (
           .tx(signal_inst_6[0:0]),
           .tx_ready(signal_inst_6[1:1]),
           .tx_busy(signal_inst_6[2:2]) );
-    assign signal_select_34 = signal_inst_6[0:0];
-    assign uart_tx_o = signal_select_34;
+    assign signal_select_33 = signal_inst_6[0:0];
+    assign uart_tx_o = signal_select_33;
     assign led0_n = vdd;
-    assign led1_n = signal_not;
+    assign led1_n = vdd;
 
 endmodule
