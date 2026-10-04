@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a rejected (resource regression); H3b–H5 experiments have not been run.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4–H5 experiments have not been run.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -300,12 +300,115 @@ passes; the remaining production RTL/full-regression simulations were stopped
 after the measured rejection, with no aggregate PASS claimed. Logs and scope
 are retained in the candidate bundle.
 No H3a board acceptance or RTT is claimed. The failed resource screen rejects
-promotion without requiring board tests. H2 remains the accepted fallback;
-H3b/H3c and later experiments are not authorized by this H3a assignment.
+promotion without requiring board tests. H2 remains the accepted fallback.
+The subsequently user-authorized H3b and combined experiments are recorded below.
 See [measured review](results/phase-h-h3a-20261004T012455Z/MEASURED_REVIEW.md),
 [ledger](results/phase-h-h3a-20261004T012455Z/candidates.csv),
 [cycle schedule](results/phase-h-h3a-20261004T012455Z/SCHEDULE.md) and
 [handoff](results/phase-h-h3a-20261004T012455Z/HANDOFF.md).
+
+**H3b and combined H3a+H3b status: rejected — user-confirmed resource-screen
+decisions, October 3.** H3b candidate
+`h3b-shared-relations-8853aea` builds directly on accepted H2 at commit
+`8853aea`; its unchanged parent generation matched the accepted H2 competition
+RTL byte-for-byte. It replaces the separate unsigned below/above comparisons
+with one 16-bit unsigned less-than comparison plus equality, deriving above as
+`!(below || equal)`. H2's relation flags, exact 20-bit sums and schedule remain.
+
+Combined candidate `h3ab-shared-arithmetic-relations-3f4e842` adds the same
+comparator change to H3a's shared full-width arithmetic. Its implementation
+parent at commit `3f4e842` generated RTL identical to archived measured H3a
+before the comparator edit. Neither experiment accepts H3a or replaces H2.
+
+| Candidate | Total logic | Registers | Synthesis-summary LUTs | Logic/register/LUT change vs H2 | Decision |
+| --- | ---: | ---: | ---: | --- | --- |
+| Accepted H2 | 362 | 335 | 285 | reference | Retain accepted fallback |
+| H3a alone | 364 | 356 | 306 | +2 / +21 / +21 | Rejected |
+| H3b alone | 368 | 335 | 289 | +6 / 0 / +4 | Rejected |
+| H3a+H3b combined | 381 | 356 | 321 | +19 / +21 / +36 | Rejected |
+| H3c digit-serial | 378 | 376 | 335 | +16 / +41 / +50 | Rejected |
+
+All three user-built candidates use Gowin V1.9.11.03 Education and retain
+1 BSRAM / 0 SSRAM. H3b P&R reports 292 LUT + 76 ALU; combined P&R reports
+325 LUT + 56 ALU. These P&R LUT counts are distinct from the synthesis-summary
+LUT column. Routed 27 MHz timing passes with zero setup/hold violations:
+H3b worst setup/hold slack +23.820 / +0.227 ns; combined +30.515 / +0.321 ns.
+Clock/UART settings and competition constraints are unchanged.
+
+Read-only reviews of the live `test_proj2/test_proj2/impl/` reports created
+October 3 at 18:54:49 (H3b) and 19:02:03 (combined) confirmed each project
+RTL/CST/SDC matched its delivered candidate byte-for-byte at review time.
+The combined run replaced the live H3b reports; no standalone H3b raw-report
+archive was made. H3a's archived raw reports remain preserved in its bundle.
+The counts above record the observed measurements, not an estimated additive
+result: comparator reuse added 17 logic counts to H3a, so the combination
+also fails the primary resource screen.
+
+H3b build, focused existing engine Cyclesim/Icarus checks (464 packets /
+9,918 edges), complete-top elaboration and Yosys process/hierarchy checks pass.
+Combined checks likewise pass (518 packets / 12,223 edges), including all nine
+first-scored relation transitions, extremes/truncation, stalls, session reuse,
+reset at each applicable H3a stage and exact-once commit/RAM checks. Structural
+checks confirm the intended shared operators and retained block-memory inference
+attribute. Full regression and serial suites were not run for these candidates;
+no H3b/combined board validation or RTT is claimed. Failed resource screens
+reject promotion without board tests.
+
+Delivered RTL and constraints remain in
+[H3b folder](results/h3b-shared-relations-8853aea/) and
+[combined folder](results/h3ab-shared-arithmetic-relations-3f4e842/).
+Accepted H2 remains 362 / 335 / 285 and is the reference for subsequent experiments;
+use its [competition RTL and constraints](results/phase-h-h2-20261004T003607Z-comparison-state/gowin/src/).
+
+**H3c status: rejected — measured resource regression, October 3.** Candidate
+`h3c-digit-serial-h2`, parent accepted
+`H2-comparison-state-20261004T003607Z`. The existing H3a command/commit shell
+was reused while replacing its full-width arithmetic with one shared four-bit
+add/subtract datapath. Five LSB-first chunks propagate carry/no-borrow for each
+operation; rolling updates subtract oldest then add current, while warm-up only
+adds current. Fixed shifts assemble the exact 20-bit result before the single
+commit. H2's separate below/above comparisons and warm-up relation flags,
+H1's synchronous history/read schedule and block-memory inference, direct
+27 MHz clock and UART settings are retained. Temporary arithmetic state is
+40 bits (20-bit sum scratch, 16-bit operand, carry and 3-bit chunk counter).
+Engine result publication is 8 cycles warm-up / 14 cycles rolling after command
+acceptance; earliest result transfer is 9 / 15 cycles.
+
+The matching user-built Gowin V1.9.11.03 Education candidate reports
+**378 total logic / 376 registers / 335 synthesis-summary LUTs /
+1 BSRAM / 0 SSRAM**. Versus accepted H2, this is **+16 logic (4.4%),
++41 registers (12.2%) and +50 synthesis LUTs (17.5%)**. P&R reports
+338 LUT + 40 ALU = 378 logic. Synthesis hierarchy/utilization reports
+338 LUT (including three INV) and 34 ALU; keep these distinct from the
+335-LUT synthesis-summary row. Routed 27 MHz timing passes with worst
+setup/hold slack **+30.124 / +0.323 ns**, zero setup/hold violations and
+zero total negative slack. PR1014 remains.
+
+Read-only review confirmed the live project RTL/CST/SDC matched the delivered
+candidate byte-for-byte. Reports were created October 3 at 19:11:53:
+[P&R resources](test_proj2/test_proj2/impl/pnr/test_proj2.rpt.txt),
+[synthesis summary](test_proj2/test_proj2/impl/gwsynthesis/test_proj2_syn.rpt.html)
+and [routed timing](test_proj2/test_proj2/impl/pnr/test_proj2_tr_content.html).
+These are live project reports and may be replaced by a later build; no separate
+raw-report archive was created. Delivered inputs remain in the
+[H3c folder](results/h3c-digit-serial-h2/).
+
+Build, focused engine Cyclesim/Icarus checks (742 packets / 26,161 edges),
+controller variable-latency mocks and 72-packet real-controller sanity replay,
+complete-top elaboration and Yosys hierarchy/process checks pass. Coverage
+includes independent integer window sums, carry/borrow propagation, zero/max
+values, top-nibble handling, all nine first-scored relation transitions,
+reset at every processing edge, stale history, exact-once commits and stalled
+result stability. Structural checks confirm four-bit arithmetic operands with
+carry-out (one six-bit guarded addition), no full-width sum add/subtract and
+retained block-memory inference. Full regression, long serial simulations and
+the broader controller reset sweep were not run. No H3c board validation or
+RTT is claimed. The failed resource screen rejects promotion; H2 remains the
+accepted fallback and implementation parent for H4.
+
+Current engine source and live `test_proj2` inputs contain rejected H3c;
+neither is the accepted H2 fallback. This logging update does not restore or
+alter implementation files or fallback artifacts.
 
 **Primary files:** `src/engine/update.ml`, engine tests and schedule-sensitive
 integration checks. Preserve latency-independent command/result handshakes.

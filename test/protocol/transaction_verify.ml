@@ -124,7 +124,7 @@ let mocks () =
   printf "PASS mocks: nine reset stages, %d responses, %d commands, %d clear pulses, %d earliest-result commands; random stalls/latency and held offers\n"
     !total_packets !total_commands !total_clears !earliest
 
-let replay path =
+let replay ?(reset_sweep=true) path =
   let module S = Cyclesim.With_interface(H.I)(H.O) in
   let sim = S.create ~config:Cyclesim.Config.trace_all (H.create (scope ())) in
   let i = Cyclesim.inputs sim in
@@ -173,7 +173,8 @@ let replay path =
     done;
     check "publication versus transfer edge" !elapsed (!publication + 1);
     let key = if v.(0)=0 then "session_start" else if v.(0)<16 then "warmup" else "steady" in
-    check "H3a bounded path latency" !elapsed (if v.(0)=0 || v.(0)>=16 then 13 else 11);
+    check "H3c bounded path latency" !elapsed
+      (if v.(0)=0 then 23 else if v.(0)>=16 then 33 else 21);
     Hashtbl.update counts key ~f:(function None -> !elapsed | Some n -> check "path latency" !elapsed n; n);
     for _ = 1 to 7 do
       let ready,valid,response,_,_,_,_,_,_ = tick () in
@@ -194,8 +195,9 @@ let replay path =
   (* Abort on every elapsed edge through session-clear, both engine updates,
      stalled response and drain, then refill/scored replay on this SAME instance.
      This verifies controller + engine reset together, with stale physical RAM. *)
+  if reset_sweep then begin
   for index = 0 to 1 do
-   for offset = 0 to 14 do
+   for offset = 0 to (if index = 0 then 24 else 34) do
     (* Refill a full window before the rolling reset sweep, on this instance. *)
     if index = 1 then List.iter (List.take lines 35) ~f:process;
     set_req i.request (if index = 0 then [0;34;65535;17;0] else [35;34;65535;17;0]);
@@ -203,7 +205,7 @@ let replay path =
     set i.response_ready 0; set i.response_done 0;
     ignore (tick ());
     for elapsed = 1 to offset do
-      if elapsed = 14 then set i.response_ready 1;
+      if elapsed = (if index = 0 then 24 else 34) then set i.response_ready 1;
       ignore (tick ())
     done;
     set i.reset 1;
@@ -215,6 +217,7 @@ let replay path =
     List.iter (List.take lines 35) ~f:process
   done;
   done;
+  end;
   printf "PASS real engine: %d records, %d commands, %d session clears\n" !records !commands !clears;
   Hashtbl.iteri counts ~f:(fun ~key ~data -> printf "latency %s: publication E0+%d; earliest response transfer E0+%d\n" key (data-1) data)
 
@@ -336,6 +339,7 @@ let bytes path =
 let () = match Array.to_list (Sys.get_argv ()) with
   | [_; "mocks"] -> mocks ()
   | [_; "replay"; path] -> replay path
+  | [_; "replay-sanity"; path] -> replay ~reset_sweep:false path
   | [_; "bytes"; path] -> bytes path
   | [_; "emit"; kind; path] -> emit kind path
-  | _ -> failwith "usage: transaction_verify (mocks | replay TRACE | bytes TRACE | emit KIND RTL)"
+  | _ -> failwith "usage: transaction_verify (mocks | replay[-sanity] TRACE | bytes TRACE | emit KIND RTL)"

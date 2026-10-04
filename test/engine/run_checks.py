@@ -42,6 +42,7 @@ class Trace:
         self.ram = [65535 - a for a in range(32)]
         self.state = 0
         self.pending = None
+        self.chunk = 0
         self.clear_scalars()
         self.edges = 0
         self.counts = collections.Counter()
@@ -80,11 +81,14 @@ class Trace:
                 self.state = 1
                 self.counts['accepted'] += 1
         elif self.state == 1:
-            self.state = 3 if self.pending[3] else 2
-        elif self.state == 2:
-            self.state = 3
-        elif self.state == 3:
-            self.state = 4
+            self.state = 6
+        elif self.state in (6, 7):
+            self.chunk = 0
+            self.state = 3 if self.state == 7 or self.pending[3] else 2
+        elif self.state in (2, 3):
+            if self.chunk == 4:
+                self.state = 7 if self.state == 2 else 4
+            self.chunk += 1
         elif self.state == 4:
             item, price, pos, warm, answer = self.pending
             old = self.windows[item]
@@ -140,12 +144,13 @@ class Trace:
         latency = 0
         # Explicit expected stages: synchronous read, optional subtract, add,
         # commit. Busy clear is illegal and must not disturb the accepted work.
-        stages = [3, 4, 5] if warm else [2, 3, 4, 5]
+        stages = ([6, 3] + [3]*4 + [4, 5] if warm else
+                  [6, 2] + [2]*4 + [7, 3] + [3]*4 + [4, 5])
         for expected_stage in stages:
             self.step(valid=1, ready=1, clear=1, **noise)
             latency += 1
             assert self.state == expected_stage
-        assert latency == (3 if warm else 4)
+        assert latency == (8 if warm else 14)
         self.counts[f'latency_{"warm" if warm else "steady"}_{latency}'] += 1
         for _ in range(self.rng.randrange(12) if stall is None else stall):
             self.step(valid=1, ready=0, **self.noise())
@@ -221,7 +226,7 @@ def build_trace(path):
     # with both warm-up and rolling commands and a pending committed result. Check all RAM words on every edge:
     # a reset on the commit edge MUST suppress the write, even with valid high.
     for warm in [0, 1]:
-      for target_state in ([0, 1, 3, 4, 5] if warm else range(6)):
+      for target_state in ([0, 1, 6, 3, 4, 5] if warm else range(8)):
         for item in range(2):
             # Populate both histories and nonzero BUY/SELL before reset tests.
             for index in range(35):
@@ -240,7 +245,7 @@ def build_trace(path):
                 t.step(valid=1, item=item, price=0 if item == 0 else 65535,
                        pos=0 if warm else t.pointer, warm=warm,
                        answer=response[3 if item == 0 else 5])
-                for _ in range(4):
+                for _ in range(14):
                     if t.state == target_state:
                         break
                     t.step(**t.noise())
@@ -268,7 +273,7 @@ def build_trace(path):
         for new in ["below", "equal", "above"]:
             assert t.counts[f"transition_{old}_{new}"] > 0
             assert t.counts[f"first_scored_{old}_{new}"] > 0
-    for state in range(6):
+    for state in range(8):
         assert t.counts[f'reset_state_{state}'] >= 2
     summary = dict(sorted(t.counts.items()))
     summary.update(supplied_fixture_records=supplied, edges=t.edges,
@@ -276,6 +281,72 @@ def build_trace(path):
                    trace_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     print(json.dumps(summary, indent=2), flush=True)
     return summary
+
+
+def build_quick_trace(path):
+    """H3c resource-screen check using the existing per-edge window/RAM oracle.
+
+    Directed carries/borrows, top digit, relation transitions, and reset at
+    every edge (including all five digits of both operations). No serial run.
+    """
+    t = Trace(path)
+    t.step(reset=1, valid=1, ready=1)
+    t.step()
+    model = ReferenceModel()
+
+    def packet(index, a, b):
+        request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2
+                   else encode_request(index, ITEM_A, a, ITEM_B, b))
+        t.packet(request, model.respond(request), model._windows)
+
+    streams = [
+        [(65535, 0), (1, 65535)] + [(0, 65535)]*14
+        + [(65535, 0), (0, 65535), (1, 1), (65534, 65534)]*6,
+        [(4096, 65535)]*16 + [(0, 0)]*16 + [(65535, 65535)]*16,
+    ]
+    for last in (98, 100, 102):
+        for incoming in (98, 99, 100, 102):
+            streams.append([(100, 200)]*15 + [(last, 2*last)]
+                           + [(incoming, 2*incoming)])
+    for stream in streams:
+        for index, (a, b) in enumerate(stream):
+            packet(index, a, b)
+    # Offset zero is READ immediately after acceptance; the final offset is
+    # RESULT. Reset on COMMIT must suppress RAM and all scalar writes.
+    for warm in (0, 1):
+        for offset in range((8 if warm else 14) + 1):
+            for index in range(18):
+                packet(index, 4096 if index < 16 else 0,
+                       65535 if index < 16 else 1)
+            if warm:
+                t.step(clear=1, valid=1)
+            item = offset % 2
+            response = (bytes([0, 0, 17, 0, 34, 0, 0, 0]) if warm else
+                        model.respond(encode_request(18, ITEM_A, 65535, ITEM_B, 0)))
+            t.step(valid=1, item=item, price=65535 if item == 0 else 0,
+                   pos=0 if warm else t.pointer, warm=warm,
+                   answer=response[3 if item == 0 else 5])
+            for _ in range(offset):
+                t.step(valid=1, ready=0, clear=1, **t.noise())
+            if t.state == 5:
+                for _ in range(64):
+                    t.step(valid=1, ready=0, **t.noise())
+            t.counts[f'reset_{"warm" if warm else "steady"}_offset_{offset}'] += 1
+            t.step(reset=1, valid=1, ready=1, **t.noise())
+            t.step(reset=1, clear=1, valid=1, **t.noise())
+            t.step()
+    # Refill and roll again after the final aborted operation, with stale RAM.
+    for index in range(18):
+        packet(index, index*17, 65535-index)
+    t.file.close()
+    for name in ('maximum_sum', 'zero_sum', 'result_stall_edges',
+                 'latency_warm_8', 'latency_steady_14'):
+        assert t.counts[name] > 0, name
+    for old in ('below', 'equal', 'above'):
+        for new in ('below', 'equal', 'above'):
+            assert t.counts[f'first_scored_{old}_{new}'] > 0
+    print(f'H3c quick trace: {t.counts["packets"]} packets / {t.edges} edges', flush=True)
+    return dict(t.counts, edges=t.edges)
 
 
 def main():
@@ -290,7 +361,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='phase-f-') as directory:
         tmp = Path(directory)
         trace = tmp / 'trace.txt'
-        summary = build_trace(trace)
+        summary = build_quick_trace(trace) if "--quick" in sys.argv else build_trace(trace)
         run([generator, 'replay', trace])
         rtl = tmp / 'engine.v'
         run([generator, 'emit', rtl])
@@ -305,19 +376,24 @@ def main():
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
         module = json.loads(net.read_text())['modules']['gqh_update_engine']
         arithmetic_cells = [c for c in module['cells'].values()
-                            if c['type'] in ('$add', '$sub')]
+                            if c['type'] in ('$add', '$sub')
+                            and len(c['connections']['Y']) > 3]
         assert len(arithmetic_cells) == 1, arithmetic_cells
         cell = arithmetic_cells[0]
         assert cell['type'] == '$add'
-        assert len(cell['connections']['A']) == len(cell['connections']['B']) == 21
-        assert len(cell['connections']['Y']) == 21
+        # The only sum datapath is four operand bits plus carry-out and a
+        # guard bit. The independent 3-bit chunk-counter increment is allowed.
+        assert len(cell['connections']['A']) == len(cell['connections']['B']) == 6
+        assert len(cell['connections']['Y']) == 6
         assert cell['connections']['A'][0] == cell['connections']['B'][0]
-        assert cell['connections']['A'][1:] == module['netnames']['arithmetic_lhs']['bits']
-        assert cell['connections']['B'][1:] == module['netnames']['arithmetic_rhs']['bits']
+        assert cell['connections']['A'][1:5] == module['netnames']['arithmetic_lhs']['bits']
+        assert cell['connections']['B'][1:5] == module['netnames']['arithmetic_rhs']['bits']
+        assert cell['connections']['A'][5] == cell['connections']['B'][5] == '0'
         assert cell['connections']['Y'] == module['netnames']['arithmetic_with_carry']['bits']
+        assert len(module['netnames']['arithmetic_operand']['bits']) == 16
         summary['arithmetic_structure'] = dict(add_cells=1, sub_cells=0,
-            encoded_width=21, retained_width=20, shared_guard_carry=True)
-        print('PASS arithmetic structure: one addition, 20 retained bits, shared guard carry; no subtract/increment chain')
+            encoded_width=6, digit_width=4, carry_output=True)
+        print('PASS arithmetic structure: one 4-bit digit addition with carry; no full-width sum arithmetic')
         ports = module['ports']
         for suffix in ['a', 'b']:
             assert 'previous_' + suffix not in module['netnames']
@@ -333,7 +409,7 @@ def main():
         run(['iverilog', '-g2012', '-s', 'engine_tb', '-o', exe, rtl, HERE / 'engine_tb.v'])
         run(['vvp', exe, f'+TRACE={trace}'])
         print('RTL SHA256:', hashlib.sha256(data).hexdigest(), flush=True)
-        if len(sys.argv) == 3:
+        if len(sys.argv) == 3 and sys.argv[2] != '--quick':
             output = Path(sys.argv[2])
             output.mkdir(parents=True, exist_ok=True)
             (output / 'gqh_update_engine.v').write_bytes(data)
