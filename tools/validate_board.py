@@ -144,7 +144,7 @@ def run_logged(command, folder):
     return ''.join(lines)
 
 
-def uart_check(port, fault=False):
+def uart_check(port, fault=False, no_heartbeat=False):
     import serial
     with serial.Serial(port, 115200, timeout=0.2) as uart:
         time.sleep(0.2)
@@ -157,7 +157,8 @@ def uart_check(port, fault=False):
             uart.write(REQUEST)
             require(uart.read(8) == b'', 'Busy fault did not block another request')
             confirm('LED1 should now be ON and staying ON. Is it?')
-            confirm('Press/release S2 reset. Is LED1 OFF and LED0 blinking again?')
+            led0 = 'OFF' if no_heartbeat else 'blinking again'
+            confirm(f'Press/release S2 reset. Is LED1 OFF and LED0 {led0}?')
             uart.write(REQUEST)
             require(uart.read(8) == RESPONSE, 'Fresh request failed after fault reset')
         require(not uart.read(1), 'Unexpected extra UART output')
@@ -172,6 +173,8 @@ def main(argv=None):
                         default=ROOT / 'test_proj2/test_proj2/impl/pnr/test_proj2.fs')
     parser.add_argument('--results-root', type=Path, default=ROOT / 'results')
     parser.add_argument('--smoke', action='store_true', help='Quick only; a screen, not full acceptance')
+    parser.add_argument('--no-heartbeat', action='store_true',
+                        help='Expect LED0 OFF for the H5 competition image')
     parser.add_argument('--prepare-only', action='store_true', help='Generate run files without serial access')
     args = parser.parse_args(argv)
     parent = args.results_root.expanduser().resolve()
@@ -180,13 +183,18 @@ def main(argv=None):
     stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     run = Path(tempfile.mkdtemp(prefix=f'board-{label}-{stamp}-', dir=parent))
     summary = dict(label=args.label, port=args.port, fs=str(args.fs.resolve()),
-                   mode='smoke' if args.smoke else 'full', pass_all=False, stages={})
+                   mode='smoke' if args.smoke else 'full', no_heartbeat=args.no_heartbeat,
+                   pass_all=False, stages={})
+    led0 = 'OFF' if args.no_heartbeat else 'blinking'
     print(f'Results: {run}', flush=True)
     def stage(name, operation):
         print(f'Running {name} ...', flush=True)
         summary['stages'][name] = operation()
         (run / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
         print(f'PASS {name}', flush=True)
+        if 'official_mean_ms' in summary['stages'][name]:
+            print(f"  Mean round-trip latency: {summary['stages'][name]['official_mean_ms']:.3f} ms",
+                  flush=True)
     def official(name):
         folder = run / name
         script = next(folder.glob('*.py'))
@@ -207,21 +215,22 @@ def main(argv=None):
             return 0
         if not args.smoke:
             confirm(f'Freshly programmed {args.fs.name}, WITHOUT button reset, '
-                    'with LED0 blinking and LED1 OFF?')
+                    f'with LED0 {led0} and LED1 OFF?')
             stage('startup', lambda: uart_check(args.port))
-        confirm('Press/release S2 reset. LED0 blinking and LED1 OFF?')
+        confirm(f'Press/release S2 reset. LED0 {led0} and LED1 OFF?')
         stage('quick', lambda: official('quick'))
         if not args.smoke:
             confirm('Press/release S2 once before the normal/full-range pair. '
-                    'LED0 blinking and LED1 OFF? Do not reset between the next tests.')
+                    f'LED0 {led0} and LED1 OFF? Do not reset between the next tests.')
             # No reset/reprogramming between normal and full-range. Each sends
             # index zero, exercising logical session clear on the same image.
             stage('normal', lambda: official('normal'))
             stage('fullrange', lambda: official('fullrange'))
             stage('custom', lambda: custom('custom'))
-            confirm('Histories are populated. Press/release S2 reset; LED0 blinking and LED1 OFF?')
+            confirm(f'Histories are populated. Press/release S2 reset; LED0 {led0} and LED1 OFF?')
             stage('custom-after-reset', lambda: custom('custom-after-reset'))
-            stage('fault-reset', lambda: uart_check(args.port, fault=True))
+            stage('fault-reset', lambda: uart_check(args.port, fault=True,
+                                                  no_heartbeat=args.no_heartbeat))
         summary['pass_all'] = True
         code = 0
         print('PASS ' + ('SMOKE ONLY — full validation still required' if args.smoke else
