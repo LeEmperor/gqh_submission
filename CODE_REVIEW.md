@@ -126,7 +126,7 @@ I regenerated the RTL from `src/` at `9330a63` and compared it with every commit
 | `test_proj2/test_proj2/src/gqh_competition_top.v` | `897d6d38…` | H1 only, no H2 flags | Yes (H1 runs) |
 | `test_proj1/test_proj1/src/gqh_competition_top.v` | `6c7f220c…` | Original G2 | Yes |
 
-- **H2 is in the source but has nothing behind it.** `resource_optimization.md` says "H2–H5 experiments have not been run", and the commit message mentions only H1, yet `src/engine/update.ml` now contains H2. No committed RTL contains it, and nothing has run on the board.
+- **H2 is in the source but has nothing behind it.** `resource_optimization.md` says "H2–H5 experiments have not been run", and the commit message mentions only H1, yet `src/engine/update.ml` now contains H2. No committed RTL contains it, and nothing has run on the board. In simulation it does pass: at `9330a63`, the engine and integration suites both pass (independent oracle, 1,394 serial packets, exit 0). So the remaining gap is the hardware: no board run and no RTL in the repo.
 - **Every rebuild path gives an untested or old design.** Judges rebuild from committed source. Regenerating from Hardcaml gives an untested design. Opening the root project gives the old G2. Only `test_proj2` matches a board-tested image, and it isn't the source.
 
 **Fix.** Pick the freeze source. Regenerate `rtl/gqh_competition_top.v` from it and delete the other copies. Build the `.fs` from the one project that reads `rtl/`, and run the full board acceptance on that image.
@@ -208,7 +208,7 @@ The Phase H plan lists the heartbeat under H5 and preserves its "current cadence
 
 Both sides come from the same generator, so the check can never fail. `rtl/gqh_competition_top.v` is no longer a test dependency at all.
 
-This is exactly how C5 got through: `rtl/` is stale and the suite stays green.
+This is exactly how C5 got through: `rtl/` is stale and the suite stays green. Confirmed: `dune build @test/engine/runtest @test/integration/runtest` passes at `9330a63` (exit 0) while `rtl/` is stale.
 
 **Fix.** Compare against the delivered `rtl/gqh_competition_top.v` again, and regenerate `rtl/` as part of any candidate that should be built. If H experiments need a fallback, keep the fallback RTL under `results/` instead of pointing the check away from `rtl/`.
 
