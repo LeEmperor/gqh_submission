@@ -8,6 +8,50 @@ and saves raw bytes + timings to CSV with a JSON summary.
 summary is labeled `custom-runner`. For scoring-style validation, use the
 organizers' `21_quick_uart_test.py` and `22_robust_uart_test.py`.
 
+## One-command optimization validation
+
+After programming the candidate in Gowin, leave it running without a button
+reset, close other serial terminals, and run from the repository root:
+
+```sh
+python3 tools/validate_board.py --port /dev/ttyUSB1
+```
+
+The default candidate label is H2 and image path is
+`test_proj2/test_proj2/impl/pnr/test_proj2.fs`. For later stages use `--label H3`
+and optionally `--fs /path/to/programmed.fs`. The script does not program the board.
+It creates a unique `results/board-H2-.../` directory, patches PORT in private
+copies of the pristine official scripts, and prints the result path at the start
+and end. No shell variables, directory preparation, separate launchers or log
+redirection are needed. Requires Python 3 and pyserial.
+
+The full sequence is startup (before button reset), official quick, normal robust
+then full-range with no intervening reset/programming, a 1,598-packet independent
+custom replay across 25 sessions, the same replay after populated-history button
+reset, and sticky busy-fault/button-reset recovery. The custom fixture includes
+all nine H2 relations at the first scored update, warm-up slot swaps, equality,
+truncated averages, zero/max/full-range prices and repeated sessions. Prompts
+cover the physical reset presses and LED observations; other steps run themselves.
+
+Official quick must print PASS; robust CSVs and summaries must show all 100
+responses, 84/84 packets, 168/168 actions and zero timeouts. Normal mean must be
+at most 20.7825 ms. Custom runs require every byte correct, no abort, timeout,
+short response or unsolicited/trailing bytes. The wrapper stops on failure and
+exits nonzero; `summary.json` and per-stage console/CSV/summary files retain the
+results. A full PASS is board-test evidence, with resource/timing screening kept
+separate. It does not update phase acceptance automatically.
+
+For a fast screening pass between builds:
+
+```sh
+python3 tools/validate_board.py --port /dev/ttyUSB1 --smoke
+```
+
+This runs quick only after a reset prompt. Its result is explicitly smoke-only;
+use the default suite for candidate board validation. `--prepare-only` creates
+all fixtures/scripts without opening serial. Wrapper logic can be tested without
+a board using `python3 -m unittest discover -s test/runner -p test_board_validation.py`.
+
 ## Quick start
 
 Requires Python 3.9+. `pyserial` is needed only for board runs (`pip install pyserial`),

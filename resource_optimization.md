@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2–H5 experiments have not been run.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3–H5 experiments have not been run.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -206,6 +206,31 @@ Moving scalar state into BSRAM is a separate follow-up candidate, preferably aft
 H2 establishes what state remains necessary. Count address/decode/control overhead.
 
 ### H2 — Replace previous prices with comparison state
+
+**Status: accepted/complete — measured resource improvement and fresh full board validation.**
+Candidate `H2-comparison-state-20261004T003607Z`, parent
+`H1-history-block-inference-20261003T225802Z`. Engine, protocol, emitted RTL,
+production serial and full regressions pass. All nine relation transitions at
+index 16 are checked; comparison flags commit during warm-up and remain item-owned.
+H1 history inference/read schedule, exact arithmetic, 27 MHz and UART are retained.
+The new `test_proj2` Gowin V1.9.11.03 build matches the delivered H2 RTL/CST/SDC.
+Measured H2: **362 total logic / 335 registers / 285 synthesis-summary LUTs /
+1 BSRAM / 0 SSRAM**. Versus H1: **50 fewer logic (12.1%), 28 fewer registers
+(7.7%), 52 fewer synthesis LUTs**. Routed 27 MHz setup/hold checks pass with
++25.197 ns / +0.208 ns slack and zero violations; PR1014 remains.
+Fresh H2 programming/startup, quick, normal → full-range with no intervening
+reset/programming, custom and populated-history reset replay, and sticky-fault/
+button-reset recovery all pass. Normal/full-range each returned 100 responses,
+84/84 scored packets, 168/168 actions and zero timeouts. Normal mean is 16.813 ms;
+full-range mean is 16.920 ms. Both custom runs pass 1,598/1,598 with no
+mismatch/SHORT/TIMEOUT, abort or unsolicited/trailing bytes.
+See the [full board summary](results/board-H2-20261003-181927-sdxjntxh/summary.json)
+and its per-stage logs/CSVs. The user confirmed fresh programming and physical
+LED/reset observations during the wrapper run. Acceptance applies to this combined
+H1+H2 candidate, not subsequent changes. Source snapshot/hash packaging was omitted
+at the user's request. F/G closure and deferred final-image packaging remain intact.
+See [H2 files and manual next steps](results/phase-h-h2-20261004T003607Z-comparison-state/HANDOFF.md).
+The concurrent H1 closure is preserved separately; it does not accept H2.
 
 **Primary files:** `src/engine/update.ml` and `test/engine/`; integration tests
 consume the unchanged engine command/result interface.
