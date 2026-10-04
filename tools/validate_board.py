@@ -144,7 +144,7 @@ def run_logged(command, folder):
     return ''.join(lines)
 
 
-def uart_check(port, fault=False, no_heartbeat=False):
+def uart_check(port, fault=False, no_heartbeat=False, no_fault_led=False):
     import serial
     with serial.Serial(port, 115200, timeout=0.2) as uart:
         time.sleep(0.2)
@@ -156,7 +156,10 @@ def uart_check(port, fault=False, no_heartbeat=False):
         if fault:
             uart.write(REQUEST)
             require(uart.read(8) == b'', 'Busy fault did not block another request')
-            confirm('LED1 should now be ON and staying ON. Is it?')
+            if no_fault_led:
+                confirm('Fault LED is disabled. Is LED1 still OFF?')
+            else:
+                confirm('LED1 should now be ON and staying ON. Is it?')
             led0 = 'OFF' if no_heartbeat else 'blinking again'
             confirm(f'Press/release S2 reset. Is LED1 OFF and LED0 {led0}?')
             uart.write(REQUEST)
@@ -175,6 +178,8 @@ def main(argv=None):
     parser.add_argument('--smoke', action='store_true', help='Quick only; a screen, not full acceptance')
     parser.add_argument('--no-heartbeat', action='store_true',
                         help='Expect LED0 OFF for the H5 competition image')
+    parser.add_argument('--no-fault-led', action='store_true',
+                        help='Expect LED1 OFF; still test UART fault lockout and reset recovery')
     parser.add_argument('--prepare-only', action='store_true', help='Generate run files without serial access')
     args = parser.parse_args(argv)
     parent = args.results_root.expanduser().resolve()
@@ -184,6 +189,7 @@ def main(argv=None):
     run = Path(tempfile.mkdtemp(prefix=f'board-{label}-{stamp}-', dir=parent))
     summary = dict(label=args.label, port=args.port, fs=str(args.fs.resolve()),
                    mode='smoke' if args.smoke else 'full', no_heartbeat=args.no_heartbeat,
+                   no_fault_led=args.no_fault_led,
                    pass_all=False, stages={})
     led0 = 'OFF' if args.no_heartbeat else 'blinking'
     print(f'Results: {run}', flush=True)
@@ -230,7 +236,8 @@ def main(argv=None):
             confirm(f'Histories are populated. Press/release S2 reset; LED0 {led0} and LED1 OFF?')
             stage('custom-after-reset', lambda: custom('custom-after-reset'))
             stage('fault-reset', lambda: uart_check(args.port, fault=True,
-                                                  no_heartbeat=args.no_heartbeat))
+                                                  no_heartbeat=args.no_heartbeat,
+                                                  no_fault_led=args.no_fault_led))
         summary['pass_all'] = True
         code = 0
         print('PASS ' + ('SMOKE ONLY — full validation still required' if args.smoke else

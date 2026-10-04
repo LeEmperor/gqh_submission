@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4 implemented with a user-recorded two-logic reduction; H5 heartbeat removal retained at 318 total logic, with routed timing and user-reported board quick-test PASS; H5 TX-shift experiment rejected at 327 total logic and source restored before subsequent experiments; H5 shared-phase controller measured at 304 total logic / 250 registers, with focused checks and routed timing passing; H5 response-payload reset removal ties that parent at 304 / 250, with no measured resource gain. Current source still includes both the shared-phase controller and payload reset removal; no reset-removal rollback or final retention decision has been recorded. Full H5 board acceptance and latency have not been recorded.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4 implemented with a user-recorded two-logic reduction; H5 heartbeat removal measured at 318 total logic; H5 TX-shift rejected at 327 and source restored before subsequent experiments; H5 shared-phase controller measured at 304 total logic / 250 registers; H5 response-payload reset removal ties that parent at 304 / 250. The user reports a full H5-304 board-suite PASS with saved normal/full-range means of 16.810 / 16.917 ms. Current source retains both controller and payload changes and now disables the competition fault LED; the new LED-only candidate awaits resource screening. Five-run latency and final image packaging remain unrecorded.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -737,6 +737,50 @@ folders are preserved. Programmed-image identity and full board acceptance
 are not established by either resource review. No mutative Git operations,
 Gowin invocation, programming or serial-device operations were performed by
 the agent during these iterations.
+
+**H5-304 board follow-up, October 3 at 20:13:** the user reports the flashed
+image passes the full wrapper suite. The saved
+[board summary](results/board-H5-304-20261003-201300-6nt__w_h/summary.json)
+records `pass_all: true`, startup exact response with no extra bytes, quick
+21/21 responses, normal and full-range each 100 responses / 84 correct scored
+packets / 168 correct actions / zero timeouts, and successful sticky-fault/
+button-reset recovery. The normal → full-range pair ran without an intervening
+reset. Official mean host round-trip latency is **16.810 ms normal** and
+**16.917 ms full-range**; the normal mean is below 20.7825 ms. Custom and
+custom-after-populated-history-reset each pass **1,598/1,598**, with zero
+MISMATCH/SHORT/TIMEOUT and no unsolicited/trailing bytes. Their respective
+mean/median/p95 latencies are **16.933 / 16.940 / 17.379 ms** and
+**16.931 / 16.939 / 17.246 ms**. These host timings include USB/UART overhead;
+this is not a five-run median comparison.
+
+The run identifies the live `test_proj2.fs` path and the user confirms testing
+the flashed image. The current live inputs match the reset-removal candidate;
+no independent bitstream identity bundle was created. This follow-up
+supersedes the earlier statements that no H5-304 board/latency tests were
+recorded. It does not retroactively establish the separately archived FSM-only
+image's board results. The user next requests removing the fault LED, so the
+current, board-tested source (including payload reset removal) is that
+experiment's implementation parent.
+
+**H5 fault LED candidate, awaiting measurement:**
+`h5-no-fault-led` changes only competition-top `led1_n` from inverted
+`decoder.protocol_fault` to constant high (LED off). The sticky fault register
+and all receive-lockout/reset behavior remain unchanged, and the official six
+ports are retained. The parent regenerates byte-identically to
+`h5-regctrl-response-payload-no-reset`: **304 logic / 250 registers / 230
+synthesis-summary LUTs**. The parent top hierarchy has one LUT; LED indication
+is only an inverter, so any counted saving is expected to be small and is
+not claimed before Gowin measurement.
+
+[Delivered LED-only inputs](results/h5-no-fault-led/) contain complete
+competition RTL and unchanged SDC/CST. Every emitted module except the top is
+byte-identical to the parent. Generator build, full-top Yosys hierarchy/process
+checks and Icarus elaboration pass. The board wrapper now accepts
+`--no-fault-led`, retaining UART fault-lockout and reset checks while expecting
+LED1 to stay off; its nine board-free checks pass. No new serial or board test,
+Gowin invocation or programming was performed by the agent. Both LED outputs
+are constant high; the previous flashed image's fault LED still operates until
+the user programs a new image.
 
 **Primary files:** whichever measured block is selected; keep experiments narrow.
 

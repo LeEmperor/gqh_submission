@@ -47,7 +47,7 @@ let create ?half_period_cycles:_ ?cycles_per_bit ?extra_idle_cycles scope (i : _
   response_done <-- sequencer.response_done;
   tx_data <-- sequencer.tx_data;
   tx_valid <-- sequencer.tx_valid;
-  { O.uart_tx_o = tx.tx; led0_n = vdd; led1_n = ~:(decoder.protocol_fault) }
+  { O.uart_tx_o = tx.tx; led0_n = vdd; led1_n = vdd }
 
 let hierarchical ?instance ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles scope i =
   let module H = Hierarchy.In_scope (I) (O) in
