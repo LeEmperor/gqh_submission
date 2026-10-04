@@ -13,7 +13,7 @@ module engine_tb;
     .update$window_position(pos), .update$warmup(warm),
     .update_ready(update_ready), .result_valid(result_valid), .action(action));
   integer fd, n, j, addr, count=0;
-  integer v [0:51];
+  integer v [0:53];
   reg [4095:0] trace;
   task check;
     input [31:0] actual;
@@ -35,7 +35,7 @@ module engine_tb;
     while (!$feof(fd)) begin
       n=$fscanf(fd,"%d",v[0]);
       if (n==1) begin
-        for (j=1; j<52; j=j+1) begin
+        for (j=1; j<54; j=j+1) begin
           n=$fscanf(fd,"%d",v[j]);
           if (n!=1) $fatal(1,"short trace row");
         end
@@ -49,10 +49,11 @@ module engine_tb;
         check(update_ready,v[11],"post ready"); check(result_valid,v[12],"post valid");
         check(action,v[13],"post action");
         check(dut.sum_a,v[14],"sum A"); check(dut.sum_b,v[15],"sum B");
-        check(dut.previous_a,v[16],"previous A"); check(dut.previous_b,v[17],"previous B");
-        check(dut.held_a,v[18],"held A"); check(dut.held_b,v[19],"held B");
+        check(dut.previous_below_a,v[16],"below A"); check(dut.previous_above_a,v[17],"above A");
+        check(dut.previous_below_b,v[18],"below B"); check(dut.previous_above_b,v[19],"above B");
+        check(dut.held_a,v[20],"held A"); check(dut.held_b,v[21],"held B");
         for (addr=0; addr<32; addr=addr+1)
-          check(dut.engine_history[addr],v[20+addr],"RAM preservation/exact once");
+          check(dut.engine_history[addr],v[22+addr],"RAM preservation/exact once");
         clock=0; #1;
         count=count+1;
       end

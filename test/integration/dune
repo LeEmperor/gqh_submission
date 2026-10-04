@@ -3,9 +3,15 @@
  (modules serial_verify)
  (libraries core hardcaml hardcaml_gqh))
 (rule
+ (target competition_candidate.v)
+ (deps ../../bin/generate.exe)
+ (action (run python3 -c
+  "import pathlib, subprocess, sys; subprocess.run([sys.argv[1], 'competition', '-output', str(pathlib.Path(sys.argv[2]).resolve())], check=True)"
+  ../../bin/generate.exe %{target})))
+(rule
  (alias runtest)
  (deps serial_verify.exe run_checks.py competition_tb.v
-  ../../bin/generate.exe ../../dune-project ../../rtl/gqh_competition_top.v
+  ../../bin/generate.exe ../../dune-project competition_candidate.v
   (source_tree ../engine/oracle))
  (action (chdir ../.. (run python3 test/integration/run_checks.py
-   bin/generate.exe test/integration/serial_verify.exe))))
+   bin/generate.exe test/integration/serial_verify.exe - test/integration/competition_candidate.v))))

@@ -14,6 +14,18 @@ sys.path.insert(0, str(HERE / 'oracle'))
 from model import ReferenceModel, decode_request, encode_request, ITEM_A, ITEM_B
 
 
+def relation(window):
+    """Last price versus floor(sum(direct window)/16), including warm-up."""
+    price = window[-1] if window else 0
+    average = sum(window) // 16
+    return int(price < average), int(price > average)
+
+
+def relation_name(window):
+    below, above = relation(window)
+    return "below" if below else "above" if above else "equal"
+
+
 def run(args):
     subprocess.run([str(a) for a in args], check=True)
 
@@ -83,6 +95,13 @@ class Trace:
                 self.counts['truncated_average'] += bool(sum(old) % 16 or sum(old[1:] + [price]) % 16)
                 self.counts[f'held_{answer}'] += answer == self.held[item]
                 window = old[1:] + [price]
+            before_relation, after_relation = relation_name(old), relation_name(window)
+            self.counts[f'relation_{after_relation}'] += 1
+            self.counts[f'transition_{before_relation}_{after_relation}'] += 1
+            if warm and len(window) == 16:
+                self.counts[f'warmup_final_{after_relation}'] += 1
+            if not warm and pos == 0:
+                self.counts[f'scored_wrap_previous_{before_relation}'] += 1
             self.windows[item] = window
             self.held[item] = answer
             self.output_action = answer
@@ -98,7 +117,7 @@ class Trace:
         else:
             self.counts['result_stall_edges'] += 1
         scalar = [sum(w) for w in self.windows]
-        scalar += [w[-1] if w else 0 for w in self.windows] + self.held
+        scalar += [flag for w in self.windows for flag in relation(w)] + self.held
         after = self.outputs(reset, clear)
         self.file.write(' '.join(map(str, inputs + before + after + scalar + self.ram)) + '\n')
         self.edges += 1
@@ -123,7 +142,7 @@ class Trace:
         self.step(valid=1, ready=1, **noise)
         assert self.state == 0
 
-    def packet(self, request, response):
+    def packet(self, request, response, oracle_windows):
         index, id1, price1, id2, price2 = decode_request(request)
         if index == 0:
             self.pointer = 0
@@ -132,7 +151,14 @@ class Trace:
             self.step()
         assert self.pointer == index % 16
         for item_id, price, answer in [(id1, price1, response[3]), (id2, price2, response[5])]:
-            self.command(int(item_id == ITEM_B), price, self.pointer, int(index < 16), answer)
+            item = int(item_id == ITEM_B)
+            previous_relation = relation_name(self.windows[item])
+            self.command(item, price, self.pointer, int(index < 16), answer)
+            if index == 16:
+                self.counts[f'first_scored_{previous_relation}_{relation_name(self.windows[item])}'] += 1
+            # Tie direct-window scalar/flag expectations to the unchanged oracle,
+            # independently of DUT arithmetic and physical circular RAM order.
+            assert self.windows[item] == oracle_windows[item_id]
         self.pointer = (self.pointer + 1) % 16
         self.counts['packets'] += 1
         self.counts['warmup_swaps'] += index < 16 and id1 == ITEM_B
@@ -152,7 +178,7 @@ def build_trace(path):
             request = bytes.fromhex(record['request_hex'])
             response = bytes.fromhex(record['expected_response_hex'])
             assert model.respond(request) == response
-            t.packet(request, response)
+            t.packet(request, response, model._windows)
             supplied += 1
     assert supplied == 800
     # Six seeded streams with arbitrary warm-up swaps, 32 circular wraps each.
@@ -163,18 +189,24 @@ def build_trace(path):
             a, b = rng.randrange(bound), rng.randrange(bound)
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if rng.randrange(2)
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
-            t.packet(request, model.respond(request))
+            t.packet(request, model.respond(request), model._windows)
     # Explicit equality/held crossings, maximum/zero sums, truncation changes.
     directed = [
         [(100, 200)]*16 + [(102,198),(103,197),(99,201),(98,202)]*24,
         [(65535, 0)]*16 + [(65535,0),(0,65535),(1,65534),(65534,1)]*24,
         [(100,100)]*15 + [(115,85)] + [(101,99),(100,100),(100,100)]*32,
     ]
+    # Force every relation at the last warm-up commit and every destination
+    # relation at index 16. Last=99 is equal with sum remainder 15.
+    for last in [98, 100, 102, 99]:
+        for incoming in [98, 100, 102]:
+            directed.append([(100, 200)]*15 + [(last, 2*last)]
+                            + [(incoming, 2*incoming)])
     for prices in directed:
         for index, (a, b) in enumerate(prices):
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2 == 0
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
-            t.packet(request, model.respond(request))
+            t.packet(request, model.respond(request), model._windows)
     # Reset at idle, after capture, after synchronous read/before commit, and
     # with a pending committed result. Check all RAM words on every edge:
     # a reset on the commit edge MUST suppress the write, even with valid high.
@@ -185,7 +217,7 @@ def build_trace(path):
                 a, b = ((100, 200) if index < 16 else
                         [(102,198),(103,197),(99,201),(98,202)][(index-16)%4])
                 request = encode_request(index, ITEM_A, a, ITEM_B, b)
-                t.packet(request, model.respond(request))
+                t.packet(request, model.respond(request), model._windows)
             assert all(t.held) and all(sum(w) for w in t.windows)
             if target_state:
                 response = model.respond(encode_request(35, ITEM_A, 0, ITEM_B, 65535))
@@ -205,12 +237,18 @@ def build_trace(path):
             # update. Deliberately retain stale physical RAM through reset.
             for index in range(35):
                 request = encode_request(index, ITEM_B, 65000-index, ITEM_A, index*17)
-                t.packet(request, model.respond(request))
+                t.packet(request, model.respond(request), model._windows)
     t.file.close()
     for name in ['held_1', 'held_2', 'previous_equals_old_average',
                  'price_equals_new_average', 'truncated_average', 'maximum_sum',
                  'zero_sum', 'warmup_swaps', 'wraps', 'result_stall_edges']:
         assert t.counts[name] > 0, name
+    for old in ["below", "equal", "above"]:
+        assert t.counts[f"warmup_final_{old}"] > 0
+        assert t.counts[f"scored_wrap_previous_{old}"] > 0
+        for new in ["below", "equal", "above"]:
+            assert t.counts[f"transition_{old}_{new}"] > 0
+            assert t.counts[f"first_scored_{old}_{new}"] > 0
     for state in range(4):
         assert t.counts[f'reset_state_{state}'] >= 2
     summary = dict(sorted(t.counts.items()))
@@ -242,9 +280,16 @@ def main():
         assert data == rtl.read_bytes(), 'nondeterministic engine RTL'
         assert b'initial' not in data, 'unexpected hardware initialization'
         assert b'reg [15:0] engine_history[0:31]' in data
+        assert data.count(b'(* syn_ramstyle="block_ram" *)') == 1
+        assert b'(* syn_ramstyle="block_ram" *)\n    reg [15:0] engine_history[0:31]' in data
         net = tmp / 'net.json'
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
-        ports = json.loads(net.read_text())['modules']['gqh_update_engine']['ports']
+        module = json.loads(net.read_text())['modules']['gqh_update_engine']
+        ports = module['ports']
+        for suffix in ['a', 'b']:
+            assert 'previous_' + suffix not in module['netnames']
+            for flag in ['below', 'above']:
+                assert len(module['netnames'][f'previous_{flag}_{suffix}']['bits']) == 1
         expected = {'clock':1, 'reset':1, 'session_clear':1, 'update_valid':1,
                     'result_ready':1, 'update$item_select':1, 'update$price':16,
                     'update$window_position':4, 'update$warmup':1,

@@ -70,10 +70,15 @@ RAM is 32 x 16 addressed by `{item_select, window_position}`, explicit one-edge
 read latency, read-before-write mode, no reset or initialization. Read enable is
 READ only; write enable is COMMIT only and is suppressed by reset. Ports never
 collide in this schedule. Warm-up ignores the read data, accumulates price,
-overwrites history and previous price and returns NONE. Steady-state selects
+overwrites history and comparison flags and returns NONE. Steady-state selects
 old scalar state, zero-extends prices to 20 bits, subtracts the oldest price then
-adds the new one, and compares old/new averages extracted as bits [19:4]. Scalar
-state is two 20-bit sums, two 16-bit previous prices and two 2-bit held actions.
+adds the new one, and compares the current price with the new average extracted as bits [19:4].
+Scalar state is two 20-bit sums, two pairs of 1-bit previous_below/previous_above
+flags and two 2-bit held actions. Each pair records the last committed price
+versus its committed truncated average; both false means equality. BUY uses
+not previous_above and current_above; SELL uses not previous_below and
+current_below. Flags commit during warm-up too, preparing index 16, and clear
+to false on reset/session clear.
 Combinational arithmetic is shared between selected items in source; this is
 not evidence of one synthesized arithmetic operator or Gowin BRAM mapping.
 
@@ -115,7 +120,7 @@ RESULT, for each item, with nonzero actions/full histories and held reset/valid.
 Clear/valid collisions, repeated sessions, poison initial RAM and retained stale
 RAM across reset/session clear are checked on the same engine instance.
 
-Both simulators check pre-edge handshakes, post-edge outputs, all six scalar
+Both simulators check pre-edge handshakes, post-edge outputs, all eight scalar
 registers and all 32 RAM words on every edge. Sums are independently recomputed
 from chronological windows. The RAM image scoreboard only records committed
 writes, preserving poison/stale values across clear/reset. This checks write
@@ -123,6 +128,23 @@ addresses, exact-once commit, reset suppression and memory retention separately
 from action comparisons. RTL testbench poisoning is test-only; hardware RTL
 contains no initial block. Cyclesim default zero RAM is never relied upon.
 
+H1 adds the Gowin `syn_ramstyle="block_ram"` inference attribute only to
+`engine_history`. The emitted-RTL check requires exactly one attribute, directly
+on the 32 × 16 array. All oracle, per-edge RAM/scalar, poison, reset and stall
+checks above remain unchanged. Hardcaml's `Ram.create ~attributes` is supported
+in the installed 5.2.0+ox switch; no vendor primitive or separate behavioral
+replacement is used. The attribute does not alter simulation semantics.
+Actual BSRAM mapping, inferred read mode and resources await manual Gowin checks.
+
 Saved candidate logs, coverage, hashes and Phase G/manual instructions are in
 `results/phase-f-20261003-candidate1/`. Local simulation and generic Yosys checks
 establish behavior/elaboration, not Gowin mapping, routed timing or board success.
+
+H2 replaces previous-price observations with both relation flags for each item
+on every edge in both simulators. Expected flags use the independently retained
+chronological price windows and `sum(window) // 16`, never a DUT sum. Directed
+17-packet sessions cover all nine below/equal/above transitions, all three final
+warm-up relations and their first scored update, with alternating slots and
+distinct item prices. Existing oracle, sum/history, reset, exact-once and stalled
+result checks remain. Equality includes a sum remainder of 15; extremes and
+seeded full-range streams continue to exercise 16-bit prices and 20-bit sums.

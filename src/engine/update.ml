@@ -44,6 +44,12 @@ let create _scope (i : _ I.t) =
   let address = concat_msb [command.item_select; command.window_position] in
   let oldest =
     Ram.create ~name:"engine_history" ~size:32
+      (* Gowin's supported inference control applies to this array only. Keep
+         the unreset synchronous read-first model and engine schedule intact;
+         actual BSRAM mapping must be checked in the exact-device build. *)
+      ~attributes:[Rtl_attribute.create
+        ~applies_to:[Rtl_attribute.Applies_to.Memories]
+        ~value:(Rtl_attribute.Value.String "block_ram") "syn_ramstyle"]
       ~collision_mode:Ram.Collision_mode.Read_before_write
       ~write_ports:[| { Write_port.write_clock = i.clock
         ; write_enable = commit; write_address = address
@@ -53,30 +59,38 @@ let create _scope (i : _ I.t) =
     |> fun q -> q.(0)
   in
   let sum_next = wire 20 and action_next = wire 2 in
+  let below_next = wire 1 and above_next = wire 1 in
   let scalar item suffix =
     let enable = commit &: (command.item_select ==:. item) in
     let sum = reg scalar_spec ~enable sum_next -- ("sum_" ^ suffix) in
-    let previous = reg scalar_spec ~enable command.price -- ("previous_" ^ suffix) in
+    (* Commit the relation on warm-up too: index 15 prepares index 16.
+       Clear means zero price versus zero average (both flags false). *)
+    let below = reg scalar_spec ~enable below_next -- ("previous_below_" ^ suffix) in
+    let above = reg scalar_spec ~enable above_next -- ("previous_above_" ^ suffix) in
     let held = reg scalar_spec ~enable action_next -- ("held_" ^ suffix) in
-    sum, previous, held
+    sum, below, above, held
   in
-  let sum_a, previous_a, held_a = scalar 0 "a" in
-  let sum_b, previous_b, held_b = scalar 1 "b" in
+  let sum_a, below_a, above_a, held_a = scalar 0 "a" in
+  let sum_b, below_b, above_b, held_b = scalar 1 "b" in
   let select a b = mux2 command.item_select b a in
   let old_sum = select sum_a sum_b in
-  let previous = select previous_a previous_b in
+  let previous_below = select below_a below_b in
+  let previous_above = select above_a above_b in
   let held = select held_a held_b in
   let new_sum = mux2 command.warmup old_sum (old_sum -: uresize oldest ~width:20)
                 +: uresize command.price ~width:20 in
-  let old_average = Signal.select old_sum ~high:19 ~low:4 in
   let new_average = Signal.select new_sum ~high:19 ~low:4 in
-  let buy = (previous <=: old_average) &: (command.price >: new_average) in
-  let sell = (previous >=: old_average) &: (command.price <: new_average) in
+  let current_below = command.price <: new_average in
+  let current_above = command.price >: new_average in
+  let buy = ~:previous_above &: current_above in
+  let sell = ~:previous_below &: current_below in
   let action = mux2 command.warmup (zero 2)
     (mux2 buy (of_int_trunc ~width:2 Payload.action_buy)
        (mux2 sell (of_int_trunc ~width:2 Payload.action_sell) held)) in
   sum_next <-- new_sum;
   action_next <-- action;
+  below_next <-- current_below;
+  above_next <-- current_above;
   let action = reg scalar_spec ~enable:commit action in
   { O.update_ready; result_valid = result &: ~:(i.reset); action }
 

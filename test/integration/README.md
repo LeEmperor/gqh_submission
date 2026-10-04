@@ -9,7 +9,7 @@ opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest
 
 `dune` explicitly owns only `serial_verify.ml` in its executable. The focused
 alias runs `run_checks.py` with the production generator and that executable;
-its declared inputs include the testbench, production RTL and F's pinned oracle.
+its declared inputs include the testbench, generated candidate RTL and F's pinned oracle.
 No sibling checkout or extra package is required. Installed Python, Icarus/vvp
 and Yosys are used; no board, IDE or serial device is accessed.
 
@@ -39,7 +39,7 @@ Expected actions come from F's pinned direct-window Python model (recomputing
 `sum(window)`), independently checked against every saved fixture. Coverage
 inspection of direct windows never supplies expected DUT rolling-sum values.
 
-RTL generation is repeated byte-for-byte, compared with the checked-in candidate,
+RTL generation is repeated byte-for-byte, compared with the delivered candidate,
 and subjected to Yosys hierarchy/process/check plus exact six scalar directions
 and widths; the complete nine-module hierarchy is checked. Icarus elaborates
 and simulates that same production file. No Gowin resource/timing inference is
@@ -49,9 +49,10 @@ To save a reproducible run (new directory recommended):
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune build bin/generate.exe test/integration/serial_verify.exe
+opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition -output /tmp/h1-competition.v
 PYTHONDONTWRITEBYTECODE=1 python3 test/integration/run_checks.py \
   _build/default/bin/generate.exe _build/default/test/integration/serial_verify.exe \
-  /tmp/new-g2-check
+  /tmp/new-g2-check /tmp/h1-competition.v
 ```
 
 The saved `latency.csv` measures rising-edge controller request acceptance
@@ -62,3 +63,11 @@ The endpoints are pre-edge observations, and UART synchronization/byte capture,
 sequencer capture, TX serialization and USB/host overhead are excluded.
 This is core latency, not official UART round-trip latency. The replay trace,
 coverage and exact RTL are also saved. Failed checks exit nonzero.
+
+For H1 the focused alias generates `competition_candidate.v` in Dune's build
+directory and verifies it without replacing the preserved `rtl/` fallback. The
+direct runner's optional fourth argument selects an exact delivered candidate
+for byte comparison; without it the runner still checks `rtl/gqh_competition_top.v`.
+Use `-` as the third argument to omit evidence output. Both paths require the
+single history-array block-memory attribute. H1's separate handoff RTL must
+match the locally tested generation; this does not establish Gowin mapping.

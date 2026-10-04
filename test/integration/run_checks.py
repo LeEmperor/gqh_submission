@@ -79,7 +79,10 @@ def trace(path):
 
 def main():
     generator, cyclesim = [str(Path(p).resolve()) for p in sys.argv[1:3]]
-    output = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 else None
+    output = Path(sys.argv[3]).resolve() if len(sys.argv) >= 4 and sys.argv[3] != '-' else None
+    # A separate delivered candidate lets H experiments retain production RTL
+    # as their fallback. Without this argument, retain the production check.
+    expected_rtl = Path(sys.argv[4]).resolve() if len(sys.argv) == 5 else ROOT / 'rtl/gqh_competition_top.v'
     env = dict(os.environ, DUNE_SOURCEROOT=str(ROOT), PYTHONDONTWRITEBYTECODE='1')
     def run(args):
         subprocess.run([str(a) for a in args], check=True, env=env)
@@ -93,7 +96,9 @@ def main():
         first = rtl.read_bytes()
         run([generator, 'competition', '-output', rtl])
         assert first == rtl.read_bytes(), 'nondeterministic RTL'
-        assert first == (ROOT / 'rtl/gqh_competition_top.v').read_bytes(), 'stale production RTL'
+        assert first == expected_rtl.read_bytes(), f'stale delivered RTL: {expected_rtl}'
+        assert first.count(b'(* syn_ramstyle="block_ram" *)') == 1
+        assert b'(* syn_ramstyle="block_ram" *)\n    reg [15:0] engine_history[0:31]' in first
         net = tmp / 'net.json'
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_competition_top; proc; opt_clean; check -assert; write_json {net}'])
         modules = json.loads(net.read_text())['modules']

@@ -14,7 +14,7 @@ let replay path =
   let module S = Cyclesim.With_interface (U.I) (U.O) in
   let sim = S.create ~config:Cyclesim.Config.trace_all (U.create (scope ())) in
   let i = Cyclesim.inputs sim and o = Cyclesim.outputs sim in
-  let nodes = List.map ["sum_a"; "sum_b"; "previous_a"; "previous_b"; "held_a"; "held_b"]
+  let nodes = List.map ["sum_a"; "sum_b"; "previous_below_a"; "previous_above_a"; "previous_below_b"; "previous_above_b"; "held_a"; "held_b"]
     ~f:(fun name -> Option.value_exn (Cyclesim.lookup_node_or_reg_by_name sim name)) in
   let memory = Option.value_exn (Cyclesim.lookup_mem_by_name sim "engine_history") in
   (* Poison every initial cell: the software simulator's default zero memory is
@@ -29,7 +29,7 @@ let replay path =
     In_channel.iter_lines file ~f:(fun line ->
       incr count;
       let v = String.split line ~on:' ' |> List.map ~f:Int.of_string |> Array.of_list in
-      if Array.length v <> 52 then failwith "invalid trace row";
+      if Array.length v <> 54 then failwith "invalid trace row";
       List.iteri [i.reset; i.session_clear; i.update_valid; i.result_ready;
         i.update.item_select; i.update.price; i.update.window_position; i.update.warmup]
         ~f:(fun idx p -> set p v.(idx));
@@ -45,8 +45,8 @@ let replay path =
       List.iteri nodes ~f:(fun idx n ->
         check !count "scalar/window consistency" (Cyclesim.Node.to_int n) v.(14+idx));
       for address = 0 to 31 do
-        if v.(20+address) >= 0 then
-          check !count "RAM exact-once/preservation" (Cyclesim.Memory.to_int memory ~address) v.(20+address)
+        if v.(22+address) >= 0 then
+          check !count "RAM exact-once/preservation" (Cyclesim.Memory.to_int memory ~address) v.(22+address)
       done));
   printf "PASS Cyclesim: %d edges, handshake, actions, scalars and all known RAM cells\n" !count
 let () =
