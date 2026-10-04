@@ -21,48 +21,55 @@ module O = struct
     }
   [@@deriving hardcaml]
 end
-module State = struct
-  type t = Idle | Await_clear_idle | Clear | Dispatch1 | Result1
-         | Dispatch2 | Result2 | Response | Drain
-  [@@deriving sexp_of, compare ~localize, enumerate]
-end
-
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
-  let sm = State_machine.create (module State) spec in
+  (* Explicit one-hot phases with local next-bit equations. Dispatch/result
+     are shared by both slots; the slot bit changes only on result transfer.
+     No synthesizer-specific FSM attribute or binary decoder is required. *)
+  let idle = Variable.reg spec ~clear_to:vdd ~width:1 in
+  let await_clear_idle = Variable.reg spec ~width:1 in
+  let clear = Variable.reg spec ~width:1 in
+  let dispatch = Variable.reg spec ~width:1 in
+  let result = Variable.reg spec ~width:1 in
+  let response = Variable.reg spec ~width:1 in
+  let drain = Variable.reg spec ~width:1 in
+  let second = Variable.reg spec ~width:1 in
   let pointer = Variable.reg spec ~width:4 in
   let action1 = Variable.reg spec ~width:2 in
   let action2 = Variable.reg spec ~width:2 in
   let active = ~:(i.reset) in
-  let request_ready = sm.is Idle &: active in
+  let request_ready = idle.value &: active in
   let accept = request_ready &: i.request_valid in
+  let index_zero = i.request.index ==:. 0 in
+  (* Observe readiness BEFORE clear: clear suppresses engine readiness.
+     Exclusive engine ownership keeps it idle for the following clear edge. *)
+  let engine_idle = i.update_ready &: ~:(i.result_valid) in
+  let command_accept = dispatch.value &: i.update_ready in
+  let result_accept = result.value &: i.result_valid in
+  let first_result = result_accept &: ~:(second.value) in
+  let second_result = result_accept &: second.value in
+  let response_accept = response.value &: i.response_ready in
+  let drain_done = drain.value &: i.response_done in
   compile
-    [ sm.switch
-        [ Idle, [ when_ accept
-             [ if_ (i.request.index ==:. 0)
-                   [ pointer <--. 0; sm.set_next Await_clear_idle ]
-                   [ sm.set_next Dispatch1 ] ] ]
-        (* Observe readiness BEFORE clear: clear suppresses engine readiness.
-           No engine command is offered in these states. With exclusive engine
-           ownership, observed idle remains idle for the following clear edge. *)
-        ; Await_clear_idle,
-          [ when_ (i.update_ready &: ~:(i.result_valid)) [ sm.set_next Clear ] ]
-        ; Clear, [ sm.set_next Dispatch1 ]
-        ; Dispatch1, [ when_ i.update_ready [ sm.set_next Result1 ] ]
-        ; Result1, [ when_ i.result_valid
-            [ action1 <-- i.action; sm.set_next Dispatch2 ] ]
-        ; Dispatch2, [ when_ i.update_ready [ sm.set_next Result2 ] ]
-        ; Result2, [ when_ i.result_valid
-            [ action2 <-- i.action; pointer <-- pointer.value +:. 1
-            ; sm.set_next Response ] ]
-        ; Response, [ when_ i.response_ready [ sm.set_next Drain ] ]
-        ; Drain, [ when_ i.response_done [ sm.set_next Idle ] ]
-        ] ];
+    [ idle <-- ((idle.value &: ~:accept) |: drain_done)
+    ; await_clear_idle <-- ((accept &: index_zero)
+                         |: (await_clear_idle.value &: ~:engine_idle))
+    ; clear <-- (await_clear_idle.value &: engine_idle)
+    ; dispatch <-- ((accept &: ~:index_zero) |: clear.value |: first_result
+                 |: (dispatch.value &: ~:(i.update_ready)))
+    ; result <-- (command_accept |: (result.value &: ~:(i.result_valid)))
+    ; response <-- (second_result |: (response.value &: ~:(i.response_ready)))
+    ; drain <-- (response_accept |: (drain.value &: ~:(i.response_done)))
+    ; when_ accept [ second <--. 0 ]
+    ; when_ first_result [ second <--. 1; action1 <-- i.action ]
+    ; when_ second_result [ action2 <-- i.action; pointer <-- pointer.value +:. 1 ]
+    ; when_ (accept &: index_zero) [ pointer <--. 0 ]
+    ];
   (* Borrow decoder storage: acceptance disables reception until response_done.
      The producer must retain ALL fields through that drain edge, even after
      request_valid drops or a sticky fault occurs. Shared reset aborts the loan. *)
   let p = i.request in
-  let second = sm.is Dispatch2 |: sm.is Result2 in
+  let second = second.value in
   let id = mux2 second p.slot2_id p.slot1_id in
   { O.request_ready; receive_enable = request_ready
   ; update =
@@ -70,13 +77,13 @@ let create _scope (i : _ I.t) =
       ; price = mux2 second p.slot2_price p.slot1_price
       ; window_position = pointer.value
       ; warmup = p.index <:. 16 }
-  ; update_valid = (sm.is Dispatch1 |: sm.is Dispatch2) &: active
-  ; result_ready = (sm.is Result1 |: sm.is Result2) &: active
-  ; session_clear = sm.is Clear &: active
+  ; update_valid = dispatch.value &: active
+  ; result_ready = result.value &: active
+  ; session_clear = clear.value &: active
   ; response =
       { Payload.Response.index = p.index; slot1_id = p.slot1_id; slot2_id = p.slot2_id
       ; slot1_action = action1.value; slot2_action = action2.value }
-  ; response_valid = sm.is Response &: active }
+  ; response_valid = response.value &: active }
 
 let hierarchical ?instance scope i =
   let module H = Hierarchy.In_scope (I) (O) in

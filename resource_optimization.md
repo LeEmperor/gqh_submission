@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4 implemented with a user-recorded two-logic reduction; H5 heartbeat removal measured at 318 total logic, with routed timing and user-reported board quick-test PASS. Full H5 board acceptance and latency have not been recorded.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4 implemented with a user-recorded two-logic reduction; H5 heartbeat removal retained at 318 total logic, with routed timing and user-reported board quick-test PASS; H5 TX-shift experiment rejected at 327 total logic and source restored before subsequent experiments; H5 shared-phase controller measured at 304 total logic / 250 registers, with focused checks and routed timing passing; H5 response-payload reset removal ties that parent at 304 / 250, with no measured resource gain. Current source still includes both the shared-phase controller and payload reset removal; no reset-removal rollback or final retention decision has been recorded. Full H5 board acceptance and latency have not been recorded.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -475,7 +475,7 @@ promotion before accepting a new storage contract.
 
 ### H5 — Re-profile remaining control overhead
 
-**H5 findings, recorded October 3:** candidate `h5-no-heartbeat`, parent H4
+**H5 heartbeat-removal findings, recorded October 3:** candidate `h5-no-heartbeat`, parent H4
 at `fefc7d0`. The user explicitly authorized removing the competition top's
 heartbeat instance and driving `led0_n` high. LED0 now stays off. Every other
 module is byte-identical to H4; the remaining top wiring is unchanged apart
@@ -527,6 +527,217 @@ The generated `.fs` hash is recorded for build identity; which image was
 programmed was not independently verified. Final submission packaging remains
 separate work.
 
+**H5 UART TX-shift findings: rejected, October 3.** Candidate
+`h5-uart-tx-shift` builds on the measured 318-logic `h5-no-heartbeat` parent,
+including H2, H4 and heartbeat removal. Inspection of the matching parent
+synthesis hierarchy found TX at **34 LUTs / 21 registers** and RX at
+**31 LUTs / 24 registers**. Both production timers already require eight bits;
+a generic Yosys inspection merged the repeated TX decrement expressions into
+one subtractor. The candidate changed only TX serialization: capture the offered
+byte on acceptance, output its LSB and shift right at the end of each complete
+data-bit period. Timer, bit count, FSM, gap settings and ready/busy behavior
+were retained. All other emitted modules and both constraints matched the parent
+byte-for-byte; RX and TX timers remained independent.
+
+The matching Gowin V1.9.11.03 Education reports, created October 3 at 19:42:41,
+show a whole-design resource regression:
+
+| Metric | No-heartbeat parent | TX shift | Change |
+| --- | ---: | ---: | ---: |
+| P&R total logic | 318 | **327** | **+9 (2.8%)** |
+| Total registers | 246 | 246 | 0 |
+| Synthesis-summary LUTs | 242 | 252 | +10 |
+| P&R LUTs | 244 | 253 | +9 |
+| P&R ALUs | 74 | 74 | 0 |
+| BSRAM / SSRAM | 1 / 0 | 1 / 0 | Unchanged |
+
+Routed 27 MHz timing passes: worst setup/hold slack **+24.059 / +0.216 ns**,
+zero setup/hold violations and zero total negative slack; reported Fmax is
+77.051 MHz. PR1014 remains. Synthesis attributes TX **65 LUTs / 21 registers**,
+while response-sequencer LUT attribution falls from 38 to 16 despite unchanged
+RTL. Attribution shifts across module boundaries, so the **+9 total logic**
+whole-design result determines the resource-screen decision; do not interpret
+the TX hierarchy delta alone as the experiment's net cost.
+
+Generator and TX-test builds pass. The existing
+`test/transport/tx_boundary_tests.exe` passes all 256 bytes across 15 timing
+configurations, including divisor 234, exact start/data/stop periods, caller
+input changes after acceptance, consecutive bytes, backpressure, reset at bit/gap
+boundaries and zero/nonzero extra gaps. Complete competition RTL passes Icarus
+elaboration and Yosys hierarchy/process checks with zero problems. No full
+regressions, long serial integration, candidate board tests or latency runs were
+performed before resource screening.
+
+At review time, live project RTL/CST/SDC matched the delivered candidate.
+Measurements were read from the live
+[P&R report](test_proj2/test_proj2/impl/pnr/test_proj2.rpt.txt),
+[synthesis summary](test_proj2/test_proj2/impl/gwsynthesis/test_proj2_syn.rpt.html),
+[synthesis hierarchy](test_proj2/test_proj2/impl/gwsynthesis/test_proj2_syn_rsc.xml)
+and [routed timing](test_proj2/test_proj2/impl/pnr/test_proj2_tr_content.html).
+These live reports may be replaced by later IDE builds; no additional report
+archive was created for this lean experiment. Delivered rejected-candidate
+inputs remain in [the TX-shift folder](results/h5-uart-tx-shift/).
+
+The user requested returning to 318. The TX-shift source change was removed;
+the restored generator builds and produces competition RTL byte-identical to
+[the saved no-heartbeat parent](results/h5-no-heartbeat/gqh_competition_top.v).
+Source retains H2, H4 and heartbeat removal. The live Gowin project and programmed
+board were left as the user had them; source restoration does not establish
+which image is currently programmed. The 318-logic parent is retained for the
+next iteration. Explicit zero-gap FSM specialization remains an unmeasured
+opportunity; timer sharing was not attempted because RX observes unexpected
+traffic during TX for sticky-fault detection.
+
+**H5 controller FSM findings: resource screen improves, October 3.** Candidate
+`h5-fsm-shared-phase-flags` builds on `h5-no-heartbeat`, with the rejected TX
+shift removed. Before editing, regeneration of the working tree was
+byte-identical to the saved 318-logic no-heartbeat RTL. The newer live
+327-logic report belonged to TX shift, not this implementation parent.
+
+The controller's nine-state binary FSM had four state bits and duplicated
+Dispatch1/Result1/Dispatch2/Result2 decoding. The candidate replaces it with
+seven directly registered one-hot phase flags and one slot-selection bit;
+both slots share dispatch and result phases. Local Boolean next-bit equations
+replace the binary switch. The installed Hardcaml API exposes Binary, Gray
+and Onehot encodings; this implementation uses explicit flags, with no
+synthesizer-specific FSM attribute or case decoder in emitted controller RTL.
+Only the controller module differs from the parent; UART, engine, packet
+storage, board wiring and both constraints remain byte-identical.
+
+Request acceptance resets slot selection. Index zero resets the pointer,
+waits for observed engine idle, and pulses session clear before dispatch.
+Command acceptance enters result wait; the first result captures action1 and
+selects slot two; the second captures action2 and advances the pointer once.
+Response acceptance enters drain, and only final-frame completion rearms
+reception. Decoder fields remain borrowed through the completion edge. This
+preserves exactly two updates per request, slot/action association, synchronous
+control, stalls and the distinction between response acceptance, last-byte
+acceptance and final stop-bit completion.
+
+The matching user-built Gowin V1.9.11.03 Education report, created October 3
+at **19:55:51**, showed:
+
+| Metric | No-heartbeat parent | Shared-phase controller | Change |
+| --- | ---: | ---: | ---: |
+| P&R total logic | 318 | **304** | **−14 (4.4%)** |
+| P&R LUTs / ALUs | 244 / 74 | 230 / 74 | −14 LUTs / 0 ALUs |
+| Total registers | 246 | **250** | +4 |
+| Synthesis-summary LUTs | 242 | **230** | −12 |
+| Synthesis ALUs | 67 | 67 | 0 |
+| BSRAM / SSRAM | 1 / 0 | 1 / 0 | Unchanged |
+| Controller hierarchy LUTs / registers | 56 / 12 | 50 / 16 | −6 LUTs / +4 registers |
+
+Routed timing passes at the unchanged 27 MHz: worst setup/hold slack
+**+24.562 / +0.332 ns**, zero setup/hold violations and zero total negative
+slack; reported Fmax **80.158 MHz**. PR1014 remains. Other hierarchy counts
+shifted despite unchanged module RTL, so the measured whole-design −14 logic
+is the resource result, not the controller attribution delta alone.
+
+Generator and transaction-verifier builds pass. Existing controller mocks
+cover all nine reset stages, both slots with distinct actions, random command
+and response stalls, held offers and variable latency including next-edge
+results: **361 responses, 728 commands, 24 clear pulses and 50 earliest-result
+commands**. A focused 121-packet, three-session independent-oracle trace covers
+slot swaps, pointer wrap, warm-up/rolling transitions, crossings, equality and
+full-range extremes. Real-engine replay including its existing interrupted-
+transaction/reset recovery sweep passes **1,346 packets / 2,692 commands /
+38 session clears**. Response publication remains E0+10 for index zero and
+E0+8 otherwise; earliest response transfer is one edge later. The existing
+100-packet byte-composition check passes payload retention, faults, partial/
+drain reset recovery and final-frame receive rearm. Complete competition RTL
+passes Yosys hierarchy/process checks and Icarus elaboration.
+
+At review time, live project RTL/SDC/CST were byte-identical to delivered
+[shared-phase candidate inputs](results/h5-fsm-shared-phase-flags/).
+No raw-report archive was created; the live FSM reports were subsequently
+replaced by the reset-removal build below. These measurements record the
+reviewed FSM build, not the now-current live report. No full regressions,
+long serial simulation, candidate board tests or latency measurements were
+run. This is a successful resource screen, not full board acceptance. The
+user next requested a register-control experiment, using this 304-logic
+controller design as its implementation parent.
+
+**H5 response-payload reset findings: resource tie, October 3.** Candidate
+`h5-regctrl-response-payload-no-reset` builds on
+`h5-fsm-shared-phase-flags`. Before editing, current regeneration matched both
+the saved FSM RTL and live project RTL byte-for-byte. The shared-phase
+controller, restored indexed UART TX, H1/H2 engine, H4 retention contracts,
+27 MHz clock, divisor 234, zero extra TX gap, six ports and no-heartbeat
+configuration remain intact.
+
+Only the sequencer's **36-bit response payload bank** changes: its five fields
+use a clock-only register specification instead of synchronous reset. The
+capture condition and hold behavior are unchanged. Every field is captured
+together on response acceptance before Send; the bank remains stable through
+byte stalls and Drain. It feeds only tx_data, not state transitions,
+arithmetic, memory addresses or writes. Reset still clears the FSM, byte
+position and completion flag, aborting the live response. A later acceptance
+replaces the entire bank before use. The production UART captures data only
+on an idle valid offer and gates the external TX output by its own state and
+reset, preserving idle-high behavior even when inactive sequencer data is
+stale or unknown. No payload power-up initialization was added.
+
+The matching user-built Gowin report, created October 3 at **20:07:08**,
+shows **no measured resource gain**:
+
+| Metric | Shared-phase parent | Payload reset removed | Change |
+| --- | ---: | ---: | ---: |
+| P&R total logic | 304 | **304** | 0 |
+| P&R LUTs / ALUs | 230 / 74 | 230 / 74 | 0 |
+| Total registers | 250 | **250** | 0 |
+| Synthesis-summary LUTs / ALUs | 230 / 67 | 230 / 67 | 0 |
+| BSRAM / SSRAM | 1 / 0 | 1 / 0 | Unchanged |
+| Sequencer hierarchy LUTs / registers | 37 / 42 | 37 / 42 | 0 |
+
+Synthesis reports **36 DFFE registers** for the unreset payload bank. The
+emitted RTL confirms removal of exactly five payload reset branches, with
+three control-register reset branches retained. Register controls changed,
+but counted logic did not; this is consistent with the original resets
+mapping efficiently to native register controls. P&R CLS usage changed
+265 → 271, outside the stated logic/register ranking metrics.
+
+Routed 27 MHz timing passes: worst setup/hold slack **+24.368 / +0.332 ns**,
+zero setup/hold violations and zero total negative slack; reported Fmax
+**78.929 MHz**. PR1014 remains. This experiment keeps the same cycle schedule;
+there is no demonstrated resource or latency advantage over the FSM parent.
+
+Builds pass. The existing protocol inline suite passes, including all eight
+sending-byte positions and final-drain reset, held consecutive responses,
+distinct payloads, exactly-once completions and **100 randomized backpressure
+schedules**. The existing 100-packet byte-composition check also passes.
+The focused emitted-RTL check
+[response_payload_reset_tb.v](test/protocol/response_payload_reset_tb.v)
+starts all 36 payload bits unknown, resets before first capture and checks
+that no byte is offered and external TX stays high. It then sends distinct
+responses, aborts a captured stalled response with reset, proves its nonzero
+contents were retained, checks quiet recovery, and sends a fresh response.
+It checks three complete responses against independently specified byte
+values using the production UART, including final stop-bit drain. This
+avoids relying on simulator-default zeros. Complete competition RTL passes
+Yosys hierarchy/process checks and Icarus elaboration. No existing expected
+behavior was changed. Full regressions and long serial simulations remain
+unrun; no board or latency tests were performed for this candidate.
+
+Delivered inputs remain in
+[the reset-removal folder](results/h5-regctrl-response-payload-no-reset/).
+Live project RTL/SDC/CST matched these inputs at review. The current
+[P&R report](test_proj2/test_proj2/impl/pnr/test_proj2.rpt.txt),
+[synthesis summary](test_proj2/test_proj2/impl/gwsynthesis/test_proj2_syn.rpt.html),
+[synthesis hierarchy](test_proj2/test_proj2/impl/gwsynthesis/test_proj2_syn_rsc.xml)
+and [routed timing](test_proj2/test_proj2/impl/pnr/test_proj2_tr_content.html)
+are for this candidate and may be replaced by later IDE builds. No snapshots,
+checksums, report archive, packaging or acceptance bookkeeping were created.
+
+**Current implementation/decision:** the recommendation is to retain the
+304-logic shared-phase FSM parent because reset removal provides no measured
+resource advantage. The user has requested logging these results, but has
+not explicitly selected or rejected reset removal. Source and live project
+inputs still include that change; no rollback was performed. Both fallback
+folders are preserved. Programmed-image identity and full board acceptance
+are not established by either resource review. No mutative Git operations,
+Gowin invocation, programming or serial-device operations were performed by
+the agent during these iterations.
+
 **Primary files:** whichever measured block is selected; keep experiments narrow.
 
 The original candidate list was to re-read the hierarchy after H1–H4 and rank
@@ -568,6 +779,9 @@ Minimum ledger columns:
 | H3c / H2 | Digit-serial arithmetic | 378 | 376 | 335 | 1 | Pass | Focused checks pass; no board run | Not measured | Rejected |
 | H4 / H2 | Borrow decoder request fields | 360 (inferred) | Not archived | Not archived | Not archived | Not archived | Not recorded here | Not recorded | User-recorded −2 logic; H5 parent |
 | H5 / H4 | Remove competition heartbeat; LED0 high | **318** | **246** | **242** | **1** | **Pass** | **User-reported quick PASS**; broader checks not recorded | Not measured | Resource screen and quick check pass |
+| H5 TX shift / H5 no heartbeat | Shift captured byte instead of indexed bit mux | 327 | 246 | 252 | 1 | Pass | Focused TX checks pass; no candidate board run | Not measured | Rejected: +9 logic; restored 318-logic source |
+| H5 shared-phase FSM / H5 no heartbeat | Direct one-hot phase flags plus slot bit; shared dispatch/result | **304** | **250** | **230** | 1 | Pass | Focused mocks, oracle/reset replay and byte checks pass; no board run | Not measured | Resource screen improves: −14 logic; register-control parent |
+| H5 payload reset removal / H5 shared-phase FSM | Remove reset from 36-bit sequencer response payload bank | **304** | **250** | **230** | 1 | Pass | Focused protocol/byte checks and unknown/nonzero RTL check pass; no board run | Not measured | Resource tie; parent recommended; no rollback/retention decision recorded |
 
 Each candidate folder should retain source revision plus dirty diff/new files,
 generated RTL identity, complete project settings and vendor sources, raw Gowin

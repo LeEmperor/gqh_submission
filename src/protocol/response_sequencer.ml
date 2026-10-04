@@ -25,7 +25,12 @@ end
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
   let sm = State_machine.create (module State) spec in
-  let payload = Payload.Response.Of_always.reg spec in
+  (* Every field is replaced together before Send. Payload feeds only tx_data;
+     resettable control suppresses tx_valid until capture and the UART ignores
+     data without an offer. Keep the bank stable through Send/Drain, but it
+     needs neither reset nor power-up initialization. Reset aborts its lifetime. *)
+  let payload_spec = Reg_spec.create ~clock:i.clock () in
+  let payload = Payload.Response.Of_always.reg payload_spec in
   let position = Variable.reg spec ~width:3 in
   let done_ = Variable.reg spec ~width:1 in
   compile

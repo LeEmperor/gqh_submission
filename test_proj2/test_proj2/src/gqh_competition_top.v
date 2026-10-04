@@ -21,17 +21,22 @@ module gqh_uart_tx (
     wire signal_not_1;
     wire signal_eq_1;
     wire signal_and;
-    wire [7:0] signal_const;
-    wire [6:0] signal_select;
     wire gnd;
-    wire [7:0] signal_cat;
-    wire [7:0] signal_mux;
+    wire signal_select;
+    wire signal_select_1;
+    wire signal_select_2;
+    wire signal_select_3;
+    wire signal_select_4;
+    wire signal_select_5;
+    wire signal_select_6;
+    wire [7:0] signal_const;
     wire [7:0] signal_wire;
-    wire [7:0] signal_mux_1;
+    wire [7:0] signal_mux;
     reg [7:0] signal_cases;
     wire [7:0] signal_wire_1;
     reg [7:0] signal_reg;
-    wire signal_select_1;
+    wire signal_select_7;
+    reg signal_mux_1;
     wire vdd;
     wire signal_eq_2;
     wire signal_mux_2;
@@ -84,19 +89,20 @@ module gqh_uart_tx (
     assign signal_not_1 = ~ signal_wire_7;
     assign signal_eq_1 = signal_const_1 == signal_reg_3;
     assign signal_and = signal_eq_1 & signal_not_1;
-    assign signal_const = 8'b00000000;
-    assign signal_select = signal_reg[7:1];
     assign gnd = 1'b0;
-    assign signal_cat = { gnd,
-                          signal_select };
-    assign signal_mux = signal_eq_4 ? signal_cat : signal_reg;
+    assign signal_select = signal_reg[7:7];
+    assign signal_select_1 = signal_reg[6:6];
+    assign signal_select_2 = signal_reg[5:5];
+    assign signal_select_3 = signal_reg[4:4];
+    assign signal_select_4 = signal_reg[3:3];
+    assign signal_select_5 = signal_reg[2:2];
+    assign signal_select_6 = signal_reg[1:1];
+    assign signal_const = 8'b00000000;
     assign signal_wire = tx_data;
-    assign signal_mux_1 = signal_wire_5 ? signal_wire : signal_reg;
+    assign signal_mux = signal_wire_5 ? signal_wire : signal_reg;
     always @* begin
         case (signal_reg_3)
         3'b000:
-            signal_cases <= signal_mux_1;
-        3'b010:
             signal_cases <= signal_mux;
         default:
             signal_cases <= signal_reg;
@@ -109,10 +115,30 @@ module gqh_uart_tx (
         else
             signal_reg <= signal_wire_1;
     end
-    assign signal_select_1 = signal_reg[0:0];
+    assign signal_select_7 = signal_reg[0:0];
+    always @* begin
+        case (signal_reg_1)
+        0:
+            signal_mux_1 <= signal_select_7;
+        1:
+            signal_mux_1 <= signal_select_6;
+        2:
+            signal_mux_1 <= signal_select_5;
+        3:
+            signal_mux_1 <= signal_select_4;
+        4:
+            signal_mux_1 <= signal_select_3;
+        5:
+            signal_mux_1 <= signal_select_2;
+        6:
+            signal_mux_1 <= signal_select_1;
+        default:
+            signal_mux_1 <= signal_select;
+        endcase
+    end
     assign vdd = 1'b1;
     assign signal_eq_2 = signal_const_14 == signal_reg_3;
-    assign signal_mux_2 = signal_eq_2 ? signal_select_1 : vdd;
+    assign signal_mux_2 = signal_eq_2 ? signal_mux_1 : vdd;
     assign signal_const_1 = 3'b000;
     assign signal_mux_3 = signal_eq_4 ? signal_const_1 : signal_reg_3;
     assign signal_mux_4 = signal_eq_4 ? signal_const_1 : signal_reg_3;
@@ -286,13 +312,12 @@ module gqh_response_sequencer (
     wire signal_eq;
     wire signal_and;
     wire [7:0] signal_const;
-    wire [1:0] signal_const_2;
     wire [1:0] signal_wire;
     wire [1:0] signal_mux;
     reg [1:0] signal_cases;
     wire [1:0] signal_wire_1;
     reg [1:0] signal_reg;
-    wire [5:0] signal_const_3;
+    wire [5:0] signal_const_2;
     wire [7:0] signal_cat;
     wire [7:0] signal_wire_2;
     wire [7:0] signal_mux_1;
@@ -311,7 +336,6 @@ module gqh_response_sequencer (
     wire [7:0] signal_wire_7;
     reg [7:0] signal_reg_3;
     wire [7:0] signal_select;
-    wire [15:0] signal_const_8;
     wire [15:0] signal_wire_8;
     wire [15:0] signal_mux_4;
     reg [15:0] signal_cases_4;
@@ -319,22 +343,23 @@ module gqh_response_sequencer (
     reg [15:0] signal_reg_4;
     wire [7:0] signal_select_1;
     reg [7:0] signal_mux_5;
-    wire signal_const_9;
-    wire signal_const_10;
+    wire signal_const_4;
+    wire signal_const_5;
     wire signal_mux_6;
     reg signal_cases_5;
     wire signal_wire_10;
     reg signal_reg_5;
     wire signal_not_1;
+    wire [1:0] signal_const_7;
     wire signal_wire_11;
     wire signal_not_2;
     wire [1:0] signal_mux_7;
-    wire [1:0] signal_const_13;
-    wire [2:0] signal_const_14;
-    wire [2:0] signal_const_15;
+    wire [1:0] signal_const_8;
+    wire [2:0] signal_const_9;
+    wire [2:0] signal_const_10;
     wire signal_wire_12;
     wire signal_wire_13;
-    wire [2:0] signal_const_16;
+    wire [2:0] signal_const_11;
     wire [2:0] signal_add;
     wire [2:0] signal_mux_8;
     wire [2:0] signal_mux_9;
@@ -346,7 +371,7 @@ module gqh_response_sequencer (
     wire [1:0] signal_mux_11;
     wire signal_wire_15;
     wire [1:0] signal_mux_12;
-    wire [1:0] signal_const_18;
+    wire [1:0] signal_const_13;
     wire signal_wire_16;
     wire [1:0] signal_mux_13;
     reg [1:0] signal_cases_7;
@@ -356,10 +381,9 @@ module gqh_response_sequencer (
     wire signal_eq_2;
     wire signal_and_1;
     assign signal_not = ~ signal_wire_12;
-    assign signal_eq = signal_const_18 == signal_reg_7;
+    assign signal_eq = signal_const_13 == signal_reg_7;
     assign signal_and = signal_eq & signal_not;
     assign signal_const = 8'b00000000;
-    assign signal_const_2 = 2'b00;
     assign signal_wire = response$slot2_action;
     assign signal_mux = signal_wire_16 ? signal_wire : signal_reg;
     always @* begin
@@ -372,13 +396,10 @@ module gqh_response_sequencer (
     end
     assign signal_wire_1 = signal_cases;
     always @(posedge signal_wire_13) begin
-        if (signal_wire_12)
-            signal_reg <= signal_const_2;
-        else
-            signal_reg <= signal_wire_1;
+        signal_reg <= signal_wire_1;
     end
-    assign signal_const_3 = 6'b000000;
-    assign signal_cat = { signal_const_3,
+    assign signal_const_2 = 6'b000000;
+    assign signal_cat = { signal_const_2,
                           signal_reg };
     assign signal_wire_2 = response$slot2_id;
     assign signal_mux_1 = signal_wire_16 ? signal_wire_2 : signal_reg_1;
@@ -392,10 +413,7 @@ module gqh_response_sequencer (
     end
     assign signal_wire_3 = signal_cases_1;
     always @(posedge signal_wire_13) begin
-        if (signal_wire_12)
-            signal_reg_1 <= signal_const;
-        else
-            signal_reg_1 <= signal_wire_3;
+        signal_reg_1 <= signal_wire_3;
     end
     assign signal_wire_4 = response$slot1_action;
     assign signal_mux_2 = signal_wire_16 ? signal_wire_4 : signal_reg_2;
@@ -409,12 +427,9 @@ module gqh_response_sequencer (
     end
     assign signal_wire_5 = signal_cases_2;
     always @(posedge signal_wire_13) begin
-        if (signal_wire_12)
-            signal_reg_2 <= signal_const_2;
-        else
-            signal_reg_2 <= signal_wire_5;
+        signal_reg_2 <= signal_wire_5;
     end
-    assign signal_cat_1 = { signal_const_3,
+    assign signal_cat_1 = { signal_const_2,
                             signal_reg_2 };
     assign signal_wire_6 = response$slot1_id;
     assign signal_mux_3 = signal_wire_16 ? signal_wire_6 : signal_reg_3;
@@ -428,13 +443,9 @@ module gqh_response_sequencer (
     end
     assign signal_wire_7 = signal_cases_3;
     always @(posedge signal_wire_13) begin
-        if (signal_wire_12)
-            signal_reg_3 <= signal_const;
-        else
-            signal_reg_3 <= signal_wire_7;
+        signal_reg_3 <= signal_wire_7;
     end
     assign signal_select = signal_reg_4[7:0];
-    assign signal_const_8 = 16'b0000000000000000;
     assign signal_wire_8 = response$index;
     assign signal_mux_4 = signal_wire_16 ? signal_wire_8 : signal_reg_4;
     always @* begin
@@ -447,10 +458,7 @@ module gqh_response_sequencer (
     end
     assign signal_wire_9 = signal_cases_4;
     always @(posedge signal_wire_13) begin
-        if (signal_wire_12)
-            signal_reg_4 <= signal_const_8;
-        else
-            signal_reg_4 <= signal_wire_9;
+        signal_reg_4 <= signal_wire_9;
     end
     assign signal_select_1 = signal_reg_4[15:8];
     always @* begin
@@ -473,38 +481,39 @@ module gqh_response_sequencer (
             signal_mux_5 <= signal_const;
         endcase
     end
-    assign signal_const_9 = 1'b0;
-    assign signal_const_10 = 1'b1;
-    assign signal_mux_6 = signal_not_2 ? signal_const_10 : signal_const_9;
+    assign signal_const_4 = 1'b0;
+    assign signal_const_5 = 1'b1;
+    assign signal_mux_6 = signal_not_2 ? signal_const_5 : signal_const_4;
     always @* begin
         case (signal_reg_7)
         2'b10:
             signal_cases_5 <= signal_mux_6;
         default:
-            signal_cases_5 <= signal_const_9;
+            signal_cases_5 <= signal_const_4;
         endcase
     end
     assign signal_wire_10 = signal_cases_5;
     always @(posedge signal_wire_13) begin
         if (signal_wire_12)
-            signal_reg_5 <= signal_const_9;
+            signal_reg_5 <= signal_const_4;
         else
             signal_reg_5 <= signal_wire_10;
     end
     assign signal_not_1 = ~ signal_wire_12;
+    assign signal_const_7 = 2'b00;
     assign signal_wire_11 = tx_busy;
     assign signal_not_2 = ~ signal_wire_11;
-    assign signal_mux_7 = signal_not_2 ? signal_const_2 : signal_reg_7;
-    assign signal_const_13 = 2'b10;
-    assign signal_const_14 = 3'b111;
-    assign signal_const_15 = 3'b000;
+    assign signal_mux_7 = signal_not_2 ? signal_const_7 : signal_reg_7;
+    assign signal_const_8 = 2'b10;
+    assign signal_const_9 = 3'b111;
+    assign signal_const_10 = 3'b000;
     assign signal_wire_12 = reset;
     assign signal_wire_13 = clock;
-    assign signal_const_16 = 3'b001;
-    assign signal_add = signal_reg_6 + signal_const_16;
+    assign signal_const_11 = 3'b001;
+    assign signal_add = signal_reg_6 + signal_const_11;
     assign signal_mux_8 = signal_eq_1 ? signal_reg_6 : signal_add;
     assign signal_mux_9 = signal_wire_15 ? signal_mux_8 : signal_reg_6;
-    assign signal_mux_10 = signal_wire_16 ? signal_const_15 : signal_reg_6;
+    assign signal_mux_10 = signal_wire_16 ? signal_const_10 : signal_reg_6;
     always @* begin
         case (signal_reg_7)
         2'b00:
@@ -518,17 +527,17 @@ module gqh_response_sequencer (
     assign signal_wire_14 = signal_cases_6;
     always @(posedge signal_wire_13) begin
         if (signal_wire_12)
-            signal_reg_6 <= signal_const_15;
+            signal_reg_6 <= signal_const_10;
         else
             signal_reg_6 <= signal_wire_14;
     end
-    assign signal_eq_1 = signal_reg_6 == signal_const_14;
-    assign signal_mux_11 = signal_eq_1 ? signal_const_13 : signal_reg_7;
+    assign signal_eq_1 = signal_reg_6 == signal_const_9;
+    assign signal_mux_11 = signal_eq_1 ? signal_const_8 : signal_reg_7;
     assign signal_wire_15 = tx_ready;
     assign signal_mux_12 = signal_wire_15 ? signal_mux_11 : signal_reg_7;
-    assign signal_const_18 = 2'b01;
+    assign signal_const_13 = 2'b01;
     assign signal_wire_16 = response_valid;
-    assign signal_mux_13 = signal_wire_16 ? signal_const_18 : signal_reg_7;
+    assign signal_mux_13 = signal_wire_16 ? signal_const_13 : signal_reg_7;
     always @* begin
         case (signal_reg_7)
         2'b00:
@@ -544,11 +553,11 @@ module gqh_response_sequencer (
     assign signal_wire_17 = signal_cases_7;
     always @(posedge signal_wire_13) begin
         if (signal_wire_12)
-            signal_reg_7 <= signal_const_2;
+            signal_reg_7 <= signal_const_7;
         else
             signal_reg_7 <= signal_wire_17;
     end
-    assign signal_eq_2 = signal_const_2 == signal_reg_7;
+    assign signal_eq_2 = signal_const_7 == signal_reg_7;
     assign signal_and_1 = signal_eq_2 & signal_not_1;
     assign response_ready = signal_and_1;
     assign response_done = signal_reg_5;
@@ -616,241 +625,265 @@ module gqh_transaction_controller (
     output [1:0] response$slot2_action;
     output response_valid;
 
-    wire signal_eq;
     wire signal_and;
     wire [1:0] signal_const;
     wire [1:0] signal_mux;
-    reg [1:0] signal_cases;
     wire [1:0] signal_wire;
     reg [1:0] signal_reg;
     wire [1:0] signal_wire_1;
     wire [1:0] signal_mux_1;
-    reg [1:0] signal_cases_1;
     wire [1:0] signal_wire_2;
     reg [1:0] signal_reg_1;
-    wire signal_eq_1;
     wire signal_and_1;
-    wire signal_eq_2;
-    wire signal_eq_3;
-    wire signal_or;
     wire signal_and_2;
-    wire signal_eq_4;
-    wire signal_eq_5;
-    wire signal_or_1;
     wire signal_and_3;
     wire [15:0] signal_const_2;
     wire signal_lt;
     wire [3:0] signal_const_3;
-    wire [3:0] signal_const_4;
+    wire [3:0] signal_const_5;
     wire [3:0] signal_add;
     wire [3:0] signal_mux_2;
+    wire signal_and_4;
     wire [3:0] signal_mux_3;
-    wire [3:0] signal_mux_4;
-    reg [3:0] signal_cases_2;
     wire [3:0] signal_wire_3;
     reg [3:0] signal_reg_2;
     wire [15:0] signal_wire_4;
     wire [15:0] signal_wire_5;
-    wire [15:0] signal_mux_5;
+    wire [15:0] signal_mux_4;
     wire [7:0] signal_const_6;
     wire [7:0] signal_wire_6;
     wire [7:0] signal_wire_7;
-    wire signal_eq_6;
-    wire signal_eq_7;
-    wire signal_or_2;
-    wire [7:0] signal_mux_6;
-    wire signal_eq_8;
+    wire [7:0] signal_mux_5;
+    wire signal_eq;
     wire signal_not;
+    wire vdd;
+    wire signal_const_7;
     wire signal_wire_8;
-    wire signal_wire_9;
-    wire signal_wire_10;
-    wire [3:0] signal_mux_7;
-    wire [3:0] signal_const_8;
-    wire signal_wire_11;
-    wire [3:0] signal_mux_8;
-    wire [3:0] signal_const_9;
-    wire [3:0] signal_mux_9;
-    wire [3:0] signal_const_10;
-    wire [3:0] signal_mux_10;
-    wire [3:0] signal_const_11;
-    wire [3:0] signal_mux_11;
-    wire [3:0] signal_const_12;
-    wire [3:0] signal_mux_12;
-    wire [3:0] signal_const_13;
-    wire signal_wire_12;
     wire signal_not_1;
-    wire signal_wire_13;
-    wire signal_and_4;
-    wire [3:0] signal_mux_13;
-    wire [3:0] signal_const_15;
-    wire [15:0] signal_const_16;
-    wire [15:0] signal_wire_14;
-    wire signal_eq_9;
-    wire [3:0] signal_mux_14;
-    wire signal_wire_15;
     wire signal_and_5;
-    wire [3:0] signal_mux_15;
-    reg [3:0] signal_cases_3;
-    wire [3:0] signal_wire_16;
-    (* fsm_encoding="one_hot" *)
-    reg [3:0] signal_reg_3;
-    wire signal_eq_10;
+    wire signal_wire_9;
+    wire signal_not_2;
     wire signal_and_6;
-    assign signal_eq = signal_const_9 == signal_reg_3;
-    assign signal_and = signal_eq & signal_not;
+    wire signal_not_3;
+    wire signal_and_7;
+    wire signal_not_4;
+    wire signal_and_8;
+    wire signal_const_12;
+    wire signal_mux_6;
+    wire signal_mux_7;
+    wire signal_wire_10;
+    reg signal_reg_3;
+    wire signal_not_5;
+    wire signal_and_9;
+    wire signal_wire_11;
+    wire signal_wire_12;
+    wire signal_wire_13;
+    wire signal_not_6;
+    wire signal_wire_14;
+    wire signal_and_10;
+    wire signal_not_7;
+    wire signal_and_11;
+    wire signal_and_12;
+    wire signal_or;
+    wire signal_wire_15;
+    reg signal_reg_4;
+    wire signal_and_13;
+    wire signal_wire_16;
+    reg signal_reg_5;
+    wire [15:0] signal_const_16;
+    wire [15:0] signal_wire_17;
+    wire signal_eq_1;
+    wire signal_not_8;
+    wire signal_and_14;
+    wire signal_or_1;
+    wire signal_or_2;
+    wire signal_or_3;
+    wire signal_wire_18;
+    reg signal_reg_6;
+    wire signal_and_15;
+    wire signal_or_4;
+    wire signal_wire_19;
+    reg signal_reg_7;
+    wire signal_and_16;
+    wire signal_and_17;
+    wire signal_or_5;
+    wire signal_wire_20;
+    reg signal_reg_8;
+    wire signal_and_18;
+    wire signal_or_6;
+    wire signal_wire_21;
+    reg signal_reg_9;
+    wire signal_and_19;
+    wire signal_wire_22;
+    wire signal_and_20;
+    wire signal_not_9;
+    wire signal_and_21;
+    wire signal_or_7;
+    wire signal_wire_23;
+    reg signal_reg_10;
+    wire signal_and_22;
+    assign signal_and = signal_reg_8 & signal_not;
     assign signal_const = 2'b00;
-    assign signal_mux = signal_wire_12 ? signal_wire_1 : signal_reg;
-    always @* begin
-        case (signal_reg_3)
-        4'b0110:
-            signal_cases <= signal_mux;
-        default:
-            signal_cases <= signal_reg;
-        endcase
-    end
-    assign signal_wire = signal_cases;
-    always @(posedge signal_wire_9) begin
-        if (signal_wire_8)
+    assign signal_mux = signal_and_17 ? signal_wire_1 : signal_reg;
+    assign signal_wire = signal_mux;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
             signal_reg <= signal_const;
         else
             signal_reg <= signal_wire;
     end
     assign signal_wire_1 = action;
-    assign signal_mux_1 = signal_wire_12 ? signal_wire_1 : signal_reg_1;
-    always @* begin
-        case (signal_reg_3)
-        4'b0100:
-            signal_cases_1 <= signal_mux_1;
-        default:
-            signal_cases_1 <= signal_reg_1;
-        endcase
-    end
-    assign signal_wire_2 = signal_cases_1;
-    always @(posedge signal_wire_9) begin
-        if (signal_wire_8)
+    assign signal_mux_1 = signal_and_9 ? signal_wire_1 : signal_reg_1;
+    assign signal_wire_2 = signal_mux_1;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
             signal_reg_1 <= signal_const;
         else
             signal_reg_1 <= signal_wire_2;
     end
-    assign signal_eq_1 = signal_const_13 == signal_reg_3;
-    assign signal_and_1 = signal_eq_1 & signal_not;
-    assign signal_eq_2 = signal_const_10 == signal_reg_3;
-    assign signal_eq_3 = signal_const_12 == signal_reg_3;
-    assign signal_or = signal_eq_3 | signal_eq_2;
-    assign signal_and_2 = signal_or & signal_not;
-    assign signal_eq_4 = signal_const_11 == signal_reg_3;
-    assign signal_eq_5 = signal_const_15 == signal_reg_3;
-    assign signal_or_1 = signal_eq_5 | signal_eq_4;
-    assign signal_and_3 = signal_or_1 & signal_not;
+    assign signal_and_1 = signal_reg_5 & signal_not;
+    assign signal_and_2 = signal_reg_7 & signal_not;
+    assign signal_and_3 = signal_reg_6 & signal_not;
     assign signal_const_2 = 16'b0000000000010000;
-    assign signal_lt = signal_wire_14 < signal_const_2;
+    assign signal_lt = signal_wire_17 < signal_const_2;
     assign signal_const_3 = 4'b0000;
-    assign signal_const_4 = 4'b0001;
-    assign signal_add = signal_reg_2 + signal_const_4;
-    assign signal_mux_2 = signal_wire_12 ? signal_add : signal_reg_2;
-    assign signal_mux_3 = signal_eq_9 ? signal_const_3 : signal_reg_2;
-    assign signal_mux_4 = signal_and_5 ? signal_mux_3 : signal_reg_2;
-    always @* begin
-        case (signal_reg_3)
-        4'b0000:
-            signal_cases_2 <= signal_mux_4;
-        4'b0110:
-            signal_cases_2 <= signal_mux_2;
-        default:
-            signal_cases_2 <= signal_reg_2;
-        endcase
-    end
-    assign signal_wire_3 = signal_cases_2;
-    always @(posedge signal_wire_9) begin
-        if (signal_wire_8)
+    assign signal_const_5 = 4'b0001;
+    assign signal_add = signal_reg_2 + signal_const_5;
+    assign signal_mux_2 = signal_and_17 ? signal_add : signal_reg_2;
+    assign signal_and_4 = signal_and_20 & signal_eq_1;
+    assign signal_mux_3 = signal_and_4 ? signal_const_3 : signal_mux_2;
+    assign signal_wire_3 = signal_mux_3;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
             signal_reg_2 <= signal_const_3;
         else
             signal_reg_2 <= signal_wire_3;
     end
     assign signal_wire_4 = request$slot2_price;
     assign signal_wire_5 = request$slot1_price;
-    assign signal_mux_5 = signal_or_2 ? signal_wire_4 : signal_wire_5;
+    assign signal_mux_4 = signal_reg_3 ? signal_wire_4 : signal_wire_5;
     assign signal_const_6 = 8'b00100010;
     assign signal_wire_6 = request$slot2_id;
     assign signal_wire_7 = request$slot1_id;
-    assign signal_eq_6 = signal_const_10 == signal_reg_3;
-    assign signal_eq_7 = signal_const_11 == signal_reg_3;
-    assign signal_or_2 = signal_eq_7 | signal_eq_6;
-    assign signal_mux_6 = signal_or_2 ? signal_wire_6 : signal_wire_7;
-    assign signal_eq_8 = signal_mux_6 == signal_const_6;
-    assign signal_not = ~ signal_wire_8;
-    assign signal_wire_8 = reset;
-    assign signal_wire_9 = clock;
-    assign signal_wire_10 = response_done;
-    assign signal_mux_7 = signal_wire_10 ? signal_const_3 : signal_reg_3;
-    assign signal_const_8 = 4'b1000;
-    assign signal_wire_11 = response_ready;
-    assign signal_mux_8 = signal_wire_11 ? signal_const_8 : signal_reg_3;
-    assign signal_const_9 = 4'b0111;
-    assign signal_mux_9 = signal_wire_12 ? signal_const_9 : signal_reg_3;
-    assign signal_const_10 = 4'b0110;
-    assign signal_mux_10 = signal_wire_13 ? signal_const_10 : signal_reg_3;
-    assign signal_const_11 = 4'b0101;
-    assign signal_mux_11 = signal_wire_12 ? signal_const_11 : signal_reg_3;
-    assign signal_const_12 = 4'b0100;
-    assign signal_mux_12 = signal_wire_13 ? signal_const_12 : signal_reg_3;
-    assign signal_const_13 = 4'b0010;
-    assign signal_wire_12 = result_valid;
-    assign signal_not_1 = ~ signal_wire_12;
-    assign signal_wire_13 = update_ready;
-    assign signal_and_4 = signal_wire_13 & signal_not_1;
-    assign signal_mux_13 = signal_and_4 ? signal_const_13 : signal_reg_3;
-    assign signal_const_15 = 4'b0011;
-    assign signal_const_16 = 16'b0000000000000000;
-    assign signal_wire_14 = request$index;
-    assign signal_eq_9 = signal_wire_14 == signal_const_16;
-    assign signal_mux_14 = signal_eq_9 ? signal_const_4 : signal_const_15;
-    assign signal_wire_15 = request_valid;
-    assign signal_and_5 = signal_and_6 & signal_wire_15;
-    assign signal_mux_15 = signal_and_5 ? signal_mux_14 : signal_reg_3;
-    always @* begin
-        case (signal_reg_3)
-        4'b0000:
-            signal_cases_3 <= signal_mux_15;
-        4'b0001:
-            signal_cases_3 <= signal_mux_13;
-        4'b0010:
-            signal_cases_3 <= signal_const_15;
-        4'b0011:
-            signal_cases_3 <= signal_mux_12;
-        4'b0100:
-            signal_cases_3 <= signal_mux_11;
-        4'b0101:
-            signal_cases_3 <= signal_mux_10;
-        4'b0110:
-            signal_cases_3 <= signal_mux_9;
-        4'b0111:
-            signal_cases_3 <= signal_mux_8;
-        4'b1000:
-            signal_cases_3 <= signal_mux_7;
-        default:
-            signal_cases_3 <= signal_reg_3;
-        endcase
-    end
-    assign signal_wire_16 = signal_cases_3;
-    always @(posedge signal_wire_9) begin
-        if (signal_wire_8)
-            signal_reg_3 <= signal_const_3;
+    assign signal_mux_5 = signal_reg_3 ? signal_wire_6 : signal_wire_7;
+    assign signal_eq = signal_mux_5 == signal_const_6;
+    assign signal_not = ~ signal_wire_11;
+    assign vdd = 1'b1;
+    assign signal_const_7 = 1'b0;
+    assign signal_wire_8 = response_done;
+    assign signal_not_1 = ~ signal_wire_8;
+    assign signal_and_5 = signal_reg_9 & signal_not_1;
+    assign signal_wire_9 = response_ready;
+    assign signal_not_2 = ~ signal_wire_9;
+    assign signal_and_6 = signal_reg_8 & signal_not_2;
+    assign signal_not_3 = ~ signal_wire_13;
+    assign signal_and_7 = signal_reg_7 & signal_not_3;
+    assign signal_not_4 = ~ signal_wire_14;
+    assign signal_and_8 = signal_reg_6 & signal_not_4;
+    assign signal_const_12 = 1'b1;
+    assign signal_mux_6 = signal_and_20 ? signal_const_7 : signal_reg_3;
+    assign signal_mux_7 = signal_and_9 ? signal_const_12 : signal_mux_6;
+    assign signal_wire_10 = signal_mux_7;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_3 <= signal_const_7;
         else
-            signal_reg_3 <= signal_wire_16;
+            signal_reg_3 <= signal_wire_10;
     end
-    assign signal_eq_10 = signal_const_3 == signal_reg_3;
-    assign signal_and_6 = signal_eq_10 & signal_not;
-    assign request_ready = signal_and_6;
-    assign receive_enable = signal_and_6;
-    assign update$item_select = signal_eq_8;
-    assign update$price = signal_mux_5;
+    assign signal_not_5 = ~ signal_reg_3;
+    assign signal_and_9 = signal_and_16 & signal_not_5;
+    assign signal_wire_11 = reset;
+    assign signal_wire_12 = clock;
+    assign signal_wire_13 = result_valid;
+    assign signal_not_6 = ~ signal_wire_13;
+    assign signal_wire_14 = update_ready;
+    assign signal_and_10 = signal_wire_14 & signal_not_6;
+    assign signal_not_7 = ~ signal_and_10;
+    assign signal_and_11 = signal_reg_4 & signal_not_7;
+    assign signal_and_12 = signal_and_20 & signal_eq_1;
+    assign signal_or = signal_and_12 | signal_and_11;
+    assign signal_wire_15 = signal_or;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_4 <= signal_const_7;
+        else
+            signal_reg_4 <= signal_wire_15;
+    end
+    assign signal_and_13 = signal_reg_4 & signal_and_10;
+    assign signal_wire_16 = signal_and_13;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_5 <= signal_const_7;
+        else
+            signal_reg_5 <= signal_wire_16;
+    end
+    assign signal_const_16 = 16'b0000000000000000;
+    assign signal_wire_17 = request$index;
+    assign signal_eq_1 = signal_wire_17 == signal_const_16;
+    assign signal_not_8 = ~ signal_eq_1;
+    assign signal_and_14 = signal_and_20 & signal_not_8;
+    assign signal_or_1 = signal_and_14 | signal_reg_5;
+    assign signal_or_2 = signal_or_1 | signal_and_9;
+    assign signal_or_3 = signal_or_2 | signal_and_8;
+    assign signal_wire_18 = signal_or_3;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_6 <= signal_const_7;
+        else
+            signal_reg_6 <= signal_wire_18;
+    end
+    assign signal_and_15 = signal_reg_6 & signal_wire_14;
+    assign signal_or_4 = signal_and_15 | signal_and_7;
+    assign signal_wire_19 = signal_or_4;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_7 <= signal_const_7;
+        else
+            signal_reg_7 <= signal_wire_19;
+    end
+    assign signal_and_16 = signal_reg_7 & signal_wire_13;
+    assign signal_and_17 = signal_and_16 & signal_reg_3;
+    assign signal_or_5 = signal_and_17 | signal_and_6;
+    assign signal_wire_20 = signal_or_5;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_8 <= signal_const_7;
+        else
+            signal_reg_8 <= signal_wire_20;
+    end
+    assign signal_and_18 = signal_reg_8 & signal_wire_9;
+    assign signal_or_6 = signal_and_18 | signal_and_5;
+    assign signal_wire_21 = signal_or_6;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_9 <= signal_const_7;
+        else
+            signal_reg_9 <= signal_wire_21;
+    end
+    assign signal_and_19 = signal_reg_9 & signal_wire_8;
+    assign signal_wire_22 = request_valid;
+    assign signal_and_20 = signal_and_22 & signal_wire_22;
+    assign signal_not_9 = ~ signal_and_20;
+    assign signal_and_21 = signal_reg_10 & signal_not_9;
+    assign signal_or_7 = signal_and_21 | signal_and_19;
+    assign signal_wire_23 = signal_or_7;
+    always @(posedge signal_wire_12) begin
+        if (signal_wire_11)
+            signal_reg_10 <= vdd;
+        else
+            signal_reg_10 <= signal_wire_23;
+    end
+    assign signal_and_22 = signal_reg_10 & signal_not;
+    assign request_ready = signal_and_22;
+    assign receive_enable = signal_and_22;
+    assign update$item_select = signal_eq;
+    assign update$price = signal_mux_4;
     assign update$window_position = signal_reg_2;
     assign update$warmup = signal_lt;
     assign update_valid = signal_and_3;
     assign result_ready = signal_and_2;
     assign session_clear = signal_and_1;
-    assign response$index = signal_wire_14;
+    assign response$index = signal_wire_17;
     assign response$slot1_id = signal_wire_7;
     assign response$slot2_id = signal_wire_6;
     assign response$slot1_action = signal_reg_1;
