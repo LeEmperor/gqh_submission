@@ -7,6 +7,9 @@ five-run median latency** (within 5% tied), in that order.
 
 ## Start here
 
+- **[Submission checklist and agent handoff](SUBMISSION_CHECKLIST.md)** — the
+  ordered final-packaging, verification, Devpost and board-return workflow. Final
+  candidate selection remains pending until the user is ready.
 - **[PLAN.md](PLAN.md)** — the active implementation plan, exact protocol and
   algorithm, priorities, work assignments, and delivery gates. Update this when
   decisions change.
