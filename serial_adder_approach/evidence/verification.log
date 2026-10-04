@@ -1,0 +1,20 @@
++ opam exec --switch=5.2.0+ox -- dune exec serial_adder_approach/generate.exe -- /tmp/opencode/serial-adder-4shut9ay
+Generated /tmp/opencode/serial-adder-4shut9ay/gqh_serial_top.v
+Generated /tmp/opencode/serial-adder-4shut9ay/gqh_serial_engine_only_top.v
+Generated /tmp/opencode/serial-adder-4shut9ay/serial_engine_test.v
++ iverilog -g2012 -s engine_tb -o /tmp/opencode/serial-adder-4shut9ay/engine /home/wayne/devel/jane/even_smaller/serial_adder_approach/serial_engine_test.v /home/wayne/devel/jane/even_smaller/serial_adder_approach/engine_tb.v
++ vvp /tmp/opencode/serial-adder-4shut9ay/engine +TRACE=/home/wayne/devel/jane/even_smaller/serial_adder_approach/evidence/engine-commands.txt
+PASS serial engine: 8956 samples, direct-window sum/relation/action, poisoned RAM, other-item preservation, result stalls
+/home/wayne/devel/jane/even_smaller/serial_adder_approach/engine_tb.v:88: $finish called at 2427286000 (1ps)
++ iverilog -g2012 -s tx_tb -o /tmp/opencode/serial-adder-4shut9ay/tx /home/wayne/devel/jane/even_smaller/serial_adder_approach/gqh_serial_top.v /home/wayne/devel/jane/even_smaller/serial_adder_approach/tx_tb.v
++ vvp /tmp/opencode/serial-adder-4shut9ay/tx
+PASS LFSR TX: all 256 bytes, exact 234-clock start/data/stop bits, immediate back-to-back acceptance
+/home/wayne/devel/jane/even_smaller/serial_adder_approach/tx_tb.v:27: $finish called at 5992971000 (1ps)
++ yosys -Q -q -p read_verilog /home/wayne/devel/jane/even_smaller/serial_adder_approach/gqh_serial_top.v; hierarchy -check -top gqh_competition_top; proc; opt_clean; check -assert; write_json /tmp/opencode/serial-adder-4shut9ay/serial_lfsr.json
++ iverilog -g2012 -DHOPT_NO_DIAGNOSTICS -DHOPT_ENGINE_RESULT_STATE=3 -DHOPT_ENGINE_SERIAL_DIGITS=20 -s competition_tb -o /tmp/opencode/serial-adder-4shut9ay/serial_lfsr /home/wayne/devel/jane/even_smaller/serial_adder_approach/gqh_serial_top.v /home/wayne/devel/jane/even_smaller/test/integration/packet_ram_tb.v
++ vvp /tmp/opencode/serial-adder-4shut9ay/serial_lfsr +TRACE=/home/wayne/devel/jane/even_smaller/serial_adder_approach/evidence/packets.txt +LATENCY=/home/wayne/devel/jane/even_smaller/serial_adder_approach/evidence/serial_lfsr-latency.csv
+PASS: 1394 production-divisor serial oracle packets; core latency session=56 other=54 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and LEDs off
+/home/wayne/devel/jane/even_smaller/test/integration/packet_ram_tb.v:261: $finish called at 3635996088996 (1ps)
++ yosys -Q -q -p read_verilog /home/wayne/devel/jane/even_smaller/serial_adder_approach/gqh_serial_engine_only_top.v; hierarchy -check -top gqh_competition_top; proc; opt_clean; check -assert; write_json /tmp/opencode/serial-adder-4shut9ay/serial_engine_only.json
++ iverilog -g2012 -DHOPT_NO_DIAGNOSTICS -DHOPT_ENGINE_RESULT_STATE=3 -DHOPT_ENGINE_SERIAL_DIGITS=20 -s competition_tb -o /tmp/opencode/serial-adder-4shut9ay/serial_engine_only /home/wayne/devel/jane/even_smaller/serial_adder_approach/gqh_serial_engine_only_top.v /home/wayne/devel/jane/even_smaller/test/integration/packet_ram_tb.v

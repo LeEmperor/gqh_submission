@@ -32,6 +32,7 @@ let () =
         | _ -> failwith "unknown serial optimization variant") in
   let enabled name = String.equal (Option.value (Sys.getenv name) ~default:"0") "1" in
   let sim = S.create (Board.Competition_top.create
+    ~diagnostics:(not (enabled "HOPT_NO_DIAGNOSTICS"))
     ~records_in_bram:(enabled "HOPT_RECORDS_IN_BRAM")
     ~borrow_command:(enabled "HOPT_BORROW_COMMAND")
     ~delta_arithmetic:(enabled "HOPT_DELTA_ARITHMETIC")

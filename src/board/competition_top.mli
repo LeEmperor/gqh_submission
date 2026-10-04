@@ -6,6 +6,8 @@ module O = Top.O
     simulation/experiments; production defaults are 234 clocks/bit, zero extra
     gap and a 13,500,000-clock heartbeat half-period. RX synchronization and
     reset release match the diagnostic board top. LED1 is decoder sticky fault.
+    [diagnostics] defaults true; false omits the heartbeat and fault indication,
+    driving both active-low LEDs high. Protocol fault lockout remains functional.
     The controller exclusively owns the engine and rearms only on final drain.
     Competition defaults borrow decoder request/controller response retention;
     set [borrow_request] or [borrow_response] false for independent measurements.
@@ -19,7 +21,8 @@ module O = Top.O
     Optional per-block state encoding and TX shift mode select experiments;
     omitted options preserve each module's existing implementation. *)
 val create
-  :  ?packet_ram:bool
+  :  ?diagnostics:bool
+  -> ?packet_ram:bool
   -> ?half_period_cycles:int
   -> ?cycles_per_bit:int
   -> ?extra_idle_cycles:int
@@ -39,6 +42,7 @@ val create
   -> Scope.t -> Signal.t I.t -> Signal.t O.t
 val hierarchical
   :  ?instance:string
+  -> ?diagnostics:bool
   -> ?packet_ram:bool
   -> ?half_period_cycles:int
   -> ?cycles_per_bit:int

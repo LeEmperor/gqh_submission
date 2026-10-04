@@ -24,4 +24,21 @@
        (setenv HOPT_DIFFERENCE_RELATION 1
         (run python3 test/integration/run_checks.py
          bin/generate.exe test/integration/serial_verify.exe -
-         rtl/gqh_competition_bsram_top.v)))))))))
+          rtl/gqh_competition_bsram_top.v)))))))))
+
+(rule
+ (alias runtest-bsram-lean)
+ (deps serial_verify.exe run_checks.py competition_tb.v packet_ram_tb.v
+  ../../bin/generate.exe ../../dune-project ../../rtl/gqh_competition_bsram_lean_top.v
+  (source_tree ../engine/oracle))
+ (action
+  (chdir ../..
+   (setenv HOPT_NO_DIAGNOSTICS 1
+    (setenv HOPT_PROTOCOL packet_ram
+     (setenv HOPT_RECORDS_IN_BRAM 1
+      (setenv HOPT_BORROW_COMMAND 1
+       (setenv HOPT_DELTA_ARITHMETIC 1
+        (setenv HOPT_DIFFERENCE_RELATION 1
+         (run python3 test/integration/run_checks.py
+          bin/generate.exe test/integration/serial_verify.exe -
+          rtl/gqh_competition_bsram_lean_top.v))))))))))

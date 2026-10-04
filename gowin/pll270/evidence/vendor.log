@@ -1,0 +1,2 @@
+PASS vendor rPLL model: lock, reset release, 81 cycles in 1000.026000 ns
+/home/wayne/devel/jane/even_smaller/test/pll/vendor_tb.v:22: $finish called at 51464301 (1ps)

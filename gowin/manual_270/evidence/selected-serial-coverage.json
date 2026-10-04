@@ -1,0 +1,37 @@
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "latency": {
+    "endpoint": "accept_to_first_tx_accept_cycles",
+    "session_cycles": 18,
+    "other_cycles": 16,
+    "samples": 1394
+  },
+  "rtl_sha256": "7c986085251433848d8e07940fc6aed7d1a8c381012dd3dbd6a521872de504c3",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  }
+}

@@ -1,0 +1,3 @@
+# Preserve vendor artifacts exactly; programming images are not source diffs.
+evidence/** -text -diff
+evidence/**/*.fs binary

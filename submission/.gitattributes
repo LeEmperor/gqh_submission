@@ -1,0 +1,3 @@
+# Preserve archived test bytes and logs as captured.
+board/** -text
+rebuild.log -text

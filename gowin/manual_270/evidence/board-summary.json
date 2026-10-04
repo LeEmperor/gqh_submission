@@ -1,0 +1,69 @@
+{
+  "label": "bsram-270",
+  "port": "/dev/ttyUSB1",
+  "fs": "/home/wayne/devel/jane/even_smaller/gowin/manual_270/impl/pnr/gqh_competition.fs",
+  "mode": "full",
+  "no_heartbeat": true,
+  "no_fault_led": true,
+  "pass_all": true,
+  "stages": {
+    "startup": {
+      "exact_response": true,
+      "extra_bytes": false,
+      "fault_reset": false
+    },
+    "quick": {
+      "received": 21,
+      "scored_packets": 5
+    },
+    "normal": {
+      "received": 100,
+      "scored_packets": 84,
+      "correct_actions": 168,
+      "timeouts": 0,
+      "official_mean_ms": 16.813
+    },
+    "fullrange": {
+      "received": 100,
+      "scored_packets": 84,
+      "correct_actions": 168,
+      "timeouts": 0,
+      "official_mean_ms": 16.902
+    },
+    "custom": {
+      "received": 1598,
+      "counts": {
+        "OK": 1598,
+        "MISMATCH": 0,
+        "SHORT": 0,
+        "TIMEOUT": 0
+      },
+      "latency": {
+        "count": 1598,
+        "mean_ms": 16.933008852941178,
+        "median_ms": 16.9415265,
+        "p95_ms": 17.402281
+      }
+    },
+    "custom-after-reset": {
+      "received": 1598,
+      "counts": {
+        "OK": 1598,
+        "MISMATCH": 0,
+        "SHORT": 0,
+        "TIMEOUT": 0
+      },
+      "latency": {
+        "count": 1598,
+        "mean_ms": 16.933249057571967,
+        "median_ms": 16.9370015,
+        "p95_ms": 17.436276
+      }
+    },
+    "fault-reset": {
+      "exact_response": true,
+      "extra_bytes": false,
+      "fault_reset": true
+    }
+  }
+}

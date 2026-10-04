@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module name="gqh_competition_top" Register="2" T_Register="97(2)" T_Lut="203(0)" T_Bsram="4(0)">
+ <SubModule name="engine" Register="19" Lut="65" Bsram="3" T_Register="19(19)" T_Lut="65(65)" T_Bsram="3(3)"/>
+ <SubModule name="uart_rx" Register="24" Lut="29" T_Register="24(24)" T_Lut="29(29)"/>
+ <SubModule name="packet_ram_controller" Register="29" Lut="75" Bsram="1" T_Register="29(29)" T_Lut="75(75)" T_Bsram="1(1)"/>
+ <SubModule name="reset_release" Register="2" T_Register="2(2)"/>
+ <SubModule name="uart_tx" Register="21" Lut="34" T_Register="21(21)" T_Lut="34(34)"/>
+</Module>

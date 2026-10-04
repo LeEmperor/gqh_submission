@@ -1,0 +1,2 @@
+PASS PLL reset: delayed lock, two-edge release, stopped-clock lock loss during TX, relock and button recovery
+/home/wayne/devel/jane/even_smaller/test/pll/reset_tb.v:93: $finish called at 4919204780 (1ps)

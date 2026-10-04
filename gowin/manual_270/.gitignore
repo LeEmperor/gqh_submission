@@ -1,0 +1,5 @@
+!/impl/
+/impl/*
+!/impl/gqh_competition_process_config.json
+!/evidence/*.log
+/resolved-settings.tcl

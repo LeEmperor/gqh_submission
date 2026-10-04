@@ -1,0 +1,37 @@
+{
+  "candidate": "competition-bsram-lean",
+  "parent": "competition-bsram: 302 logic / 109 registers / 3 BSRAM",
+  "rtl_sha256": "7c986085251433848d8e07940fc6aed7d1a8c381012dd3dbd6a521872de504c3",
+  "resources": {
+    "logic": 270,
+    "registers": 84,
+    "bsram": 3,
+    "ssram": 0,
+    "synthesis_luts": 210,
+    "setup_violated_endpoints": 0,
+    "hold_violated_endpoints": 0,
+    "paths_analyzed": 317,
+    "worst_setup_slack_ns": 25.16,
+    "tool_version": "V1.9.11.03 Education",
+    "part": "GW2AR-LV18QN88C8/I7",
+    "warning_codes": [
+      "PR1014"
+    ]
+  },
+  "checks": {
+    "functional_modules": "byte-identical to parent",
+    "parent_regeneration": "byte-identical",
+    "cyclesim_serial_oracle": "passed",
+    "production_divisor_icarus": "passed: 1394 packets / 13 sessions; startup, faults, RX/engine/TX resets, full stops, LEDs off",
+    "regeneration": "deterministic and byte-identical to delivered RTL"
+  },
+  "board_acceptance": "full board suite passed; user-confirmed programmed candidate",
+  "board_validation": {
+    "summary": "evidence/board-summary.json",
+    "source_results": "result/board-bsram-270-20261004-070249-_874a3je",
+    "pass_all": true,
+    "normal_mean_ms": 16.813,
+    "fullrange_mean_ms": 16.902,
+    "programmed_image_identity": "user confirmation and supplied path; wrapper does not hash/read back image"
+  }
+}

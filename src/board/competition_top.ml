@@ -4,7 +4,7 @@ open! Signal
 module I = Top.I
 module O = Top.O
 
-let create ?(packet_ram = false) ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles ?(borrow_request = true) ?(borrow_response = true)
+let create ?(diagnostics = true) ?(packet_ram = false) ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles ?(borrow_request = true) ?(borrow_response = true)
   ?controller_encoding ?sequencer_encoding ?rx_encoding ?tx_encoding ?tx_shift_register ?rx_factored_timer ?tx_factored_timer
   ?records_in_bram ?borrow_command ?delta_arithmetic ?difference_relation
   scope (i : _ I.t) =
@@ -64,16 +64,19 @@ let create ?(packet_ram = false) ?half_period_cycles ?cycles_per_bit ?extra_idle
   tx_valid <-- sequencer.tx_valid;
   decoder.protocol_fault
   ) in
-  let heartbeat = Heartbeat.hierarchical ~instance:"heartbeat" ?half_period_cycles scope
-    { Heartbeat.I.clock = i.sys_clk; reset = reset.reset } in
-  { O.uart_tx_o = tx.tx; led0_n = heartbeat.led_n; led1_n = ~:protocol_fault }
+  let led0_n, led1_n = if diagnostics then (
+    let heartbeat = Heartbeat.hierarchical ~instance:"heartbeat" ?half_period_cycles scope
+      { Heartbeat.I.clock = i.sys_clk; reset = reset.reset } in
+    heartbeat.led_n, ~:protocol_fault
+  ) else vdd, vdd in
+  { O.uart_tx_o = tx.tx; led0_n; led1_n }
 
-let hierarchical ?instance ?packet_ram ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles
+let hierarchical ?instance ?diagnostics ?packet_ram ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles
   ?borrow_request ?borrow_response
   ?controller_encoding ?sequencer_encoding ?rx_encoding ?tx_encoding ?tx_shift_register ?rx_factored_timer ?tx_factored_timer
   ?records_in_bram ?borrow_command ?delta_arithmetic ?difference_relation scope i =
   let module H = Hierarchy.In_scope (I) (O) in
   H.hierarchical ?instance ~scope ~name:"gqh_competition_top"
-    (create ?packet_ram ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles ?borrow_request ?borrow_response
+    (create ?diagnostics ?packet_ram ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles ?borrow_request ?borrow_response
        ?controller_encoding ?sequencer_encoding ?rx_encoding ?tx_encoding ?tx_shift_register ?rx_factored_timer ?tx_factored_timer
   ?records_in_bram ?borrow_command ?delta_arithmetic ?difference_relation) i

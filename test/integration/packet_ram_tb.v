@@ -4,15 +4,39 @@
 `ifndef HOPT_ENGINE_RESULT_STATE
 `define HOPT_ENGINE_RESULT_STATE 3
 `endif
+`ifndef HOPT_CORE_MHZ
+`define HOPT_CORE_MHZ 27
+`endif
+`ifndef HOPT_UART_DIVISOR
+`define HOPT_UART_DIVISOR 234
+`endif
+`ifndef HOPT_TOP
+`define HOPT_TOP gqh_competition_top
+`endif
 module competition_tb;
-  // Independent wall-time host: 234.375 core clocks/bit at nominal 115200.
-  localparam real CORE = 1000.0/27.0;
+  // Independent wall-time host, with a 27 MHz reference on every board target.
+  localparam real CORE = 1000.0/`HOPT_CORE_MHZ;
+  localparam integer DIVISOR = `HOPT_UART_DIVISOR;
   localparam real HOST_BIT = 1000000000.0/115200.0;
   reg sys_clk = 0;
-  always #(CORE/2.0) sys_clk = ~sys_clk;
+  always #(1000.0/27.0/2.0) sys_clk = ~sys_clk;
   reg reset_btn = 0, uart_rx_i = 1;
   wire uart_tx_o, led0_n, led1_n;
-  gqh_competition_top dut(.*);
+  `HOPT_TOP dut(.*);
+`ifdef HOPT_PLL
+  wire core_clock = dut.core_clk;
+`else
+  wire core_clock = sys_clk;
+`endif
+  wire fault_led_n;
+`ifdef HOPT_NO_DIAGNOSTICS
+  // Fault lockout is functional even when its external indicator is omitted.
+  assign fault_led_n = ~dut.packet_ram_controller.protocol_fault;
+  always @(posedge core_clock)
+    if (led0_n !== 1 || led1_n !== 1) $fatal(1,"diagnostic LEDs must stay off");
+`else
+  assign fault_led_n = led1_n;
+`endif
   reg [63:0] requests [0:4095], responses [0:4095];
   reg [7:0] received [0:65535];
   integer tx_frames = 0;
@@ -27,7 +51,7 @@ module competition_tb;
   // It includes synchronous field reads and both engine commands; wire timing
   // is independently checked below. This differs from the legacy controller
   // response-offer endpoint and must not be merged with that measurement.
-  always @(posedge sys_clk) begin
+  always @(posedge core_clock) begin
     cycles = cycles + 1;
     if (dut.uart_tx.tx_ready && dut.uart_tx.tx_valid) tx_frames = tx_frames+1;
     if (dut.reset_release.reset) begin
@@ -73,8 +97,8 @@ module competition_tb;
         end
       end
       begin
-        #(9.0*234.0*CORE + CORE/4.0);
-        for (integer s=0;s<234;s=s+1) begin
+        #(9.0*DIVISOR*CORE + CORE/4.0);
+        for (integer s=0;s<DIVISOR;s=s+1) begin
           if (epoch == frame_epoch && uart_tx_o !== 1) $fatal(1,"short TX stop bit");
           #(CORE);
         end
@@ -95,11 +119,11 @@ module competition_tb;
     begin
       epoch = epoch+1;
       reset_btn = 1; uart_rx_i = 1;
-      repeat (5) @(negedge sys_clk);
+      repeat (5) @(negedge core_clock);
       if (uart_tx_o !== 1) $fatal(1,"reset TX idle");
       reset_btn = 0;
       #(HOST_BIT*12); // Let independent decoder discard an aborted frame.
-      if (led1_n !== 1 || uart_tx_o !== 1) $fatal(1,"reset recovery status");
+      if (fault_led_n !== 1 || uart_tx_o !== 1) $fatal(1,"reset recovery status");
     end
   endtask
   task send_request(input [63:0] req, input integer pauses);
@@ -126,7 +150,7 @@ module competition_tb;
     begin
       base = seen; send_request(requests[row],pauses);
       check_response(responses[row],base);
-      if (led1_n !== 1) $fatal(1,"unexpected protocol fault row %0d",row);
+      if (fault_led_n !== 1) $fatal(1,"unexpected protocol fault row %0d",row);
     end
   endtask
   task populate;
@@ -148,8 +172,11 @@ module competition_tb;
     end
     $fclose(trace_file);
     // True emitted initialization, no button reset before first full session.
-    repeat (12) @(negedge sys_clk);
-    if (uart_tx_o !== 1 || led1_n !== 1 || led0_n !== 1) $fatal(1,"startup status");
+`ifdef HOPT_PLL
+    wait(dut.pll_locked === 1);
+`endif
+    repeat (12) @(negedge core_clock);
+    if (uart_tx_o !== 1 || fault_led_n !== 1 || led0_n !== 1) $fatal(1,"startup status");
     for (integer row=0;row<count;row=row+1) transaction(row,row%31==0);
     $fclose(latency_file); measuring=0;
     $display("PASS: %0d production-divisor serial oracle packets; core latency session=%0d other=%0d cycles",count,latency_start,latency_other);
@@ -157,16 +184,16 @@ module competition_tb;
     // Framing error after partial valid input: sticky lockout, no timeout/rearm.
     base=seen; send_byte(0,1); send_byte(8'h42,0);
     uart_rx_i=1; #(HOST_BIT*15);
-    if (led1_n !== 0) $fatal(1,"missing framing fault");
+    if (fault_led_n !== 0) $fatal(1,"missing framing fault");
     send_request(requests[0],0); #(HOST_BIT*85);
-    if (seen != base || led1_n !== 0) $fatal(1,"framing lockout");
+    if (seen != base || fault_led_n !== 0) $fatal(1,"framing lockout");
     reset_board(); populate();
     // Busy input after accepted request must fault; accepted response finishes.
     base=seen; send_request(requests[17],0); send_byte(8'h99,1);
     check_response(responses[17],base);
-    if (led1_n !== 0) $fatal(1,"missing busy fault");
+    if (fault_led_n !== 0) $fatal(1,"missing busy fault");
     base=seen; send_request(requests[0],0); #(HOST_BIT*85);
-    if (seen != base || led1_n !== 0) $fatal(1,"busy sticky lockout");
+    if (seen != base || fault_led_n !== 0) $fatal(1,"busy sticky lockout");
     reset_board(); populate();
 
     // Reset during the data bits of each request byte, with populated history.
@@ -200,7 +227,7 @@ module competition_tb;
 `ifdef HOPT_ENGINE_SERIAL_DIGITS
               if (state==2 || state==4) wait(dut.engine.engine_digit==digit);
 `endif
-              @(negedge sys_clk); reset_board();
+              @(negedge core_clock); reset_board();
             end
           join
           #(HOST_BIT*85);
@@ -220,10 +247,17 @@ module competition_tb;
       if (seen != base) $fatal(1,"stale TX after reset");
       populate();
     end
+`ifdef HOPT_NO_DIAGNOSTICS
+    reset_board(); repeat(100) @(negedge core_clock);
+    if (led0_n !== 1 || led1_n !== 1 || fault_led_n !== 1 || uart_tx_o !== 1)
+      $fatal(1,"LED-free idle");
+    $display("PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and LEDs off");
+`else
     // Observe the real default heartbeat after >13.5M clocks.
-    reset_board(); repeat(13500005) @(negedge sys_clk);
+    reset_board(); repeat(13500005) @(negedge core_clock);
     if (led0_n !== 0 || led1_n !== 1 || uart_tx_o !== 1) $fatal(1,"heartbeat/idle");
     $display("PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and heartbeat");
+`endif
     $finish;
   end
   initial begin #100000000000; $fatal(1,"watchdog timeout"); end

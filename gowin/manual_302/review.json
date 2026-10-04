@@ -1,0 +1,28 @@
+{
+  "source_commit": "9c2c22c571ee58df596625be45678600538f5448",
+  "candidate": "competition-bsram / I-packet-records-arithmetic",
+  "rtl_sha256": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+  "fresh_gowin_result": {
+    "logic": 302,
+    "registers": 109,
+    "bsram": 3,
+    "ssram": 0,
+    "synthesis_luts": 242,
+    "setup_violated_endpoints": 0,
+    "hold_violated_endpoints": 0,
+    "paths_analyzed": 370,
+    "worst_setup_slack_ns": 24.321,
+    "tool_version": "V1.9.11.03 Education",
+    "part": "GW2AR-LV18QN88C8/I7",
+    "warning_codes": [
+      "PR1014"
+    ]
+  },
+  "fresh_checks": {
+    "regeneration": "byte-identical",
+    "selected_engine": "passed: 4978 packets / 104927 edges in Cyclesim and Icarus",
+    "full_regressions": "passed",
+    "selected_production_serial": "passed: 1394 packets; startup, faults, reset recovery, full stop bits, heartbeat"
+  },
+  "board_acceptance": "pending"
+}

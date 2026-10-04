@@ -1,0 +1,22 @@
+{
+  "logic": 272,
+  "registers": 88,
+  "bsram": 3,
+  "ssram": 0,
+  "synthesis_luts": 212,
+  "setup_violated_endpoints": 0,
+  "hold_violated_endpoints": 0,
+  "paths_analyzed": 663,
+  "worst_setup_slack_ns": 0.484,
+  "tool_version": "V1.9.11.03 Education",
+  "part": "GW2AR-LV18QN88C8/I7",
+  "warning_codes": [
+    "PR1014"
+  ],
+  "pll": 1,
+  "core_hz": 81000000,
+  "reference_hz": 27000000,
+  "uart_divisor": 702,
+  "worst_reported_hold_slack_ns": 0.215,
+  "bitstream_sha256": "cc513a2d29889fc670ba8b6a56d20927d0638f91b942f12513b4360e06d5e03c"
+}

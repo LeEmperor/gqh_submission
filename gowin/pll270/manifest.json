@@ -1,0 +1,92 @@
+{
+  "candidate": "pll270-81MHz",
+  "parent": "LED-free BSRAM 270-logic / 84-register candidate",
+  "top": "gqh_competition_pll_top",
+  "device": "GW2AR-18C",
+  "part": "GW2AR-LV18QN88C8/I7",
+  "tool": "Gowin V1.9.11.03 Education",
+  "resources": {
+    "logic": 272,
+    "registers": 88,
+    "bsram": 3,
+    "ssram": 0,
+    "synthesis_luts": 212,
+    "setup_violated_endpoints": 0,
+    "hold_violated_endpoints": 0,
+    "paths_analyzed": 663,
+    "worst_setup_slack_ns": 0.484,
+    "tool_version": "V1.9.11.03 Education",
+    "part": "GW2AR-LV18QN88C8/I7",
+    "warning_codes": [
+      "PR1014"
+    ],
+    "pll": 1,
+    "core_hz": 81000000,
+    "reference_hz": 27000000,
+    "uart_divisor": 702,
+    "worst_reported_hold_slack_ns": 0.215,
+    "bitstream_sha256": "cc513a2d29889fc670ba8b6a56d20927d0638f91b942f12513b4360e06d5e03c"
+  },
+  "verification": {
+    "records": 1394,
+    "supplied": 800,
+    "coverage": {
+      "action_0": 970,
+      "action_1": 814,
+      "action_2": 1004,
+      "held_0": 554,
+      "held_1": 434,
+      "held_2": 621,
+      "incoming_equality": 595,
+      "maximum_prices": 122,
+      "previous_equality": 604,
+      "scored": 1186,
+      "sessions": 13,
+      "steady_swaps": 536,
+      "truncation": 1764,
+      "warmup": 208,
+      "warmup_swaps": 92,
+      "wraps": 82,
+      "zero_prices": 122
+    },
+    "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+    "status": "passed",
+    "rtl_sha256": "5118c539d23287065ea0769d0a98f82622042109da4cf5f7fd8eb9ac443f3a62",
+    "pll_wrapper_sha256": "5f4c4b65bbbe69162d08a4c1a63f3be786460ab09261ed9e765350c12b6354f7",
+    "vendor_library_sha256": "797e52271b149b650f4ed6ae0ef2794a853c6ef19973f957abc4f576fa48b7a1",
+    "reference_hz": 27000000,
+    "core_hz": 81000000,
+    "uart_divisor": 702,
+    "host_baud": 115200,
+    "scope": "Ideal-PLL full serial replay; stopped-clock lock/reset recovery; real wrapper plus vendor rPLL functional-model smoke; not board acceptance"
+  },
+  "board_acceptance": "pending",
+  "host_latency_ms": null,
+  "ip_provenance": {
+    "original_path": "../gqh_submission/test_proj2/test_proj2/src/gowin_rpll/gowin_rpll.v",
+    "changes": "All primitive parameters preserved; wrapper renamed Gowin_rPLL_81, LOCK output exported"
+  },
+  "inputs": {
+    "gqh_competition_pll_top.v": "5118c539d23287065ea0769d0a98f82622042109da4cf5f7fd8eb9ac443f3a62",
+    "gowin_rpll_81.v": "5f4c4b65bbbe69162d08a4c1a63f3be786460ab09261ed9e765350c12b6354f7",
+    "19_tang_nano_20k.cst": "2ac1e8bc9e282f8000a94c79f766123333b67a2cd29910ad2cba90a7554d6f5e",
+    "pll81.sdc": "070be83b69528f00c0d37351ab3c187ac358b48f885e9de46da8d5d91af0f638",
+    "options.tcl": "e37f6749d3a5573ccde04986bf6940cbbb13b5c5048c484e47e9e98a354b424b",
+    "build.tcl": "3a5c45b0653baf325bf6fdd7bc0b4f7eecb32a9df7d59f791453acecc0c0a2e1",
+    "process-config-reference.json": "2cef5d3f4caef7a784e6a90b399b77c67838a949d0cedce0236faa67d30efb8e",
+    "bitstream/gqh_pll270.fs": "cc513a2d29889fc670ba8b6a56d20927d0638f91b942f12513b4360e06d5e03c",
+    "ip-source/gowin_rpll.v": "7057b7cb1eeabddb763fd2656b4d79b156ffbcdbf20d97f8f93c8960456ebe69",
+    "ip-source/gowin_rpll.ipc": "15ea3971877cbc9e1e074a0a3da180bc10a2f911dad4b2dc3161bef0e111a336"
+  },
+  "source_hashes": {
+    "src/board/competition_pll_top.ml": "9224c781d02905c48372152df5a2bd863134257323c67b4888599935a18b50de",
+    "src/board/competition_pll_top.mli": "6255e5fa2823e46d53f8e38137c6871704be22a351781320c579134ae30264c6",
+    "src/board/competition_top.ml": "ab166c3d0e4c740203ac8936a039dfa36cb37d3f79d0f9216197939906dc3019",
+    "bin/generate.ml": "066cffb7e6fe8e7f2aafffe3bf97ae9f9a53d0d7919eb9db235c840854f48da5",
+    "test/pll/run_checks.py": "5742ae780c041fbc858b61ce3a42b9747da6f45ea99b20d7080a29ed73d4e87a",
+    "test/pll/pll_model.v": "fefcca96307b8187fb7da63caa5736ceaf9c076e4691e980d95b219f22785041",
+    "test/pll/reset_tb.v": "798e3cfc3c7ac85158fdc277bb1ea30ba4a062ec00abd38038664bdd867b2def",
+    "test/pll/vendor_tb.v": "397d2b3d8c47778318d42a6eb1f46a6dbd3c8b1fef66e139b7f4a042139b5a29",
+    "test/integration/packet_ram_tb.v": "45766aa6bbdd25863cd0d96fcf17aefc357c879b97adc9ed268ae38393f993d6"
+  }
+}

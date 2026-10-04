@@ -1,0 +1,353 @@
+.......................
+----------------------------------------------------------------------
+Ran 23 tests in 0.114s
+
+OK
+...................
+----------------------------------------------------------------------
+Ran 19 tests in 0.123s
+
+OK
+File "lib/mock.ml", line 29, characters 4-18:
+29 |     Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
+         ^^^^^^^^^^^^^^
+Alert unsafe_multidomain: Stdlib.Sys.set_signal
+Use [Sys.Safe.set_signal].
+File "lib/mock.ml", line 29, characters 4-18:
+29 |     Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
+         ^^^^^^^^^^^^^^
+Alert unsafe_multidomain: Stdlib.Sys.set_signal
+Use [Sys.Safe.set_signal].
+File "test/databento_test.ml", line 27, characters 4-18:
+27 |     Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
+         ^^^^^^^^^^^^^^
+Alert unsafe_multidomain: Stdlib.Sys.set_signal
+Use [Sys.Safe.set_signal].
+
+File "test/databento_test.ml", line 71, characters 25-36:
+71 |   List.iter (fun code -> Unix.putenv "TICKWEAVE_FAKE_HTTP_STATUS" code;assert (raises historical)) ["206";"401";"500"];
+                              ^^^^^^^^^^^
+Alert unsafe_multidomain: Unix.putenv
+Mutating the environment makes reading the environment unsafe.
+
+File "test/databento_test.ml", line 72, characters 2-13:
+72 |   Unix.putenv "TICKWEAVE_FAKE_HTTP_STATUS" "200";
+       ^^^^^^^^^^^
+Alert unsafe_multidomain: Unix.putenv
+Mutating the environment makes reading the environment unsafe.
+
+File "test/databento_test.ml", line 73, characters 2-13:
+73 |   Unix.putenv "TICKWEAVE_FAKE_CURL_FAIL" "1";
+       ^^^^^^^^^^^
+Alert unsafe_multidomain: Unix.putenv
+Mutating the environment makes reading the environment unsafe.
+
+File "test/databento_test.ml", line 75, characters 2-13:
+75 |   Unix.putenv "TICKWEAVE_FAKE_CURL_FAIL" "0";
+       ^^^^^^^^^^^
+Alert unsafe_multidomain: Unix.putenv
+Mutating the environment makes reading the environment unsafe.
+File "bin/stream.ml", line 40, characters 4-18:
+40 |     Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
+         ^^^^^^^^^^^^^^
+Alert unsafe_multidomain: Stdlib.Sys.set_signal
+Use [Sys.Safe.set_signal].
+Core: codec, resets, held actions, slow independent oracle, seeded data, and exact pairing passed
+External integration: 31 independent fixtures matched request rows or rejected invalid data
+Transport: fragmented reads, absolute deadlines, poisoned connections, bounded writes, and unsolicited bytes passed
+Databento: SHA-256, quoted CSV, int64 precision, historical HTTP/status/cleanup, native live authentication/mapping/fragments/errors, and bounded control filtering passed
+CLI integration: two sessions, replay, failure injection, log preservation, and input rejection passed
+ok   price parsing
+ok   wire conversion
+ok   ts_event
+ok   csv parsing
+ok   csv record limit
+ok   hand-derived pairing
+ok   validator errors
+ok   committed fixtures
+ok   reproducibility
+ok   cross-seed generator/validator agreement
+ok   cli and output preservation
+    streamed 2000000 rows (~76 MB), heap growth 0 words
+ok   streaming bounded memory
+ok   request limit
+2232 checks passed, 0 failed
+PASS: heartbeat/reset/idle and RAM latency/collision
+PASS: independent RX/TX timing, packet handshakes/faults, serial round trips
+PASS: packet RAM all byte values, wide index/price cases, stalls, command borrowing, 291 reset offsets, 221 fault offsets, final drain
+Generated /tmp/build_6dd3f8_dune/gqh-hdl-1mjqgf_0/gqh_top.v (top module gqh_top)
+Generated /tmp/build_6dd3f8_dune/gqh-hdl-1mjqgf_0/gqh_top.v (top module gqh_top)
+PASS: emitted RTL initialization, async assertion, synchronized release, idle
+/home/wayne/devel/jane/even_smaller/_build/default/test/bringup_tb.v:30: $finish called at 86000 (1ps)
+Generated /tmp/build_6dd3f8_dune/gqh-hdl-1mjqgf_0/history_probe.v (top module history_probe)
+Generated /tmp/build_6dd3f8_dune/gqh-hdl-1mjqgf_0/history_probe.v (top module history_probe)
+PASS: emitted RAM read/write, latency and read-first collision
+/home/wayne/devel/jane/even_smaller/_build/default/test/history_tb.v:34: $finish called at 676000 (1ps)
+PASS: official checksums, deterministic deliverables, exact ports, complete HDL elaboration
+PASS mocks: nine reset stages, 361 responses, 728 commands, 24 clear pulses, 50 earliest-result commands; random stalls/latency and held offers
+PASS real engine: 4669 records, 9338 commands, 30 session clears
+latency session_start: publication E0+10; earliest response transfer E0+11
+latency warmup: publication E0+8; earliest response transfer E0+9
+latency steady: publication E0+8; earliest response transfer E0+9
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS real engine: 4669 records, 9338 commands, 30 session clears
+latency session_start: publication E0+10; earliest response transfer E0+11
+latency warmup: publication E0+8; earliest response transfer E0+9
+latency steady: publication E0+8; earliest response transfer E0+9
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS mocks: nine reset stages, 361 responses, 728 commands, 24 clear pulses, 50 earliest-result commands; random stalls/latency and held offers
+PASS real engine: 4669 records, 9338 commands, 30 session clears
+latency session_start: publication E0+10; earliest response transfer E0+11
+latency warmup: publication E0+8; earliest response transfer E0+9
+latency steady: publication E0+8; earliest response transfer E0+9
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS mocks: nine reset stages, 361 responses, 728 commands, 24 clear pulses, 50 earliest-result commands; random stalls/latency and held offers
+PASS real engine: 4669 records, 9338 commands, 30 session clears
+latency session_start: publication E0+10; earliest response transfer E0+11
+latency warmup: publication E0+8; earliest response transfer E0+9
+latency steady: publication E0+8; earliest response transfer E0+9
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+PASS byte composition: 100 oracle packets; exact bytes, stalls, drain, fault collisions, partial/drain reset recovery
+{
+  "records": 4214,
+  "supplied": 800,
+  "additional": 3414,
+  "trace_sha256": "f566d5328efef3dbf704e1583be3140d7353d4148ffe0dcb3c3e36305b371d77",
+  "packet_coverage": {
+    "action_0": 1106,
+    "action_1": 3541,
+    "action_2": 3781,
+    "held_0": 562,
+    "held_1": 1814,
+    "held_2": 2048,
+    "maximum_prices": 122,
+    "previous_equals_old_average": 640,
+    "price_equals_new_average": 631,
+    "sessions": 17,
+    "steady_packets": 3942,
+    "swapped_packets": 2071,
+    "truncation": 7255,
+    "warmup_packets": 272,
+    "warmup_swaps": 130,
+    "wraps": 261,
+    "zero_prices": 147
+  },
+  "real_reset_offsets": 13,
+  "post_reset_replay_records": 455,
+  "total_real_completed_records": 4669,
+  "gqh_transaction_controller_sha256": "c432ce45b344a84cfd07af8c632e1c5d2e29267b9a48e425dde491693bf342e7",
+  "gqh_transaction_test_sha256": "ffaf32e62c8c0bc12c7cd8395eded80ca6c5ffa5008ae5fd07123a546e46cc11",
+  "gqh_byte_test_sha256": "0d24e39323ee88d9e1987ada7d2d801f8d966624119cb323cd69a7bd01c70169"
+}
+PASS G1: mocks, independent oracle/real engine, byte composition, deterministic RTL, Yosys and Icarus elaboration
+Generated /tmp/build_6dd3f8_dune/gqh-transport-935xwf8p/gqh_transport_top.v (top module gqh_transport_top)
+Generated /tmp/build_6dd3f8_dune/gqh-transport-935xwf8p/gqh_transport_top.v (top module gqh_transport_top)
+PASS: emitted transport RTL serial round trips, reset and faults
+/home/wayne/devel/jane/even_smaller/_build/default/test/transport/transport_tb.v:95: $finish called at 3065960000 (1ps)
+PASS: transport deterministic RTL, six ports and full hierarchy
+PASS: TX all bytes, 15 timing configurations, exact durations, stalls, idle and reset boundaries
+PASS: pinned unchanged oracle/factory/fixture source hashes
+Running: /usr/bin/python3 -m unittest discover -s /home/wayne/devel/jane/even_smaller/_build/default/test/engine/oracle -p test_factory.py -v
+Running: /usr/bin/python3 /home/wayne/devel/jane/even_smaller/_build/default/test/engine/oracle/factory.py --verify-dir /home/wayne/devel/jane/even_smaller/_build/default/test/engine/oracle/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+Running: /usr/bin/python3 /home/wayne/devel/jane/even_smaller/_build/default/test/engine/oracle/factory.py --output-dir /tmp/build_6dd3f8_dune/tickweave-fixture-check-_qj7sxfk/fixtures --scenario all --seed 42 --packets 100
+Generated /tmp/build_6dd3f8_dune/tickweave-fixture-check-_qj7sxfk/fixtures
+PASS: 7 scenarios, 8 sessions, 800 records
+PASS: saved fixtures reproduce byte for byte
+PASS: all requested fixture checks completed
+{
+  "accepted": 9962,
+  "action_0": 2315,
+  "action_1": 3699,
+  "action_2": 3944,
+  "clear_valid_collision": 45,
+  "first_scored_above_above": 12,
+  "first_scored_above_below": 5,
+  "first_scored_above_equal": 4,
+  "first_scored_below_above": 9,
+  "first_scored_below_below": 18,
+  "first_scored_below_equal": 1,
+  "first_scored_equal_above": 16,
+  "first_scored_equal_below": 15,
+  "first_scored_equal_equal": 10,
+  "held_0": 875,
+  "held_1": 1887,
+  "held_2": 2121,
+  "latency_steady_2": 8516,
+  "latency_warm_2": 1440,
+  "maximum_sum": 3,
+  "packets": 4978,
+  "previous_equals_old_average": 665,
+  "price_equals_new_average": 635,
+  "relation_above": 5314,
+  "relation_below": 3929,
+  "relation_equal": 715,
+  "reset_state_0": 12,
+  "reset_state_1": 2,
+  "reset_state_2": 2,
+  "reset_state_3": 2,
+  "result_stall_edges": 55039,
+  "results_consumed": 9956,
+  "scored_wrap_previous_above": 248,
+  "scored_wrap_previous_below": 278,
+  "scored_wrap_previous_equal": 78,
+  "session_clear": 45,
+  "steady": 8518,
+  "transition_above_above": 3313,
+  "transition_above_below": 1842,
+  "transition_above_equal": 115,
+  "transition_below_above": 1818,
+  "transition_below_below": 2051,
+  "transition_below_equal": 25,
+  "transition_equal_above": 183,
+  "transition_equal_below": 36,
+  "transition_equal_equal": 575,
+  "truncated_average": 7887,
+  "warmup": 1440,
+  "warmup_final_above": 21,
+  "warmup_final_below": 28,
+  "warmup_final_equal": 41,
+  "warmup_swaps": 354,
+  "wraps": 305,
+  "zero_sum": 41,
+  "variant": "h2_or_shared20",
+  "acceptance_to_publication_cycles": 2,
+  "earliest_result_transfer_cycles": 3,
+  "earliest_next_acceptance_cycles": 4,
+  "supplied_fixture_records": 800,
+  "edges": 104927,
+  "extra_packet_records": 4178,
+  "trace_sha256": "c4c1af244ba1541395ec8d2f9228d64a66b3244bf3b49ad457c8dc1b54420971"
+}
+PASS Cyclesim: 104927 edges, handshake, actions, scalars and all known RAM cells
+PASS Icarus: 104927 edges, synchronous RAM, scalar/window consistency, reset and stalled results
+/home/wayne/devel/jane/even_smaller/_build/default/test/engine/engine_tb.v:89: $finish called at 314781000 (1ps)
+RTL SHA256: 77db91fb5c55b42158894be2793542e6635f557aec063372467af208514682b2
+PASS: Phase F independent oracle, Cyclesim, deterministic RTL, Yosys and Icarus
+test_all_scenarios_wire_answers_csv_and_metadata (test_factory.FactoryTests.test_all_scenarios_wire_answers_csv_and_metadata) ... ok
+test_boundary_prices_and_reset_fixture (test_factory.FactoryTests.test_boundary_prices_and_reset_fixture) ... ok
+test_constant_and_alternating_fixtures_hand_checked (test_factory.FactoryTests.test_constant_and_alternating_fixtures_hand_checked) ... ok
+test_existing_output_is_preserved (test_factory.FactoryTests.test_existing_output_is_preserved) ... ok
+test_invalid_settings_do_not_leave_output (test_factory.FactoryTests.test_invalid_settings_do_not_leave_output) ... ok
+test_ramp_moves_each_item_in_both_directions (test_factory.FactoryTests.test_ramp_moves_each_item_in_both_directions) ... ok
+test_random_seed_changes_prices (test_factory.FactoryTests.test_random_seed_changes_prices) ... ok
+test_repeated_session_clears_prior_nonzero_actions (test_factory.FactoryTests.test_repeated_session_clears_prior_nonzero_actions) ... ok
+test_same_settings_are_byte_identical (test_factory.FactoryTests.test_same_settings_are_byte_identical) ... ok
+test_verifier_catches_changed_action_even_with_updated_hash (test_factory.FactoryTests.test_verifier_catches_changed_action_even_with_updated_hash) ... ok
+test_accepts_hand_checked_complete_response (test_factory.OfflineLogCheckerTests.test_accepts_hand_checked_complete_response) ... ok
+test_rejects_seven_byte_response (test_factory.OfflineLogCheckerTests.test_rejects_seven_byte_response) ... ok
+test_rejects_timeout_with_empty_response (test_factory.OfflineLogCheckerTests.test_rejects_timeout_with_empty_response) ... ok
+test_rejects_wrong_action (test_factory.OfflineLogCheckerTests.test_rejects_wrong_action) ... ok
+test_constant_and_swapped_answers (test_factory.ProtocolAndModelTests.test_constant_and_swapped_answers) ... ok
+test_floor_average_equal_is_not_a_crossing (test_factory.ProtocolAndModelTests.test_floor_average_equal_is_not_a_crossing) ... ok
+test_hand_checked_big_endian_bytes (test_factory.ProtocolAndModelTests.test_hand_checked_big_endian_bytes) ... ok
+test_hand_checked_crossings_and_held_actions (test_factory.ProtocolAndModelTests.test_hand_checked_crossings_and_held_actions) ... ok
+test_model_rejects_skipped_index_without_consuming_packet (test_factory.ProtocolAndModelTests.test_model_rejects_skipped_index_without_consuming_packet) ... ok
+test_rejects_invalid_fields_and_requests (test_factory.ProtocolAndModelTests.test_rejects_invalid_fields_and_requests) ... ok
+test_seeded_random_against_complete_history_oracle (test_factory.ProtocolAndModelTests.test_seeded_random_against_complete_history_oracle) ... ok
+test_session_zero_resets_prices_and_actions (test_factory.ProtocolAndModelTests.test_session_zero_resets_prices_and_actions) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.227s
+
+OK
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+Generated /tmp/build_6dd3f8_dune/phase-g2-1_i7zrik/gqh_competition_top.v (top module gqh_competition_top)
+Generated /tmp/build_6dd3f8_dune/phase-g2-1_i7zrik/gqh_competition_top.v (top module gqh_competition_top)
+PASS: 1394 production-divisor serial oracle packets; core latency session=18 other=16 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and heartbeat
+/home/wayne/devel/jane/even_smaller/_build/default/test/integration/packet_ram_tb.v:227: $finish called at 3152464702692 (1ps)
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "latency": {
+    "endpoint": "accept_to_first_tx_accept_cycles",
+    "session_cycles": 18,
+    "other_cycles": 16,
+    "samples": 1394
+  },
+  "rtl_sha256": "ce77edb9c8221e34c78818d572178617844e7087f8388f92d5e216b967a3ca87",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  }
+}
+PASS G2: Cyclesim serial oracle, production-timing RTL serial, resets/faults, deterministic hierarchy and six ports
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+PASS: production composition Cyclesim serial oracle replay (divisor 16)
+Generated /tmp/build_6dd3f8_dune/phase-g2-i29wjv96/gqh_competition_top.v (top module gqh_competition_top)
+Generated /tmp/build_6dd3f8_dune/phase-g2-i29wjv96/gqh_competition_top.v (top module gqh_competition_top)
+PASS: 1394 production-divisor serial oracle packets; core latency session=11 other=9 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and heartbeat
+/home/wayne/devel/jane/even_smaller/_build/default/test/integration/competition_tb.v:225: $finish called at 3152462628564 (1ps)
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "latency": {
+    "endpoint": "accept_to_response_valid_cycles",
+    "session_cycles": 11,
+    "other_cycles": 9,
+    "samples": 1394
+  },
+  "rtl_sha256": "cbd88a4e72e8476fa7e22acd464c6e3e596d8c81a89ca3a5d5c4192a10ebe818",
+  "timing": {
+    "core_hz": 27000000,
+    "divisor": 234,
+    "host_baud": 115200,
+    "extra_gap": 0
+  }
+}
+PASS G2: Cyclesim serial oracle, production-timing RTL serial, resets/faults, deterministic hierarchy and six ports

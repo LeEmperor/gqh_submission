@@ -1,0 +1,6 @@
+# Retain the measured GUI configuration and review logs, not future IDE output.
+!/impl/
+/impl/*
+!/impl/gqh_competition_process_config.json
+!/evidence/*.log
+/resolved-settings.tcl

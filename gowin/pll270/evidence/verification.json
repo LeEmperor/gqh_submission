@@ -1,0 +1,33 @@
+{
+  "records": 1394,
+  "supplied": 800,
+  "coverage": {
+    "action_0": 970,
+    "action_1": 814,
+    "action_2": 1004,
+    "held_0": 554,
+    "held_1": 434,
+    "held_2": 621,
+    "incoming_equality": 595,
+    "maximum_prices": 122,
+    "previous_equality": 604,
+    "scored": 1186,
+    "sessions": 13,
+    "steady_swaps": 536,
+    "truncation": 1764,
+    "warmup": 208,
+    "warmup_swaps": 92,
+    "wraps": 82,
+    "zero_prices": 122
+  },
+  "trace_sha256": "75e3c8ed9d86d12ba69d1ea99eb129f721597dc0835aa05d6806858b7e38b40d",
+  "status": "passed",
+  "rtl_sha256": "5118c539d23287065ea0769d0a98f82622042109da4cf5f7fd8eb9ac443f3a62",
+  "pll_wrapper_sha256": "5f4c4b65bbbe69162d08a4c1a63f3be786460ab09261ed9e765350c12b6354f7",
+  "vendor_library_sha256": "797e52271b149b650f4ed6ae0ef2794a853c6ef19973f957abc4f576fa48b7a1",
+  "reference_hz": 27000000,
+  "core_hz": 81000000,
+  "uart_divisor": 702,
+  "host_baud": 115200,
+  "scope": "Ideal-PLL full serial replay; stopped-clock lock/reset recovery; real wrapper plus vendor rPLL functional-model smoke; not board acceptance"
+}

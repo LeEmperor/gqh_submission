@@ -82,9 +82,13 @@ def main():
     protocol_variant = os.environ.get('HOPT_PROTOCOL', 'default')
     uart_variant = os.environ.get('HOPT_UART', 'default')
     packet_ram = protocol_variant == 'packet_ram'
+    no_diagnostics = os.environ.get('HOPT_NO_DIAGNOSTICS') == '1'
+    assert not no_diagnostics or packet_ram, 'LED-free bench currently supports packet RAM'
     assert protocol_variant in ['default', 'packet_ram']
     assert uart_variant in ['default', 'rx_timer', 'tx_timer', 'both_timers']
     candidate_flags = (['-packet-ram'] if packet_ram else [])
+    if no_diagnostics:
+        candidate_flags.append('-no-diagnostics')
     for name, flag in [('HOPT_RECORDS_IN_BRAM', '-records-in-bram'),
                        ('HOPT_BORROW_COMMAND', '-borrow-command'),
                        ('HOPT_DELTA_ARITHMETIC', '-delta-arithmetic'),
@@ -128,8 +132,12 @@ def main():
         expected = {'sys_clk': 'input', 'reset_btn': 'input', 'uart_rx_i': 'input',
                     'uart_tx_o': 'output', 'led0_n': 'output', 'led1_n': 'output'}
         assert {k: (v['direction'], len(v['bits'])) for k, v in ports.items()} == {k: (v, 1) for k, v in expected.items()}
-        base_modules = {'gqh_competition_top', 'gqh_reset_release', 'gqh_heartbeat',
+        base_modules = {'gqh_competition_top', 'gqh_reset_release',
                         'gqh_uart_rx', 'gqh_uart_tx', 'gqh_update_engine'}
+        if no_diagnostics:
+            assert ports['led0_n']['bits'] == ports['led1_n']['bits'] == ['1']
+        else:
+            base_modules.add('gqh_heartbeat')
         protocol_modules = ({'gqh_packet_ram_controller'} if packet_ram else
                             {'gqh_request_decoder', 'gqh_transaction_controller', 'gqh_response_sequencer'})
         assert set(modules) == base_modules | protocol_modules
@@ -162,6 +170,8 @@ def main():
                               f'-DHOPT_ENGINE_SERIAL_DIGITS={digits}']
         elif engine_variant not in ['h2', 'h3_shared20']:
             raise ValueError(f'unknown engine variant: {engine_variant}')
+        if no_diagnostics:
+            engine_defines.append('-DHOPT_NO_DIAGNOSTICS')
         run(['iverilog', '-g2012', *engine_defines, '-s', 'competition_tb', '-o', exe, rtl,
              ROOT / ('test/integration/packet_ram_tb.v' if packet_ram else 'test/integration/competition_tb.v')])
         run(['vvp', exe, f'+TRACE={packets}', f'+LATENCY={tmp / "latency.csv"}'])

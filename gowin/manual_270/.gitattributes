@@ -1,0 +1,5 @@
+# Preserve checksummed deliverables across Linux and Windows checkouts.
+* -text
+evidence/*.html -diff
+evidence/*.xml whitespace=-blank-at-eol,cr-at-eol
+evidence/*.txt whitespace=-blank-at-eol,cr-at-eol

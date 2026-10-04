@@ -1,0 +1,16 @@
+{
+  "logic": 270,
+  "registers": 84,
+  "bsram": 3,
+  "ssram": 0,
+  "synthesis_luts": 210,
+  "setup_violated_endpoints": 0,
+  "hold_violated_endpoints": 0,
+  "paths_analyzed": 317,
+  "worst_setup_slack_ns": 25.16,
+  "tool_version": "V1.9.11.03 Education",
+  "part": "GW2AR-LV18QN88C8/I7",
+  "warning_codes": [
+    "PR1014"
+  ]
+}

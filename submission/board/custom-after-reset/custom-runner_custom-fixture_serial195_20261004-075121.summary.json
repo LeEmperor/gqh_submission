@@ -1,0 +1,39 @@
+{
+  "runner": "custom-runner",
+  "note": "custom-runner measurement; use the official scripts for scoring-style validation",
+  "label": "serial195",
+  "started_at": "2026-10-04T07:51:21",
+  "fixture": {
+    "path": "/home/wayne/devel/jane/even_smaller/serial_adder_approach/board_results/board-serial195-20261004-074904-7xcoryuz/custom-fixture.jsonl",
+    "metadata": {}
+  },
+  "transport": {
+    "kind": "serial",
+    "port": "/dev/ttyUSB1",
+    "baud": 115200
+  },
+  "timeout_s": 1.0,
+  "planned": 2834,
+  "sent": 2834,
+  "counts": {
+    "OK": 2834,
+    "MISMATCH": 0,
+    "SHORT": 0,
+    "TIMEOUT": 0
+  },
+  "scored_counts": {
+    "OK": 2443,
+    "MISMATCH": 0,
+    "SHORT": 0,
+    "TIMEOUT": 0
+  },
+  "aborted": null,
+  "unsolicited_byte_events": 0,
+  "trailing_unsolicited_hex": "",
+  "latency": {
+    "count": 2834,
+    "mean_ms": 16.91746808574453,
+    "median_ms": 16.9215945,
+    "p95_ms": 17.047053
+  }
+}

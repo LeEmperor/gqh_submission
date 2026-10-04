@@ -1,0 +1,5 @@
+(executable
+ (name generate)
+ (modules generate serial_engine serial_tx)
+ (libraries core hardcaml jane_rope hardcaml_gqh)
+ (preprocess (pps ppx_hardcaml ppx_jane)))

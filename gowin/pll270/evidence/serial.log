@@ -1,0 +1,6 @@
+PASS: 1394 production-divisor serial oracle packets; core latency session=18 other=16 cycles
+PASS: startup, legal pauses, full stops, sticky framing/busy faults, RX/engine/TX reset recovery and LEDs off
+- /home/wayne/devel/jane/even_smaller/test/integration/packet_ram_tb.v:261: Verilog $finish
+- S i m u l a t i o n   R e p o r t: Verilator 5.051 devel
+- Verilator: $finish at 3s; walltime 169.175 s; speed 15.679 ms/s
+- Verilator: cpu 169.056 s on 1 threads; allocated 7 MB

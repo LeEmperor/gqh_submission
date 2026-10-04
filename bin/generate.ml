@@ -49,6 +49,17 @@ let competition_bsram = target
     Competition.create_exn ~name:"gqh_competition_top"
       (Board.Competition_top.create ~packet_ram:true ~records_in_bram:true
          ~borrow_command:true ~delta_arithmetic:true ~difference_relation:true scope))
+let competition_bsram_lean = target
+  ~summary:"BSRAM competition candidate without heartbeat or diagnostic LEDs"
+  ~default:"rtl/gqh_competition_bsram_lean_top.v" ~build:(fun scope ->
+    Competition.create_exn ~name:"gqh_competition_top"
+      (Board.Competition_top.create ~diagnostics:false ~packet_ram:true ~records_in_bram:true
+         ~borrow_command:true ~delta_arithmetic:true ~difference_relation:true scope))
+let competition_pll = target
+  ~summary:"81 MHz PLL experiment based on the LED-free 270-logic candidate"
+  ~default:"gowin/pll270/gqh_competition_pll_top.v" ~build:(fun scope ->
+    Competition.create_exn ~name:"gqh_competition_pll_top"
+      (Board.Competition_pll_top.create scope))
 let state_encoding_arg = Command.Arg_type.create (function
   | "binary" -> Always.State_machine.Encoding.Binary
   | "onehot" -> Always.State_machine.Encoding.Onehot
@@ -62,6 +73,8 @@ let competition = Command.basic ~summary:"27 MHz competition system with moving-
    and delta_arithmetic = flag "-delta-arithmetic" no_arg ~doc:" Use signed price-minus-oldest delta"
    and difference_relation = flag "-difference-relation" no_arg ~doc:" Share price/average comparison subtraction"
    and packet_ram = flag "-packet-ram" no_arg ~doc:" Use byte packet RAM protocol"
+   and no_diagnostics = flag "-no-diagnostics" no_arg
+       ~doc:" Omit heartbeat and diagnostic LEDs; retain protocol fault lockout"
    and capture_request = flag "-capture-request" no_arg
        ~doc:" Capture controller request instead of borrowing decoder retention"
    and capture_response = flag "-capture-response" no_arg
@@ -86,7 +99,7 @@ let competition = Command.basic ~summary:"27 MHz competition system with moving-
        else if tx_indexed then Some false else None in
      let scope = Scope.create ~flatten_design:false () in
      emit ~scope ~path (Competition.create_exn ~name:"gqh_competition_top"
-       (Board.Competition_top.create ~records_in_bram ~borrow_command ~delta_arithmetic ~difference_relation ~packet_ram ~borrow_request:(not capture_request)
+        (Board.Competition_top.create ~diagnostics:(not no_diagnostics) ~records_in_bram ~borrow_command ~delta_arithmetic ~difference_relation ~packet_ram ~borrow_request:(not capture_request)
           ~borrow_response:(not capture_response) ?controller_encoding ?sequencer_encoding
           ?rx_encoding ?tx_encoding ?tx_shift_register ~rx_factored_timer ~tx_factored_timer scope)))
 let () =
@@ -94,4 +107,6 @@ let () =
   let argv = if List.length argv = 1 then argv @ ["bringup"] else argv in
   Command_unix.run ~argv (Command.group ~summary:"Generate self-contained Hardcaml Verilog"
   ["bringup", bringup; "history-probe", history; "transport", transport;
-   "competition", competition; "competition-bsram", competition_bsram])
+   "competition", competition; "competition-bsram", competition_bsram;
+   "competition-bsram-lean", competition_bsram_lean;
+   "competition-pll", competition_pll])
