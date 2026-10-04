@@ -13,7 +13,7 @@ module engine_tb;
     .update$window_position(pos), .update$warmup(warm),
     .update_ready(update_ready), .result_valid(result_valid), .action(action));
   integer fd, n, j, addr, count=0;
-  integer v [0:53];
+  integer v [0:54];
   reg [4095:0] trace;
   task check;
     input [31:0] actual;
@@ -35,7 +35,7 @@ module engine_tb;
     while (!$feof(fd)) begin
       n=$fscanf(fd,"%d",v[0]);
       if (n==1) begin
-        for (j=1; j<54; j=j+1) begin
+        for (j=1; j<55; j=j+1) begin
           n=$fscanf(fd,"%d",v[j]);
           if (n!=1) $fatal(1,"short trace row");
         end
@@ -45,6 +45,7 @@ module engine_tb;
         check(update_ready,v[8],"pre ready"); check(result_valid,v[9],"pre valid");
         // Power-up register values are unspecified until the first reset edge.
         if (count>0) check(action,v[10],"pre action");
+        check(dut.engine_commit,v[54],"exact commit/write pulse");
         clock=1; #1;
         check(update_ready,v[11],"post ready"); check(result_valid,v[12],"post valid");
         check(action,v[13],"post action");

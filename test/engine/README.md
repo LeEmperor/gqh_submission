@@ -50,21 +50,22 @@ follow the existing Hardcaml pattern; hierarchy name is `gqh_update_engine`.
 Emitted nested payload port names contain `$`: `update$item_select`,
 `update$price`, `update$window_position`, `update$warmup`.
 
-| Edge | Pre-edge state | Effect |
-| --- | --- | --- |
-| E0 | IDLE | Accept when valid && ready; capture all four command fields |
-| E1 | READ | Enabled synchronous history read at the captured address |
-| E2 | COMMIT | Consume registered old word; write history and scalar state once; publish action/result |
-| E3 or later | RESULT | Accept result when ready; return IDLE |
-| E4 earliest | IDLE | Accept next command |
+H3a's schedule (the H2 fallback retains its earlier two-cycle schedule):
 
-Warm-up and steady-state have the same measured latency: **2 elapsed cycles
-from acceptance to result publication**, or three rising edges including E0.
-Earliest result transfer is 3 cycles after acceptance; with no stalls, earliest
-next-command acceptance is 4 cycles after E0. At 27 MHz, publication latency is
-approximately 74.074 ns; these are engine-only times, not UART measurements.
-Result stalls add cycles without any writes and hold action/result_valid stable.
-There is no same-edge command acceptance on a result-consumption edge.
+| Edge | Warm-up | Rolling update |
+| --- | --- | --- |
+| E0 | Capture command → READ | Capture command → READ |
+| E1 | Synchronous read → ADD | Synchronous read → SUBTRACT |
+| E2 | Add old sum + price to intermediate → COMMIT | Subtract oldest from old sum to intermediate → ADD |
+| E3 | Commit history/scalars/result → RESULT | Add price to intermediate → COMMIT |
+| E4 | Earliest result transfer | Commit history/scalars/result → RESULT |
+| E5 | Earliest next command | Earliest result transfer |
+
+Publication is **3 cycles warm-up / 4 cycles steady** after acceptance. Earliest
+result transfer is 4 / 5 cycles, next command acceptance 5 / 6 cycles. Arithmetic
+states change only the 20-bit intermediate, never committed item state. Result
+stalls add cycles without writes and hold action/result_valid stable. There is
+no same-edge command acceptance on a result-consumption edge.
 
 RAM is 32 x 16 addressed by `{item_select, window_position}`, explicit one-edge
 read latency, read-before-write mode, no reset or initialization. Read enable is
@@ -79,8 +80,11 @@ versus its committed truncated average; both false means equality. BUY uses
 not previous_above and current_above; SELL uses not previous_below and
 current_below. Flags commit during warm-up too, preparing index 16, and clear
 to false on reset/session clear.
-Combinational arithmetic is shared between selected items in source; this is
-not evidence of one synthesized arithmetic operator or Gowin BRAM mapping.
+H3a selects operands around a single add/subtract datapath. Both encoded
+21-bit operands append the subtraction control as a guard bit; one addition
+and bits [20:1] implement the 20-bit sum with carry-in and no extra increment.
+Emitted-RTL process checks assert one $add, no $sub and equal guard inputs.
+Actual Gowin arithmetic/memory mapping and total logic still need measurement.
 
 Reset wins over all activity, aborts pending processing/result, clears scalar,
 command and FSM registers, masks both handshake outputs and prevents RAM writes.
@@ -115,8 +119,10 @@ three 0..127), three directed 112-packet streams, and populated-state reset and
 restart runs. Checks include equality, floor truncation, held BUY/SELL, full and
 zero sums, first scored index 16, multiple wraps, warm-up swaps, changing all
 fields after acceptance, busy command offers, early result_ready, random result
-stalls and 64-edge stalls. Reset tests cover IDLE, READ, COMMIT before write and
-RESULT, for each item, with nonzero actions/full histories and held reset/valid.
+stalls and 64-edge stalls. Reset tests cover every reachable stage on both
+warm-up and rolling paths, for each item, with populated/stale histories and
+held reset/valid. Both simulators also check the exact commit/write-enable
+pulse on every edge, including unchanged-price writes.
 Clear/valid collisions, repeated sessions, poison initial RAM and retained stale
 RAM across reset/session clear are checked on the same engine instance.
 

@@ -13,7 +13,7 @@ module competition_tb;
   integer tx_frames = 0;
   integer seen = 0, epoch = 0, cycles = 0, accepted_cycle = -1;
   integer latency_file, trace_file, count = 0, scanned;
-  integer latency_start = 0, latency_other = 0;
+  integer latency_start = 0, latency_warm = 0, latency_steady = 0;
   reg allowed = 0;
   reg measuring = 1;
   reg [1023:0] trace_path, latency_path;
@@ -35,7 +35,11 @@ module competition_tb;
         if (measuring) begin
           $fdisplay(latency_file,"%0d,%0d",dut.controller.\request$index ,cycles-accepted_cycle);
           if (dut.controller.\request$index  == 0) latency_start = cycles-accepted_cycle;
-          else latency_other = cycles-accepted_cycle;
+          else if (dut.controller.\request$index  < 16) latency_warm = cycles-accepted_cycle;
+          else latency_steady = cycles-accepted_cycle;
+          if (cycles-accepted_cycle != ((dut.controller.\request$index  == 0 ||
+              dut.controller.\request$index  >= 16) ? 13 : 11))
+            $fatal(1,"H3a controller cycle schedule");
         end
       end
       if (dut.uart_tx.tx_busy && dut.controller.receive_enable)
@@ -145,7 +149,7 @@ module competition_tb;
     if (uart_tx_o !== 1 || led1_n !== 1 || led0_n !== 1) $fatal(1,"startup status");
     for (integer row=0;row<count;row=row+1) transaction(row,row%31==0);
     $fclose(latency_file); measuring=0;
-    $display("PASS: %0d production-divisor serial oracle packets; core latency session=%0d other=%0d cycles",count,latency_start,latency_other);
+    $display("PASS: %0d production-divisor serial oracle packets; core latency session=%0d warm=%0d steady=%0d cycles",count,latency_start,latency_warm,latency_steady);
 
     // Framing error after partial valid input: sticky lockout, no timeout/rearm.
     base=seen; send_byte(0,1); send_byte(8'h42,0);
@@ -172,14 +176,16 @@ module competition_tb;
       populate();
     end
     // Reset during each real engine phase on first and second slots.
-    for (integer slot=0;slot<2;slot=slot+1) begin
-      for (integer state=1;state<=3;state=state+1) begin
+    for (integer warm=0;warm<2;warm=warm+1) begin
+     for (integer slot=0;slot<2;slot=slot+1) begin
+      for (integer state=1;state<=5;state=state+1) begin
+       if (!(warm && state==2)) begin
         base=seen;
         fork
-          send_request(requests[17],0);
+          send_request(requests[warm ? 0 : 17],0);
           begin
             if (slot==1) begin
-              wait(dut.engine.engine_state==3); wait(dut.engine.engine_state==0);
+              wait(dut.engine.engine_state==5); wait(dut.engine.engine_state==0);
             end
             wait(dut.engine.engine_state==state);
             @(negedge sys_clk); reset_board();
@@ -188,6 +194,8 @@ module competition_tb;
         #(HOST_BIT*85);
         if (seen != base) $fatal(1,"stale processing response");
         populate();
+      end
+    end
       end
     end
     // Reset during data bits of each response frame; drop the partial frame.

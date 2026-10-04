@@ -16,6 +16,7 @@ let replay path =
   let i = Cyclesim.inputs sim and o = Cyclesim.outputs sim in
   let nodes = List.map ["sum_a"; "sum_b"; "previous_below_a"; "previous_above_a"; "previous_below_b"; "previous_above_b"; "held_a"; "held_b"]
     ~f:(fun name -> Option.value_exn (Cyclesim.lookup_node_or_reg_by_name sim name)) in
+  let commit = Option.value_exn (Cyclesim.lookup_node_or_reg_by_name sim "engine_commit") in
   let memory = Option.value_exn (Cyclesim.lookup_mem_by_name sim "engine_history") in
   (* Poison every initial cell: the software simulator's default zero memory is
      not evidence that warm-up ignores unwritten RAM. *)
@@ -29,7 +30,7 @@ let replay path =
     In_channel.iter_lines file ~f:(fun line ->
       incr count;
       let v = String.split line ~on:' ' |> List.map ~f:Int.of_string |> Array.of_list in
-      if Array.length v <> 54 then failwith "invalid trace row";
+      if Array.length v <> 55 then failwith "invalid trace row";
       List.iteri [i.reset; i.session_clear; i.update_valid; i.result_ready;
         i.update.item_select; i.update.price; i.update.window_position; i.update.warmup]
         ~f:(fun idx p -> set p v.(idx));
@@ -38,6 +39,7 @@ let replay path =
       let before = Cyclesim.outputs ~clock_edge:Before sim in
       List.iteri [before.update_ready; before.result_valid; before.action]
         ~f:(fun idx p -> check !count "pre-edge handshake" (get p) v.(8+idx));
+      check !count "exact commit/write pulse" (Cyclesim.Node.to_int commit) v.(54);
       Cyclesim.cycle_at_clock_edge sim;
       Cyclesim.cycle_after_clock_edge sim;
       List.iteri [o.update_ready; o.result_valid; o.action]

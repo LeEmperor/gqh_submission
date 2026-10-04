@@ -173,6 +173,7 @@ let replay path =
     done;
     check "publication versus transfer edge" !elapsed (!publication + 1);
     let key = if v.(0)=0 then "session_start" else if v.(0)<16 then "warmup" else "steady" in
+    check "H3a bounded path latency" !elapsed (if v.(0)=0 || v.(0)>=16 then 13 else 11);
     Hashtbl.update counts key ~f:(function None -> !elapsed | Some n -> check "path latency" !elapsed n; n);
     for _ = 1 to 7 do
       let ready,valid,response,_,_,_,_,_,_ = tick () in
@@ -193,12 +194,16 @@ let replay path =
   (* Abort on every elapsed edge through session-clear, both engine updates,
      stalled response and drain, then refill/scored replay on this SAME instance.
      This verifies controller + engine reset together, with stale physical RAM. *)
-  for offset = 0 to 12 do
-    set_req i.request [0;34;65535;17;0]; set i.request_valid 1;
+  for index = 0 to 1 do
+   for offset = 0 to 14 do
+    (* Refill a full window before the rolling reset sweep, on this instance. *)
+    if index = 1 then List.iter (List.take lines 35) ~f:process;
+    set_req i.request (if index = 0 then [0;34;65535;17;0] else [35;34;65535;17;0]);
+    set i.request_valid 1;
     set i.response_ready 0; set i.response_done 0;
     ignore (tick ());
     for elapsed = 1 to offset do
-      if elapsed = 12 then set i.response_ready 1;
+      if elapsed = 14 then set i.response_ready 1;
       ignore (tick ())
     done;
     set i.reset 1;
@@ -208,6 +213,7 @@ let replay path =
     assert (get after.engine.update_ready=0 && get after.engine.result_valid=0);
     ignore (tick ()); set i.reset 0; set i.request_valid 0;
     List.iter (List.take lines 35) ~f:process
+  done;
   done;
   printf "PASS real engine: %d records, %d commands, %d session clears\n" !records !commands !clears;
   Hashtbl.iteri counts ~f:(fun ~key ~data -> printf "latency %s: publication E0+%d; earliest response transfer E0+%d\n" key (data-1) data)

@@ -25,8 +25,8 @@ DUT's rounded divisor. It checks all response bytes/counts/reserved zeros,
 acceptance before TX, full 234-clock stop bits, receive rearm after TX drain,
 legal multi-byte pauses, true startup initialization without a button reset,
 sticky framing/busy-input lockout and reset recovery. Populated-history reset
-cases cover each of eight receive byte data fields, all three engine phases on
-both slots, and data bits in each of eight response frames. Each is followed by
+cases cover each of eight receive byte data fields, all five busy engine states on
+both slots (warm-up skips SUBTRACT), and data bits in each of eight response frames. Each is followed by
 fresh index-zero/warm-up/first-scored replay on the same DUT. Default heartbeat
 is checked after 13,500,005 clocks from reset release.
 
@@ -71,3 +71,8 @@ for byte comparison; without it the runner still checks `rtl/gqh_competition_top
 Use `-` as the third argument to omit evidence output. Both paths require the
 single history-array block-memory attribute. H1's separate handoff RTL must
 match the locally tested generation; this does not establish Gowin mapping.
+
+H3a pins controller response transfer at E0+13 for session-start and steady
+packets, E0+11 for other warm-up packets. Production reset injection covers
+READ, SUBTRACT, ADD, COMMIT and RESULT on both slots, on warm-up and rolling
+paths, with populated histories and full post-reset replay.

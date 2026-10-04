@@ -19,14 +19,15 @@ module O = struct
   [@@deriving hardcaml]
 end
 
-(* IDLE -> READ -> COMMIT -> RESULT -> IDLE. At the acceptance edge E0,
-   capture all fields. E1 reads RAM. E2 commits RAM/scalars and publishes the
-   result. E3 is the earliest result transfer. No writes occur in RESULT.
-   Reset aborts any command/result; RAM is deliberately neither reset nor init.
+(* IDLE -> READ -> [SUBTRACT ->] ADD -> COMMIT -> RESULT -> IDLE.
+   E0 accepts; E1 reads history. Warm-up skips SUBTRACT and commits at E3;
+   rolling updates subtract at E2, add at E3 and commit at E4. Arithmetic
+   changes only an intermediate register. COMMIT alone writes item state/RAM.
+   Reset aborts before commit; RAM is neither reset nor initialized.
    session_clear is legal only in IDLE and wins over command acceptance. *)
 let create _scope (i : _ I.t) =
   let spec = Reg_spec.create ~clock:i.clock ~clear:i.reset () in
-  let state_next = wire 2 in
+  let state_next = wire 3 in
   let state = reg spec state_next -- "engine_state" in
   let idle = state ==:. 0 in
   let clear = idle &: i.session_clear in
@@ -35,12 +36,17 @@ let create _scope (i : _ I.t) =
   let accept = update_ready &: i.update_valid in
   let command = Payload.Update.map i.update ~f:(reg spec ~enable:accept) in
   let read = state ==:. 1 in
-  let commit = (state ==:. 2) &: ~:(i.reset) in
-  let result = state ==:. 3 in
-  state_next <-- mux2 idle (mux2 accept (of_int_trunc ~width:2 1) state)
-    (mux2 read (of_int_trunc ~width:2 2)
-       (mux2 (state ==:. 2) (of_int_trunc ~width:2 3)
-          (mux2 i.result_ready (zero 2) state)));
+  let subtract = state ==:. 2 in
+  let add = state ==:. 3 in
+  let commit = ((state ==:. 4) &: ~:(i.reset)) -- "engine_commit" in
+  let result = state ==:. 5 in
+  let code n = of_int_trunc ~width:3 n in
+  state_next <-- mux2 idle (mux2 accept (code 1) state)
+    (mux2 read (mux2 command.warmup (code 3) (code 2))
+       (mux2 subtract (code 3)
+          (mux2 add (code 4)
+             (mux2 (state ==:. 4) (code 5)
+                (mux2 i.result_ready (code 0) state)))));
   let address = concat_msb [command.item_select; command.window_position] in
   let oldest =
     Ram.create ~name:"engine_history" ~size:32
@@ -77,8 +83,21 @@ let create _scope (i : _ I.t) =
   let previous_below = select below_a below_b in
   let previous_above = select above_a above_b in
   let held = select held_a held_b in
-  let new_sum = mux2 command.warmup old_sum (old_sum -: uresize oldest ~width:20)
-                +: uresize command.price ~width:20 in
+  let arithmetic_next = wire 20 in
+  let intermediate = reg spec ~enable:(subtract |: add) arithmetic_next
+    -- "arithmetic_intermediate" in
+  let lhs = mux2 (subtract |: command.warmup) old_sum intermediate
+    -- "arithmetic_lhs" in
+  let rhs = uresize (mux2 subtract oldest command.price) ~width:20 in
+  let rhs = (rhs ^: repeat subtract ~count:20) -- "arithmetic_rhs" in
+  (* One operator, including controlled carry-in. For s in {0,1},
+     ((2*a+s) + (2*b+s)) >> 1 = a+b+s (mod 2^20).
+     Appending s to BOTH operands injects carry without a second '+ 1'
+     arithmetic chain. The unused guard-bit sum is always zero. *)
+  let arithmetic = (concat_msb [lhs; subtract] +: concat_msb [rhs; subtract])
+    -- "arithmetic_with_carry" in
+  arithmetic_next <-- Signal.select arithmetic ~high:20 ~low:1;
+  let new_sum = intermediate in
   let new_average = Signal.select new_sum ~high:19 ~low:4 in
   let current_below = command.price <: new_average in
   let current_above = command.price >: new_average in

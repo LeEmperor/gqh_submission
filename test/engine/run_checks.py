@@ -58,12 +58,13 @@ class Trace:
 
     def outputs(self, reset, clear):
         return [int(self.state == 0 and not reset and not clear),
-                int(self.state == 3 and not reset), self.output_action]
+                int(self.state == 5 and not reset), self.output_action]
 
     def step(self, reset=0, clear=0, valid=0, ready=0, item=0, price=0,
              pos=0, warm=0, answer=0):
         inputs = [reset, clear, valid, ready, item, price, pos, warm]
         before = self.outputs(reset, clear)
+        commit = int(self.state == 4 and not reset)
         if reset:
             self.counts[f'reset_state_{self.state}'] += 1
             self.clear_scalars()
@@ -79,8 +80,12 @@ class Trace:
                 self.state = 1
                 self.counts['accepted'] += 1
         elif self.state == 1:
-            self.state = 2
+            self.state = 3 if self.pending[3] else 2
         elif self.state == 2:
+            self.state = 3
+        elif self.state == 3:
+            self.state = 4
+        elif self.state == 4:
             item, price, pos, warm, answer = self.pending
             old = self.windows[item]
             if warm:
@@ -106,7 +111,7 @@ class Trace:
             self.held[item] = answer
             self.output_action = answer
             self.ram[item * 16 + pos] = price
-            self.state = 3
+            self.state = 5
             self.counts['warmup' if warm else 'steady'] += 1
             self.counts[f'action_{answer}'] += 1
             self.counts['maximum_sum'] += sum(window) == 1048560
@@ -119,7 +124,7 @@ class Trace:
         scalar = [sum(w) for w in self.windows]
         scalar += [flag for w in self.windows for flag in relation(w)] + self.held
         after = self.outputs(reset, clear)
-        self.file.write(' '.join(map(str, inputs + before + after + scalar + self.ram)) + '\n')
+        self.file.write(' '.join(map(str, inputs + before + after + scalar + self.ram + [commit])) + '\n')
         self.edges += 1
 
     def command(self, item, price, pos, warm, answer, stall=None):
@@ -132,11 +137,16 @@ class Trace:
         # Change *every* captured field, and offer busy commands. Early ready
         # must not cause a result to be consumed at its publication edge.
         noise = dict(item=1-item, price=price ^ 65535, pos=pos ^ 15, warm=1-warm)
-        self.step(valid=1, ready=1, **noise)
-        assert self.state == 2
-        self.step(valid=1, ready=1, **noise)
-        assert self.state == 3
-        self.counts[f'latency_{"warm" if warm else "steady"}_2'] += 1
+        latency = 0
+        # Explicit expected stages: synchronous read, optional subtract, add,
+        # commit. Busy clear is illegal and must not disturb the accepted work.
+        stages = [3, 4, 5] if warm else [2, 3, 4, 5]
+        for expected_stage in stages:
+            self.step(valid=1, ready=1, clear=1, **noise)
+            latency += 1
+            assert self.state == expected_stage
+        assert latency == (3 if warm else 4)
+        self.counts[f'latency_{"warm" if warm else "steady"}_{latency}'] += 1
         for _ in range(self.rng.randrange(12) if stall is None else stall):
             self.step(valid=1, ready=0, **self.noise())
         self.step(valid=1, ready=1, **noise)
@@ -207,10 +217,11 @@ def build_trace(path):
             request = (encode_request(index, ITEM_B, b, ITEM_A, a) if index % 2 == 0
                        else encode_request(index, ITEM_A, a, ITEM_B, b))
             t.packet(request, model.respond(request), model._windows)
-    # Reset at idle, after capture, after synchronous read/before commit, and
-    # with a pending committed result. Check all RAM words on every edge:
+    # Reset at every state, including subtraction, addition and final commit,
+    # with both warm-up and rolling commands and a pending committed result. Check all RAM words on every edge:
     # a reset on the commit edge MUST suppress the write, even with valid high.
-    for target_state in range(4):
+    for warm in [0, 1]:
+      for target_state in ([0, 1, 3, 4, 5] if warm else range(6)):
         for item in range(2):
             # Populate both histories and nonzero BUY/SELL before reset tests.
             for index in range(35):
@@ -219,17 +230,25 @@ def build_trace(path):
                 request = encode_request(index, ITEM_A, a, ITEM_B, b)
                 t.packet(request, model.respond(request), model._windows)
             assert all(t.held) and all(sum(w) for w in t.windows)
+            if warm:
+                # A new session leaves physical history populated/stale.
+                t.step(clear=1)
+                model.respond(encode_request(0, ITEM_A, 0, ITEM_B, 65535))
             if target_state:
-                response = model.respond(encode_request(35, ITEM_A, 0, ITEM_B, 65535))
+                response = (bytes([0,0,17,0,34,0,0,0]) if warm else
+                            model.respond(encode_request(35, ITEM_A, 0, ITEM_B, 65535)))
                 t.step(valid=1, item=item, price=0 if item == 0 else 65535,
-                       pos=t.pointer, warm=0, answer=response[3 if item == 0 else 5])
-                if target_state >= 2:
+                       pos=0 if warm else t.pointer, warm=warm,
+                       answer=response[3 if item == 0 else 5])
+                for _ in range(4):
+                    if t.state == target_state:
+                        break
                     t.step(**t.noise())
-                if target_state >= 3:
-                    t.step(**t.noise())
+                if target_state == 5:
                     for _ in range(64):
                         t.step(ready=0, valid=1, **t.noise())
             assert t.state == target_state
+            t.counts[f'reset_{"warm" if warm else "steady"}_state_{target_state}'] += 1
             t.step(reset=1, valid=1, ready=1, **t.noise())
             t.step(reset=1, clear=1, valid=1, **t.noise())
             t.step()
@@ -249,7 +268,7 @@ def build_trace(path):
         for new in ["below", "equal", "above"]:
             assert t.counts[f"transition_{old}_{new}"] > 0
             assert t.counts[f"first_scored_{old}_{new}"] > 0
-    for state in range(4):
+    for state in range(6):
         assert t.counts[f'reset_state_{state}'] >= 2
     summary = dict(sorted(t.counts.items()))
     summary.update(supplied_fixture_records=supplied, edges=t.edges,
@@ -285,6 +304,20 @@ def main():
         net = tmp / 'net.json'
         run(['yosys', '-Q', '-q', '-p', f'read_verilog {rtl}; hierarchy -check -top gqh_update_engine; proc; opt_clean; check -assert; write_json {net}'])
         module = json.loads(net.read_text())['modules']['gqh_update_engine']
+        arithmetic_cells = [c for c in module['cells'].values()
+                            if c['type'] in ('$add', '$sub')]
+        assert len(arithmetic_cells) == 1, arithmetic_cells
+        cell = arithmetic_cells[0]
+        assert cell['type'] == '$add'
+        assert len(cell['connections']['A']) == len(cell['connections']['B']) == 21
+        assert len(cell['connections']['Y']) == 21
+        assert cell['connections']['A'][0] == cell['connections']['B'][0]
+        assert cell['connections']['A'][1:] == module['netnames']['arithmetic_lhs']['bits']
+        assert cell['connections']['B'][1:] == module['netnames']['arithmetic_rhs']['bits']
+        assert cell['connections']['Y'] == module['netnames']['arithmetic_with_carry']['bits']
+        summary['arithmetic_structure'] = dict(add_cells=1, sub_cells=0,
+            encoded_width=21, retained_width=20, shared_guard_carry=True)
+        print('PASS arithmetic structure: one addition, 20 retained bits, shared guard carry; no subtract/increment chain')
         ports = module['ports']
         for suffix in ['a', 'b']:
             assert 'previous_' + suffix not in module['netnames']

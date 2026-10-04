@@ -82,8 +82,9 @@ def packets(path):
     return dict(records=len(rows), supplied=800, additional=len(rows)-800,
                 trace_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 packet_coverage=dict(sorted(coverage.items())),
-                real_reset_offsets=13, post_reset_replay_records=455,
-                total_real_completed_records=len(rows)+455)
+                real_reset_offsets=30, post_reset_replay_records=1050,
+                rolling_reset_prepopulate_records=525,
+                total_real_completed_records=len(rows)+1575)
 
 
 def main():

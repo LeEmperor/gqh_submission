@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3–H5 experiments have not been run.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a rejected (resource regression); H3b–H5 experiments have not been run.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -282,6 +282,30 @@ slot swaps, stalls and repeated sessions. Replace tests that directly inspect
 exact-once verification. Require whole-design improvement and board promotion.
 
 ### H3 — Share arithmetic, then evaluate narrower arithmetic
+
+
+**H3a status: rejected — measured resource regression.** Candidate
+`H3a-shared-full-width-20261004T012455Z`, parent accepted
+`H2-comparison-state-20261004T003607Z`. The matching user-built Gowin
+V1.9.11.03 candidate reports **364 total logic / 356 registers / 306
+synthesis-summary LUTs / 1 BSRAM / 0 SSRAM**: **+2 logic, +21 registers,
++21 synthesis LUTs** versus H2's 362 / 335 / 285. Synthesis hierarchy/utilization
+LUTs are 309 including three INV; do not substitute that for the separate
+306-LUT synthesis-summary row. Routed 27 MHz setup/hold timing passes with
++29.379 / +0.346 ns slack and zero violations; PR1014 remains. One selected
+arithmetic expression/cell removes the separate subtract/increment path, but
+the measured whole-design cost does not improve the primary ranking metric.
+Focused engine and real-controller checks pass. Production serial Cyclesim
+passes; the remaining production RTL/full-regression simulations were stopped
+after the measured rejection, with no aggregate PASS claimed. Logs and scope
+are retained in the candidate bundle.
+No H3a board acceptance or RTT is claimed. The failed resource screen rejects
+promotion without requiring board tests. H2 remains the accepted fallback;
+H3b/H3c and later experiments are not authorized by this H3a assignment.
+See [measured review](results/phase-h-h3a-20261004T012455Z/MEASURED_REVIEW.md),
+[ledger](results/phase-h-h3a-20261004T012455Z/candidates.csv),
+[cycle schedule](results/phase-h-h3a-20261004T012455Z/SCHEDULE.md) and
+[handoff](results/phase-h-h3a-20261004T012455Z/HANDOFF.md).
 
 **Primary files:** `src/engine/update.ml`, engine tests and schedule-sensitive
 integration checks. Preserve latency-independent command/result handshakes.
