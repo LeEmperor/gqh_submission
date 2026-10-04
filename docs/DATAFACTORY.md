@@ -167,11 +167,11 @@ opam exec -- dune exec --root . ./databento_audit.exe -- verify --fixtures-dir f
 
 The main streamer's integration test compares all 11 valid fixtures with their independently derived request CSVs and rejects the 20 malformed fixtures. Replay supports quoted fields spanning physical lines, retains CRLF inside quotes, and bounds each whole record. Extra columns and arbitrary header order are accepted, required headers are unique, symbols match exactly, and all prices/timestamps are validated even on unrelated rows. Wire conversion is checked on every configured-symbol trade, including trades later superseded by coalescing. The audit's zero-request/header-only captures are valid data; a streamer run still fails if it cannot supply the requested packet count.
 
-The operator's first real historical capture passed an independent encoding audit of all 10 packets: see [encoding verification](docs/ENCODING_VERIFICATION.md) for the exact byte breakdown, evidence, and repeatable OCaml check.
+The operator's first real historical capture passed an independent encoding audit of all 10 packets: see [encoding verification](ENCODING_VERIFICATION.md) for the exact byte breakdown, evidence, and repeatable OCaml check.
 
 ## Python test-data factory (Beginner 1)
 
-The new plan's Python fixture factory is in [`tools/test_data_factory/`](tools/test_data_factory/README.md). It supplies an independent direct-window oracle, seven deterministic scenarios, eight sessions, and 800 exact request/expected-response records. CSV exports can be replayed with the existing OCaml streamer. Run all offline checks with:
+The new plan's Python fixture factory is in [`tools/test_data_factory/`](../tools/test_data_factory/README.md). It supplies an independent direct-window oracle, seven deterministic scenarios, eight sessions, and 800 exact request/expected-response records. CSV exports can be replayed with the existing OCaml streamer. Run all offline checks with:
 
 ```bash
 cd /home/srijan/tickweave

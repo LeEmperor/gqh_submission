@@ -9,9 +9,9 @@ Working worktree: `even_smaller`, branch `newop`, remote
 Submit on <https://gqhacks.devpost.com> first, then return all loaned equipment to
 Reitz Room 2345. There is no ZIP upload; submit a public GitHub URL and full SHA.
 
-Authority: [Participant Guide](gqh_hw_guide.pdf),
+Authority: [Participant Guide](../gqh_hw_guide.pdf),
 [organizer submission instructions](https://github.com/ShayanNazir/GQH-Hardware-Track-Submission),
-and [placement supplement](docs/placement-supplement-20261003.md).
+and [placement supplement](../placement-supplement-20261003.md).
 The guide remains unchanged. Qualify with official 100/100 plus a perfect hidden
 full-range run immediately afterward without reprogramming. Qualified placement
 is total logic, then registers, then median latency over five runs (within 5% tied).

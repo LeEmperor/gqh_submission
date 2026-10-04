@@ -1,229 +1,240 @@
-# GQH Hardware Track — Bit-Serial Trading Signals
+# A 195-LUT Trading-Signal Engine on an FPGA
 
-A compact Hardcaml trading-signal engine for the **Tang Nano 20K**. The FPGA
-receives two instruments' prices over UART, maintains independent 16-sample
-moving averages, and returns buy/sell crossing signals. Parsing, history,
-arithmetic, state and response generation all run on the FPGA; no team-supplied
-host computation is required during judging.
+**Gator Quant Hacks 2026 · Hardware Track** — built in one weekend at the University of Florida.
 
-## Selected submission
+[![Hardcaml](https://img.shields.io/badge/HDL-Hardcaml%20%28OCaml%29-ee6a1a)](https://github.com/janestreet/hardcaml)
+[![FPGA](https://img.shields.io/badge/FPGA-Tang%20Nano%2020K%20%C2%B7%20GW2AR--18C-2b6cb0)](https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html)
+[![Board tests](https://img.shields.io/badge/board%20tests-84%2F84%20%C3%97%2010%20runs-2f855a)](submission/BOARD_VALIDATION.md)
+[![Timing](https://img.shields.io/badge/timing-0%20violations%20%40%2027%20MHz-2f855a)](serial_adder_approach/evidence/serial_lfsr/)
 
-**Serial engine + LFSR UART TX (`serial_lfsr`): 195 total logic, 98 registers,
-4 BSRAM.** The user confirms the full board suite passed. Saved official tests
-and custom replay results are included; see [board evidence](submission/BOARD_VALIDATION.md)
-and [the finalization checklist](SUBMISSION_CHECKLIST.md).
+A Tang Nano 20K FPGA takes live price updates for two instruments over UART.
+For each one, it tracks a 16-sample moving average and replies with
+**BUY / SELL / NONE** whenever the price crosses its average. Parsing, history,
+arithmetic, signal state and the response all run in hardware. No host-side
+computation is involved.
 
-| Item | Selected value |
-| --- | --- |
-| Repository author | [LeEmperor](https://github.com/LeEmperor); participant details on Devpost |
-| Board | Tang Nano 20K |
-| Device | GW2AR-18C / **GW2AR-LV18QN88C8/I7** |
-| Tool | **Gowin V1.9.11.03 Education**, GowinSynthesis, Verilog 2001 |
-| Top module | **`gqh_competition_top`** |
-| Final HDL | [`serial_adder_approach/gqh_serial_top.v`](serial_adder_approach/gqh_serial_top.v) |
-| Reproducible build | [`submission/gowin/build.tcl`](submission/gowin/build.tcl) |
-| Synthesis/P&R settings | [`serial_adder_approach/options.tcl`](serial_adder_approach/options.tcl) |
-| Programming image | **[`bitstream/gqh_serial.fs`](bitstream/gqh_serial.fs)** |
-| Input/image identity | [`submission/manifest.json`](submission/manifest.json) |
-| Repository | <https://github.com/LeEmperor/gqh_submission> |
-| Submission portal | <https://gqhacks.devpost.com> |
+The design is written in **[Hardcaml](https://github.com/janestreet/hardcaml)**,
+Jane Street's OCaml library for describing hardware, and is compiled to Verilog
+for Gowin's FPGA toolchain. Once the design was correct on the board, the
+objective was to make it **as small as possible**. It went from about 420 logic
+cells to **195**.
 
-The selected `.fs` SHA-256 is
-`a26f7ec1900b6cde817a8df396610a7a3e58f9b262331652e326bf5f1e892fa0`.
-The selected RTL SHA-256 is
-`b9a530d94a2dc9c7da8ff650e2f38ec9788e0d395e2bd03d229e305573f4664e`.
-Other candidate projects/images in the repository are development history.
+## Results
 
-## Architecture
+| | Final design |
+| --- | ---: |
+| **Logic cells (post place-and-route)** | **195** (193 LUTs at synthesis) |
+| Registers | 98 |
+| Block RAMs | 4 |
+| Arithmetic (ALU) cells | 0 |
+| Clock | 27 MHz on-board oscillator (no PLL) |
+| Timing | 0 setup / 0 hold violations, +29.2 ns worst slack |
+| Official practice tests on the board | **10/10 runs, 84/84 scored packets each, 0 timeouts** |
+| Custom replay on the board | **2,834 / 2,834 packets** across 26 sessions |
+| Mean round trip, host → FPGA → host | **16.8 ms** (full latency points at ≤ 20.8 ms) |
 
-- A bit-serial engine updates each exact 20-bit rolling sum with a one-bit adder
-  and subtractor over twenty cycles. Prices retain the full unsigned 16-bit range.
-- Four inferred BSRAMs hold price history, sums, comparison/action metadata and
-  packet bytes. Logical validity and warm-up handle stale memory after session reset.
-- Comparisons use floor averages (`sum >> 4`); previous comparison flags replace
-  storage of full previous prices. Non-crossings repeat the last action.
-- A ten-bit UART frame shifter and LFSR counters reduce transmitter logic.
-  All logic runs at **27 MHz**, without a PLL. UART uses **234 clocks per bit**
-  (approximately 115385 baud, +0.16% from nominal 115200), with a full stop bit
-  and no additional inter-byte gap. Both LEDs are held off.
+The FPGA itself spends about 55 clock cycles (≈ 2 µs) on each packet, and
+putting 16 bytes on the wire at 115200 baud takes about 1.4 ms. Nearly all of
+the remaining round-trip time is spent outside the chip, in the on-board
+USB-serial bridge and the host.
 
-See [the serial design notes](serial_adder_approach/README.md) for the datapath,
-memory organizations, timing and implementation history.
+Sources: [Gowin resource and timing reports](serial_adder_approach/evidence/serial_lfsr/),
+[board validation record](submission/BOARD_VALIDATION.md),
+[simulation log](serial_adder_approach/evidence/verification.log).
 
-## Build from the submitted source
+## The challenge
 
-The final Verilog is self-contained. **Rebuilding the FPGA image requires only
-Gowin V1.9.11.03 Education**; OCaml/Hardcaml and IP generation are unnecessary
-unless regenerating HDL. Clone the submitted repository and check out the full
-commit SHA recorded on Devpost, then run from its root:
-
-```sh
-gw_sh submission/gowin/build.tcl
-```
-
-Put Gowin's `IDE/bin` directory on `PATH` (or invoke `gw_sh`/`gw_sh.exe` by full
-path). On headless Linux, `QT_QPA_PLATFORM=minimal` may be needed. Use the vendor
-runtime environment for the installed Gowin version.
-
-The script selects the device/top, loads every saved option, adds exactly the
-selected RTL, official CST and 27 MHz SDC, and runs synthesis and place-and-route.
-Outputs are isolated in `submission/gowin/impl/`:
-
-- Rebuilt image: `submission/gowin/impl/pnr/gqh_serial.fs`
-- Resource report: `submission/gowin/impl/pnr/gqh_serial.rpt.txt`
-- Synthesis report: `submission/gowin/impl/gwsynthesis/gqh_serial_syn.rpt.html`
-- Resolved settings: `submission/gowin/resolved-settings.tcl`
-
-The script leaves the supplied programming image in `bitstream/` intact. The
-committed build script/options are the authoritative project definition; a new
-GUI project with default options will not reproduce the recorded configuration.
-For manual import, use the three inputs below and apply the saved options/top/part.
-Do not add the engine-only alternative, simulation testbenches or other board tops.
-
-### Constraints and ports
-
-The unchanged organizer-supplied
-[`19_tang_nano_20k.cst`](serial_adder_approach/19_tang_nano_20k.cst) and
-[`tang_nano_20k.sdc`](serial_adder_approach/tang_nano_20k.sdc) are used with the
-selected RTL. No manual pin reassignment is required.
-
-| Port | Pin | Direction / function |
-| --- | ---: | --- |
-| `sys_clk` | 4 | Input, 27 MHz oscillator |
-| `reset_btn` | 87 | Input, active-high reset button, pull-down |
-| `uart_rx_i` | 70 | Input, BL616 to FPGA |
-| `uart_tx_o` | 69 | Output, FPGA to BL616 |
-| `led0_n` | 15 | Output, held high/off |
-| `led1_n` | 16 | Output, held high/off |
-
-## Program and reproduce the demo
-
-1. Connect the Tang Nano 20K with a data-capable USB-C cable.
-2. In Gowin Programmer, Scan Device and select **GW2AR-18C**.
-3. Select **SRAM Mode → SRAM Program** and load **`bitstream/gqh_serial.fs`**.
-4. Program/Configure successfully. Both LEDs remain off; this is intentional.
-5. Close Programmer and other serial terminals. Run the board checks with Python 3
-   and pyserial, replacing `PORT` with the actual UART port:
-
-   ```sh
-   python3 serial_adder_approach/validate_board.py PORT --fs bitstream/gqh_serial.fs
-   ```
-
-The helper prompts for programming/startup and physical reset steps. It changes
-only `PORT` in private copies of the official tests. It runs quick, five normal/
-full-range pairs **without reset or reprogramming between the paired tests**, custom
-replays, legal byte pauses, and reset/fault recovery. Results are saved in a fresh
-`serial_adder_approach/board_results/board-serial195-*` directory. It never programs
-the board itself; the recorded programming identity is operator-confirmed.
-
-Expected results: quick `PASS`; each robust run completes 100 responses with
-84/84 scored packets, 168/168 actions, zero timeouts and correct warm-up bytes;
-custom responses match the independent oracle. Official practice summaries report
-correctness out of 70, not an official qualification score out of 100.
-
-### Fixed wire interface
+The organizers fixed the protocol and grading. The FPGA receives an 8-byte
+request and must answer with exactly one 8-byte response:
 
 ```text
-PC -> FPGA: [index16][item1_8][price1_16][item2_8][price2_16]
-FPGA -> PC: [index16][item1_8][action1_8][item2_8][action2_8][reserved16]
-ITEM_A = 0x11; ITEM_B = 0x22
-NONE = 0x00; SELL = 0x01; BUY = 0x02; reserved = 0x0000
-UART: 115200 baud, 8N1, LSB first; multi-byte fields big-endian
+PC -> FPGA: [index:16][item A:8][price A:16][item B:8][price B:16]
+FPGA -> PC: [index:16][item A:8][action A:8][item B:8][action B:8][reserved:16]
+
+items:   A = 0x11, B = 0x22        actions: NONE = 0x00, SELL = 0x01, BUY = 0x02
+UART:    115200 baud, 8N1, LSB first; multi-byte fields big-endian
 ```
 
-One complete 8-byte request produces exactly one 8-byte response. State is routed
-by item ID and responses preserve request slot order. Index 0 starts a fresh
-session; indices 0–15 fill the windows and return NONE. No host-side algorithm or
-unsolicited FPGA output is used.
+Each item keeps its own 16-price window. Index 0 starts a new session, and
+indices 0–15 only fill the window (they return NONE). From index 16 on:
 
-## Verification and measured results
+```text
+BUY   if the previous price was at or below the old average
+         and the current price is above the new average
+SELL  if the previous price was at or above the old average
+         and the current price is below the new average
+else  repeat the last action
+```
 
-Selected-build reports are in
-[`serial_adder_approach/evidence/serial_lfsr/`](serial_adder_approach/evidence/serial_lfsr/).
-Resource measurements are local Gowin results; judges independently rebuild and
-measure the submitted source/settings.
+Averages are `sum >> 4`, rounded down. Judging was a 100-packet run, scored
+as **correctness 70 + latency 15 + logic size 15**, followed by a hidden
+full-range run with prices from 0 to 65535. Below 95% correctness, the
+latency and size points are zero. Among qualifying teams, ranking was by total
+logic first, then registers, then latency.
 
-| Metric | Selected build |
-| --- | ---: |
-| Synthesis total LUTs (qualification metric) | **193** |
-| P&R total Logic | **195** |
-| P&R ALUs / SSRAM / latches | **0 / 0 / 0** |
-| Total registers | **98** (97 logic FF + 1 I/O FF) |
-| BSRAM | **4** |
-| Reported setup / hold violated endpoints | **0 / 0** |
-| Worst setup slack at 27 MHz | **+29.221 ns** |
-| Normal five-run median of mean UART RTT | **16.814655 ms** |
-| Full-range five-run median of mean UART RTT | **16.8111103 ms** |
+## How it works
 
-The synthesis LUT total comes from Resource Usage Summary in
-[`gqh_serial_syn.rpt.html`](serial_adder_approach/evidence/serial_lfsr/gqh_serial_syn.rpt.html);
-P&R metrics come from
-[`place-route.rpt.txt`](serial_adder_approach/evidence/serial_lfsr/place-route.rpt.txt).
-The synthesis usage table lists 193 LUTs and 2 INV cells; the mapped logic total
-is 195. These are distinct report fields, not interchangeable qualification metrics.
-The saved engine test log passes **8,956 samples** and the TX test passes all
-**256 byte values** with exact 234-clock bit lengths. The selected LFSR variant
-passes **1,394 production-divisor serial oracle packets**, startup, legal pauses,
-full stop bits, sticky faults and RX/engine/TX reset recovery. The verification
-script also runs the unselected engine-only variant; its combined summary is
-written when both finish. See [verification.log](serial_adder_approach/evidence/verification.log).
+```mermaid
+flowchart LR
+    PC([Host PC]) -- "8-byte request<br/>UART RX" --> RX[UART receiver]
+    RX --> DEC[Request decoder<br/>+ packet RAM]
+    DEC --> ENG[Bit-serial update engine]
+    ENG <--> MEM[(Block RAM<br/>history · sums · signal flags)]
+    ENG --> SEQ[Response sequencer]
+    SEQ --> TX[LFSR-timed<br/>UART transmitter]
+    TX -- "8-byte response<br/>UART TX" --> PC
+```
 
-Five normal/full-range board pairs each completed perfectly, including warm-up
-bytes, and both custom replays passed **2,834/2,834 packets across 26 sessions**.
-The user confirms completion of the full board suite. The evidence record clearly
-distinguishes saved machine results from operator confirmation. A clean-location
-rebuild reproduces identical programming data (only its creation-time comment
-differs): [rebuild verification](submission/REBUILD.md).
+Most of the savings came from moving work from logic into **time** and
+**memory**. The protocol leaves plenty of both, and block RAM does not count
+toward the logic total. One UART byte takes 2,340 clock
+cycles, so the design can afford to be slow internally.
 
-Optional HDL regeneration/local verification uses OCaml **5.2.0+ox**, Dune ≥3.17,
-and the exact Jane Street/Hardcaml versions in [dune-project](dune-project), plus
-Icarus Verilog and Yosys for HDL checks:
+- **Bit-serial arithmetic.** Each item keeps an exact 20-bit running sum. A
+  normal design updates it with 20-bit adders. This one uses a single-bit full
+  adder and a single-bit subtractor, which compute `sum + new − oldest` one bit
+  per clock over 20 cycles. That removed every ALU cell.
+- **State lives in block RAM, not flip-flops.** Price history (512×1), running
+  sums (64×1), signal flags (2×4) and packet bytes (8×8) sit in four inferred
+  BSRAMs. Nothing is ever cleared. Per-item *valid* bits mask stale contents
+  after a reset or a new session.
+- **No divider, no second comparator.** A four-clock delay lines up price bits
+  with sum bits 4–19, so the comparison against `sum >> 4` happens serially as
+  the sum streams past. Each item stores two flags, *was below* and *was above*,
+  instead of the full previous price.
+- **A smaller transmitter.** The UART TX is a ten-bit `{stop, data, start}`
+  shift register driven by LFSR counters instead of binary counters. That saved
+  another 8 cells.
+- **Nothing extra.** There is one 27 MHz clock domain, no PLL, and both LEDs
+  are held off.
+
+Design notes and memory layouts are in
+[`serial_adder_approach/README.md`](serial_adder_approach/README.md).
+
+## Optimization path
+
+| Milestone | Logic | Registers | Block RAM |
+| --- | ---: | ---: | ---: |
+| First end-to-end build working on the board | ~420 | — | — |
+| First optimization passes (H1–H4) | 363 | 235 | 1 |
+| History and packet storage moved into block RAM, registers trimmed | 302 | 109 | 3 |
+| Lean variant: heartbeat and fault LEDs removed | 270 | 84 | 3 |
+| Bit-serial update engine | 203 | 97 | 4 |
+| **+ LFSR-timed UART transmitter (final)** | **195** | **98** | **4** |
+
+The intermediate candidates and their Gowin reports are kept under
+[`gowin/`](gowin/). The full history is in
+[`docs/development/`](docs/development/README_DEVELOPMENT.md).
+
+## Verification
+
+The test suite never trusts the design to check itself.
+
+- **Independent oracle.** A separate Python model computes every expected
+  window, sum and action directly ([`test/engine/oracle/`](test/engine/oracle/)).
+- **Hardcaml-level tests.** Cyclesim, expect and property tests cover the
+  UART, the protocol decoder, the packet RAM and the transaction controller
+  ([`test/`](test/)).
+- **Generated Verilog against the oracle**, simulated in Icarus Verilog and
+  checked structurally with Yosys. The engine test checks **8,956 samples**,
+  including stored sums and flags, deliberately corrupted RAM contents, and
+  stalls. The transmitter test checks **all 256 byte values**, verifying that
+  every bit lasts exactly 234 clocks. The full design replays **1,394 oracle
+  packets** at the real baud divisor. It also covers startup, pauses between
+  bytes, framing faults, and reset recovery in the receiver, engine and
+  transmitter.
+- **On the board.** The organizers' quick and robust test scripts ran five
+  normal and five full-range price runs back to back, with no reset in between.
+  Then a custom replay-and-measure runner ([`test/runner/`](test/runner/))
+  played 2,834 packets, covering extreme prices, slot swaps, window wraparound
+  and sessions that restart mid-warm-up.
+- **Market-data traffic.** A Databento trade streamer ([`lib/`](lib/), [`bin/stream.ml`](bin/stream.ml))
+  and a Python fixture factory ([`tools/test_data_factory/`](tools/test_data_factory/))
+  generate request streams for testing.
+
+```sh
+# Full regression suite (needs the OCaml 5.2.0+ox switch, iverilog, yosys, python3)
+opam exec --switch=5.2.0+ox -- dune runtest
+```
+
+## Build and run it
+
+**Rebuild the FPGA image.** You only need Gowin EDA V1.9.11.03 Education. The
+committed Verilog is self-contained.
+
+```sh
+gw_sh submission/gowin/build.tcl     # outputs to submission/gowin/impl/
+```
+
+**Program the board.** In Gowin Programmer, select **GW2AR-18C**, choose
+**SRAM Program**, and load [`bitstream/gqh_serial.fs`](bitstream/gqh_serial.fs).
+
+**Validate it on the board** (Python 3 + pyserial):
+
+```sh
+python3 serial_adder_approach/validate_board.py <PORT> --fs bitstream/gqh_serial.fs
+```
+
+**Regenerate the Verilog from Hardcaml** (optional):
 
 ```sh
 opam exec --switch=5.2.0+ox -- dune exec serial_adder_approach/generate.exe
 python3 serial_adder_approach/verify.py
 ```
 
-Regeneration consumes `serial_adder_approach/*.ml` and the shared `src/` library.
-The verifier checks generated HDL identity, oracle-based engine state, complete
-UART behavior, restart/reset/fault cases and both serial variants. Do not rerun it
-over an in-progress verification job's evidence directory.
+The HDL toolchain uses OCaml **5.2.0+ox** and the pinned Jane Street
+`v0.18~preview` packages listed in [`dune-project`](dune-project). Exact build
+inputs and hashes are recorded in [`submission/manifest.json`](submission/manifest.json),
+and a clean-location rebuild is documented in [`submission/REBUILD.md`](submission/REBUILD.md).
 
-## External resources and local tooling
+| Pin | Port | Use |
+| ---: | --- | --- |
+| 4 | `sys_clk` | 27 MHz oscillator |
+| 87 | `reset_btn` | Reset button (active high) |
+| 70 | `uart_rx_i` | BL616 → FPGA |
+| 69 | `uart_tx_o` | FPGA → BL616 |
+| 15, 16 | `led0_n`, `led1_n` | Held off |
 
-- **Jane Street Hardcaml, Core, ppx_hardcaml and related dependencies:** hardware
-  construction/Verilog generation and OCaml tooling; versions are in `dune-project`.
-- **GQH organizers:** participant guide, unchanged board CST, quick/robust tests,
-  and the full-range practice attachment. Provenance is in
-  [tools/official/README.md](tools/official/README.md) and the
-  [placement supplement](docs/placement-supplement-20261003.md).
-- **[BlackList GQH](https://github.com/jaydennargen/blacklist-gqh), inspected commit
-  `8ed4a39`:** architectural inspiration from `src/ma_engine.sv` and `src/uart_tx.sv`
-  for bit-serial processing and compact TX. This implementation is Hardcaml and
-  retains this project's comparison-state and packet-controller architecture.
-- **Gowin:** synthesis/P&R/programming tools and inferred FPGA memory resources.
-  The selected design does not use the repository's PLL experiment.
-- **Icarus Verilog, Yosys, Python/pyserial:** simulation, structural checks and local
-  board testing. The independent oracle and replay runner are under `test/`.
-  Imported datafactory/streaming tools and other experiments are development/demo
-  resources; they are not dependencies of the selected judge FPGA build.
+## Repository layout
 
-## Known limitations and status
+| Path | What's there |
+| --- | --- |
+| [`serial_adder_approach/`](serial_adder_approach/) | **Final design**: bit-serial engine and transmitter (Hardcaml), generated Verilog, build, verify and board-validation scripts, evidence |
+| [`src/`](src/) | Shared Hardcaml library: UART RX/TX, protocol decoder, packet RAM controller, response sequencer, board tops |
+| [`bitstream/`](bitstream/) | Programming images; `gqh_serial.fs` is the submitted one |
+| [`submission/`](submission/) | Reproducible Gowin build script, input manifest, board-validation record |
+| [`test/`](test/) | Cyclesim, expect and property tests; Verilog testbenches; independent oracle; replay runner |
+| [`tools/`](tools/) | Organizer test scripts, Gowin automation, test-data factory |
+| [`lib/`](lib/), [`bin/`](bin/) | Databento streamer and Verilog generator CLI |
+| [`rtl/`](rtl/), [`gowin/`](gowin/) | Earlier candidate designs and their Gowin projects and reports |
+| [`docs/`](docs/) | Optimization write-ups, the event guide, development plans |
+| [`archive/`](archive/) | Original project proposal and board bring-up projects |
 
-- Local board results and operator confirmation are recorded in
-  [submission/BOARD_VALIDATION.md](submission/BOARD_VALIDATION.md); official
-  qualification and placement remain the judges' measurements.
-- The design follows stop-and-wait. Framing errors or unexpected input while busy
-  cause sticky protocol lockout until button reset; both diagnostic LEDs are disabled.
-- No additional TX inter-byte idle delay is configured. The guide's BL616 transport
-  warning makes final on-board no-timeout testing important.
-- Vendor logs retain warning **PR1014** about clock routing. The saved timing report
-  shows zero setup/hold violations for the applied constraints.
+## Known limitations
 
-## Submission information
+- The protocol is stop-and-wait. A UART framing error, or input arriving while
+  a response is still being sent, locks the protocol until the reset button is
+  pressed.
+- The saved board summary covers every stage through the post-reset custom
+  replay. The final fault-recovery stages were confirmed by the operator and are
+  not in the machine log. See [the validation record](submission/BOARD_VALIDATION.md).
+- Gowin reports warning PR1014 about clock routing. The timing report shows no
+  setup or hold violations.
 
-Submit the public repository URL and **full final commit SHA on Devpost**, then
-return the board/accessories to Reitz Room 2345 by **October 4, 2026, 11:00 am EDT**.
-Keep the repository public through judging. The SHA belongs in Devpost, not this
-README. [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) tracks remaining work;
-[README_DEVELOPMENT.md](README_DEVELOPMENT.md) preserves earlier candidates and notes.
+## Team
+
+Built by **[@LeEmperor](https://github.com/LeEmperor)**, **[@srijankumbam](https://github.com/srijankumbam)**,
+**[@shome9806](https://github.com/shome9806)** and **[@vishal-naveen](https://github.com/vishal-naveen)**.
+
+## Acknowledgements
+
+- **[Jane Street Hardcaml](https://github.com/janestreet/hardcaml)** and the
+  surrounding OCaml libraries are the foundation of the design.
+- **The Gator Quant Hacks organizers** provided the [participant guide](docs/gqh_hw_guide.pdf),
+  the board constraints, and the official test scripts ([`tools/official/`](tools/official/)).
+- **[BlackList GQH](https://github.com/jaydennargen/blacklist-gqh)** (commit
+  `8ed4a39`) inspired the bit-serial engine and compact transmitter. This
+  implementation is written separately in Hardcaml and keeps its own
+  comparison-flag state and packet controller.
+- Gowin EDA, Icarus Verilog and Yosys were used for synthesis, simulation and
+  structural checks.

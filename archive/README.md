@@ -1,6 +1,6 @@
 # Archived planning material
 
-Archived on October 2, 2026. **The active plan is [../PLAN.md](../PLAN.md).**
+Archived on October 2, 2026. **The active plan is [docs/development/PLAN.md](../docs/development/PLAN.md).**
 
 ## Original Tickweave proposal
 
