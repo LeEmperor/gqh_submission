@@ -1,6 +1,6 @@
 # Phase H — Resource optimization plan
 
-Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4–H5 experiments have not been run.**
+Updated: October 3, 2026. **Status: H0 complete (evidence preparation); H1 accepted/complete (user-authorized closure); H2 accepted/complete; H3a, H3b, combined H3a+H3b and H3c rejected (resource regressions); H4 implemented with a user-recorded two-logic reduction; H5 heartbeat removal measured at 318 total logic, with routed timing and user-reported board quick-test PASS. Full H5 board acceptance and latency have not been recorded.**
 
 This is the working plan for choosing, implementing and measuring Phase H
 experiments. Start with history mapping and compact engine state, then evaluate
@@ -406,9 +406,9 @@ the broader controller reset sweep were not run. No H3c board validation or
 RTT is claimed. The failed resource screen rejects promotion; H2 remains the
 accepted fallback and implementation parent for H4.
 
-Current engine source and live `test_proj2` inputs contain rejected H3c;
-neither is the accepted H2 fallback. This logging update does not restore or
-alter implementation files or fallback artifacts.
+At the H3c review, engine source and live `test_proj2` inputs contained rejected
+H3c. They have since been superseded by H4 and H5, recorded below; H2's archived
+fallback remains available.
 
 **Primary files:** `src/engine/update.ml`, engine tests and schedule-sensitive
 integration checks. Preserve latency-independent command/result handshakes.
@@ -437,11 +437,24 @@ require a better whole-design ranking tuple and successful board promotion.
 
 ### H4 — Consolidate packet storage
 
+**H4 findings, recorded October 3:** candidate
+`h4-borrow-decoder-request-h2` retains the decoder's request fields through
+final response drain and lets the controller borrow them, removing its redundant
+request capture. Commit `fefc7d0` records the user's result, "h4 gave us -2".
+Relative to H2's 362 total logic, this implies **360 total logic**. This is an
+inference from that recorded reduction; H4's original raw resource reports,
+register count, synthesis LUT count and timing were not archived here and are
+not reconstructed from H5. Delivered inputs remain in the
+[H4 folder](results/h4-borrow-decoder-request-h2/).
+
+H4 is H5's implementation parent. Before the H5 edit, regenerating the clean
+`fefc7d0` source produced competition RTL byte-identical to saved H4.
+
 **Primary files:** `src/protocol/request_decoder.ml`,
 `src/protocol/transaction_controller.ml`, `src/protocol/response_sequencer.ml`,
 their tests and coordinated production composition changes.
 
-The source currently captures a 64-bit request in the decoder, another 64-bit
+The pre-H4 source captured a 64-bit request in the decoder, another 64-bit
 request in the controller, and a 36-bit response in the sequencer. These are
 source-level payload sizes, not guaranteed independent mapped register counts.
 
@@ -462,13 +475,65 @@ promotion before accepting a new storage contract.
 
 ### H5 — Re-profile remaining control overhead
 
+**H5 findings, recorded October 3:** candidate `h5-no-heartbeat`, parent H4
+at `fefc7d0`. The user explicitly authorized removing the competition top's
+heartbeat instance and driving `led0_n` high. LED0 now stays off. Every other
+module is byte-identical to H4; the remaining top wiring is unchanged apart
+from generated internal net renumbering. The SDC and CST are byte-identical to
+H4. The optional heartbeat timing argument remains accepted for call
+compatibility and is ignored by the competition top. Diagnostic tops retain
+their heartbeat behavior.
+
+The matching user-built Gowin V1.9.11.03 Education reports, created October 3
+at 19:30:36 for GW2AR-LV18QN88C8/I7, show:
+
+| Metric | H5 |
+| --- | ---: |
+| P&R total logic | **318** |
+| P&R LUT / ALU | 244 / 74 |
+| Total registers | **246** (245 logic FF, 1 I/O FF) |
+| Synthesis-summary LUTs | **242** |
+| Synthesis ALUs | 67 |
+| BSRAM / SSRAM | 1 / 0 |
+| Worst routed setup / hold slack | **+24.405 / +0.425 ns** |
+| Setup / hold violated endpoints | 0 / 0 |
+| Reported Fmax | 79.164 MHz |
+
+At the unchanged 27 MHz clock, routed setup/hold timing passes with zero total
+negative slack. P&R's 244 LUT count and synthesis-summary's 242 LUT count are
+separate measurements. Compared with measured H2, H5 saves **44 total logic
+(12.2%), 89 registers (26.6%) and 43 synthesis-summary LUTs (15.1%)**. Using
+H4's inferred 360-logic baseline, heartbeat removal saves a further **42 total
+logic (11.7%)**. Compared with archived G2's 475 total logic, H5 saves **157
+(33.1%)**. These are whole-design comparisons, not isolated heartbeat cell counts.
+
+Build, Icarus elaboration and Yosys hierarchy/process checks pass with zero
+problems. The user reported that the board quick test passes. No H5 normal
+robust, full-range, custom replay or latency results were supplied; this records
+a successful resource screen and quick board check, without claiming full
+board acceptance. The P&R log still reports PR1014: generic routing resources
+are used for `sys_clk_d` under the specified constraint, with a warning about
+possible delay or skew. The unchanged SDC defines the onboard clock only.
+
+At review time, live project RTL/CST/SDC hashes matched delivered H5 inputs.
+The reports, synthesis netlist and project settings are now preserved under
+[H5 measured reports](results/h5-no-heartbeat/gowin/) so later IDE builds will
+not replace this evidence. See the
+[P&R resource report](results/h5-no-heartbeat/gowin/impl/pnr/test_proj2.rpt.txt),
+[synthesis summary](results/h5-no-heartbeat/gowin/impl/gwsynthesis/test_proj2_syn.rpt.html),
+[routed timing](results/h5-no-heartbeat/gowin/impl/pnr/test_proj2_tr_content.html)
+and [measurement record](results/h5-no-heartbeat/measurement.json).
+The generated `.fs` hash is recorded for build identity; which image was
+programmed was not independently verified. Final submission packaging remains
+separate work.
+
 **Primary files:** whichever measured block is selected; keep experiments narrow.
 
-Re-read the hierarchy after H1–H4 and rank remaining costs. Candidates include:
+The original candidate list was to re-read the hierarchy after H1–H4 and rank
+remaining costs. It included:
 
-- Heartbeat counter/terminal-count implementation, preserving its current cadence
-  and startup/reset behavior. Its archived 45 LUTs justify an early inexpensive
-  comparison if this is more economical than the next large redesign.
+- Heartbeat counter/terminal-count implementation. H5 instead removes the
+  competition heartbeat under the user's explicit instruction, as recorded above.
 - FSM encoding and register enables, one block at a time.
 - TX shift-register versus indexed-byte serialization, preserving byte capture,
   exact bit durations, stop bits and ready/busy semantics.
@@ -495,6 +560,14 @@ Minimum ledger columns:
 | Candidate / parent | Change | Total logic | Registers | Synth LUTs | BSRAM | Timing | Correctness / timeouts | Official mean | Status / decision |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Archived G2 observation / — | Original 27 MHz design | 475 | 379 | 351 | 0 | See archived review | See F/G closure; identity caveat above | ~16.8 ms | Historical reference |
+| H1 / G2 | History in BSRAM | 412 | 363 | 337 | 1 | Pass | Quick, normal/full-range and custom pass | 16.807 ms | Accepted/complete |
+| H2 / H1 | Comparison-state compression | 362 | 335 | 285 | 1 | Pass | See H2 acceptance | See H2 record | Accepted/complete |
+| H3a / H2 | Shared full-width arithmetic | 364 | 356 | 306 | 1 | Pass | Focused checks pass; no board run | Not measured | Rejected |
+| H3b / H2 | Shared comparisons | 368 | 335 | 289 | 1 | Pass | Focused checks pass; no board run | Not measured | Rejected |
+| H3a+H3b / H3a | Combined sharing | 381 | 356 | 321 | 1 | Pass | Focused checks pass; no board run | Not measured | Rejected |
+| H3c / H2 | Digit-serial arithmetic | 378 | 376 | 335 | 1 | Pass | Focused checks pass; no board run | Not measured | Rejected |
+| H4 / H2 | Borrow decoder request fields | 360 (inferred) | Not archived | Not archived | Not archived | Not archived | Not recorded here | Not recorded | User-recorded −2 logic; H5 parent |
+| H5 / H4 | Remove competition heartbeat; LED0 high | **318** | **246** | **242** | **1** | **Pass** | **User-reported quick PASS**; broader checks not recorded | Not measured | Resource screen and quick check pass |
 
 Each candidate folder should retain source revision plus dirty diff/new files,
 generated RTL identity, complete project settings and vendor sources, raw Gowin

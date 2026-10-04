@@ -4,7 +4,7 @@ open! Signal
 module I = Top.I
 module O = Top.O
 
-let create ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles scope (i : _ I.t) =
+let create ?half_period_cycles:_ ?cycles_per_bit ?extra_idle_cycles scope (i : _ I.t) =
   let reset = Reset_release.hierarchical ~instance:"reset_release" scope
     { Reset_release.I.clock = i.sys_clk; reset_btn = i.reset_btn } in
   let spec = Reg_spec.create ~clock:i.sys_clk ~clear:reset.reset () in
@@ -47,9 +47,7 @@ let create ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles scope (i : _ I
   response_done <-- sequencer.response_done;
   tx_data <-- sequencer.tx_data;
   tx_valid <-- sequencer.tx_valid;
-  let heartbeat = Heartbeat.hierarchical ~instance:"heartbeat" ?half_period_cycles scope
-    { Heartbeat.I.clock = i.sys_clk; reset = reset.reset } in
-  { O.uart_tx_o = tx.tx; led0_n = heartbeat.led_n; led1_n = ~:(decoder.protocol_fault) }
+  { O.uart_tx_o = tx.tx; led0_n = vdd; led1_n = ~:(decoder.protocol_fault) }
 
 let hierarchical ?instance ?half_period_cycles ?cycles_per_bit ?extra_idle_cycles scope i =
   let module H = Hierarchy.In_scope (I) (O) in
