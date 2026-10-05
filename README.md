@@ -232,9 +232,5 @@ Built by **[@LeEmperor](https://github.com/LeEmperor)**, **[@srijankumbam](https
   surrounding OCaml libraries are the foundation of the design.
 - **The Gator Quant Hacks organizers** provided the [participant guide](docs/gqh_hw_guide.pdf),
   the board constraints, and the official test scripts ([`tools/official/`](tools/official/)).
-- **[BlackList GQH](https://github.com/jaydennargen/blacklist-gqh)** (commit
-  `8ed4a39`) inspired the bit-serial engine and compact transmitter. This
-  implementation is written separately in Hardcaml and keeps its own
-  comparison-flag state and packet controller.
 - Gowin EDA, Icarus Verilog and Yosys were used for synthesis, simulation and
   structural checks.
