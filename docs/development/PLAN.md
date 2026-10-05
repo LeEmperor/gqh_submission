@@ -29,12 +29,12 @@ helping verification, measurement, or reproducibility.
 
 ### Authority and scoring
 
-- [The supplied guide](gqh_hw_guide.pdf), especially Part 2 §§7–11 and Part 3,
+- [The supplied guide](../gqh_hw_guide.pdf), especially Part 2 §§7–11 and Part 3,
   defines the written contract. Record any subsequent organizer clarification
   here, including its source.
 - **Placement supplement, October 3:** the organizer announcement supplied by
   the user establishes qualification and a strict resource-first ranking. The
-  [preserved announcement and attachment review](docs/placement-supplement-20261003.md)
+  [preserved announcement and attachment review](../placement-supplement-20261003.md)
   supplement the guide without changing its rubric or algorithm. Extra features
   have no specified placement credit.
 - **Clocking clarification, October 3:** the user reports that the competition
@@ -424,7 +424,7 @@ The TX audit retained the existing implementation and production direct 27 MHz
 configuration. Added an independent all-byte, 15-configuration timing/boundary
 suite; build, focused tests, full regressions and generated-Verilog checks pass.
 Transport RTL is byte-identical to the pre-task file. See
-[`results/phase-c-20261003-candidate1/HANDOFF.md`](results/phase-c-20261003-candidate1/HANDOFF.md)
+[`results/phase-c-20261003-candidate1/HANDOFF.md`](../../results/phase-c-20261003-candidate1/HANDOFF.md)
 for the original source/RTL identity and manual checklist. Synthesis/P&R,
 timing review, bitstream generation/programming, startup/reset/TX-idle checks
 and both 100-request transport checks now have passing evidence or user
@@ -474,7 +474,7 @@ completion claim.
 The controller and mock/real-engine/byte-composition tests pass, including all
 800 fixtures, 3,414 additional oracle vectors and 455 reset-recovery packets.
 All required local builds/regressions and emitted-RTL elaboration checks pass.
-The [G1 handoff](results/phase-g1-20261003-candidate1/HANDOFF.md) records exact
+The [G1 handoff](../../results/phase-g1-20261003-candidate1/HANDOFF.md) records exact
 interfaces, cycle measurements, source identity and G2 wiring instructions.
 G2 may begin; G1 hardware acceptance still comes from G2's matching full-system
 build. G2 and overall G remain open for manual acceptance; G2 local delivery
@@ -484,8 +484,8 @@ is recorded below.
 The direct 27 MHz `gqh_competition_top` now connects UART, decoder, G1 controller,
 F engine and sequencer. Production RTL and separate root Gowin project are
 available. Serial oracle verification, production-divisor emitted-Verilog checks
-and earlier regressions pass; see [integration coverage](test/integration/README.md)
-and [candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md).
+and earlier regressions pass; see [integration coverage](../../test/integration/README.md)
+and [candidate handoff](../../results/phase-g2-20261003-candidate1/HANDOFF.md).
 Matching whole-design synthesis/P&R, memory/resource/timing/clock inspection,
 exact bitstream identity, remaining startup/reset/status checks, robust/full-range
 84/84 and 168/168 with zero timeouts, and custom same-connection sessions remain
@@ -562,7 +562,7 @@ their `PORT` setting. Retain each local robust-test CSV.
 **October 4 local H2–H5 update:** the working tree selects H2 comparison flags
 and both H4 packet-copy removals after twenty pinned open-source whole-design
 screens. H3 arithmetic and H5 control alternatives remain preserved with tests
-and rejection evidence. See [the optimization report](docs/h2-h5-optimization.md).
+and rejection evidence. See [the optimization report](../h2-h5-optimization.md).
 The Windows Gowin rebuild failed without a valid measurement; the open-source
 585-cell proxy and 247 DFFs are not official Gowin Logic/Register counts.
 H0/H1 historical acceptance is preserved. Fresh vendor qualification and board
@@ -701,7 +701,7 @@ This plan consolidates the hardware pivot handoff and the verified competition
 guide. The useful inherited practices are independent reference verification,
 small reviewable interfaces, clear ownership, and reproducible measured results.
 The original Tickweave proposal and prior handoff are preserved in
-[archive/](archive/README.md). Their earlier task lists and authority statements
+[archive/](../../archive/README.md). Their earlier task lists and authority statements
 are historical; **update this file for current implementation decisions**.
 
 ## October 4 BSRAM/register search result
@@ -716,7 +716,7 @@ measures 302/155, so the third BSRAM wins the register tie-break.
 
 `competition-bsram` emits the selected RTL; `competition` retains the exact
 363/235 fallback until board promotion. Historical H0 completion and H1 board
-acceptance are unchanged. See [implementation/evidence](docs/bsram-register-optimization.md)
+acceptance are unchanged. See [implementation/evidence](../bsram-register-optimization.md)
 and `results/phase-i-20261004/candidate-ledger.json`. This selection uses actual
 Gowin results; nextpnr hold failures for the same three-BSRAM source remain
 recorded as invalid open-source routes. Physical board acceptance is pending.

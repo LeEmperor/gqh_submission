@@ -26,7 +26,7 @@ The organizer guide remains the primary specification. This document expands
 the implementation boundaries and work assignments; it does not replace the
 scoring, submission, or optimization requirements in PLAN.md.
 
-The [October 3 placement supplement](docs/placement-supplement-20261003.md)
+The [October 3 placement supplement](../placement-supplement-20261003.md)
 requires 100/100 on the official run plus perfect full-range correctness directly
 afterward without reprogramming. Qualifiers rank by **total logic → registers →
 five-run median latency** (within 5% tied). Gowin V1.9.11.03 rebuilds committed
@@ -413,7 +413,7 @@ opam exec --switch=5.2.0+ox -- dune build @test/protocol/runtest
 
 Also run `dune build @test/transport/runtest` in the same switch for the original
 block tests and serial/emitted-RTL integration. See
-[test/protocol/README.md](test/protocol/README.md) for ownership, reference testing
+[test/protocol/README.md](../../test/protocol/README.md) for ownership, reference testing
 conventions, and precise pre-edge/post-edge sampling semantics.
 
 Implement complete-request assembly, held payloads, response ordering, TX
@@ -553,7 +553,7 @@ build/test commands pass; deterministic RTL, Yosys checks and Icarus elaboration
 pass. Decoder fault policy, F's engine/interface, UART, board tops, generator,
 constraints and diagnostic transport are preserved.
 
-See [G1 candidate handoff](results/phase-g1-20261003-candidate1/HANDOFF.md)
+See [G1 candidate handoff](../../results/phase-g1-20261003-candidate1/HANDOFF.md)
 for exact wiring, measurement edges, source/RTL identity, command outcomes,
 coverage and G2 instructions. G2 may start. G1 hardware acceptance remains open
 and is collected through G2's matching full-system build/tests; G2, overall G,
@@ -610,13 +610,13 @@ synchronization/status and existing controller/engine/sequencer handshakes.
 `generate.exe competition` emits the complete `rtl/gqh_competition_top.v` hierarchy;
 root `gqh_competition.gprj` is separate from all experimental targets.
 
-The [focused integration suite](test/integration/README.md) drives the actual
+The [focused integration suite](../../test/integration/README.md) drives the actual
 production composition over serial and compares all bytes with the existing
 independent direct-window oracle. It includes saved fixtures, boundary/crossing
 vectors, full-range random streams, repeated sessions, warm-up/steady slot swaps,
 production-divisor Icarus at nominal host baud, resets/faults, complete stop bits,
 determinism, six-port and Yosys hierarchy checks. Earlier regressions remain active.
-See [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for exact
+See [G2 candidate handoff](../../results/phase-g2-20261003-candidate1/HANDOFF.md) for exact
 commands, hashes, cycle boundaries and outstanding manual checks. Referenced F/G1
 handoff folders are absent in this checkout; source/interfaces/tests and recorded
 plan evidence were used, without inventing archived results.
@@ -732,7 +732,7 @@ optional P and submission freeze are not marked complete by this closure.
 ### Phase H — Resource-first optimization after a qualification baseline
 
 October 4 H2–H5 implementation and open-source screening are recorded in
-[the optimization report](docs/h2-h5-optimization.md). The working tree selects
+[the optimization report](../h2-h5-optimization.md). The working tree selects
 H2 plus both H4 boundaries; H3/H5 alternatives and all measured rejections are
 preserved. H0/H1 historical acceptance stands. The selected new image still
 requires vendor resource qualification and identified-image board checks;
@@ -1133,5 +1133,5 @@ or dispatch; busy/framing faults preserve an accepted response while locking out
 new input. Standalone protocol modules and diagnostic defaults are unchanged.
 The engine optionally moves sum/relation/held-action state to two 24-bit BSRAM
 records, invalidated by two resettable bits. See
-[BSRAM/register evidence](docs/bsram-register-optimization.md) for exact field
+[BSRAM/register evidence](../bsram-register-optimization.md) for exact field
 lifetimes, qualification and the measured 302-logic / 109-register candidate.

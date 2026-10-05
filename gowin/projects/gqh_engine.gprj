@@ -5,8 +5,7 @@
     <Version>5</Version>
     <Device name="GW2AR-18C" pn="GW2AR-LV18QN88C8/I7">gw2ar18c-000</Device>
     <FileList>
-        <File path="rtl/gqh_competition_top.v" type="file.verilog" enable="1"/>
-        <File path="constraints/19_tang_nano_20k.cst" type="file.cst" enable="1"/>
-        <File path="constraints/tang_nano_20k.sdc" type="file.sdc" enable="1"/>
+        <File path="../../rtl/gqh_update_engine.v" type="file.verilog" enable="1"/>
+        <File path="../../rtl/engine.sdc" type="file.sdc" enable="1"/>
     </FileList>
 </Project>

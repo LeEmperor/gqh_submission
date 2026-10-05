@@ -2,14 +2,14 @@
 
 This is the working README preserved during serial-candidate submission packaging.
 Its candidate selections and acceptance statements are historical. See
-[README.md](README.md) for the selected submission and reproduction instructions.
+[README.md](../../README.md) for the selected submission and reproduction instructions.
 
 Build a compact **Hardcaml implementation of the required two-item, 16-sample
 moving-average crossing algorithm** on the Tang Nano 20K. Qualify with **100/100
 plus a perfect full-range run**, then minimize **total logic → registers →
 five-run median latency** (within 5% tied), in that order.
 
-The [LED-free BSRAM candidate](gowin/manual_270/README.md) measures
+The [LED-free BSRAM candidate](../../gowin/manual_270/README.md) measures
 **270 Gowin Logic / 84 Registers / 3 BSRAM**, with zero reported setup/hold
 violations. It removes the heartbeat and fault LED while retaining functional
 protocol fault lockout. Generate with `competition-bsram-lean`; import
@@ -20,58 +20,58 @@ then full-range without reset, both 1,598-packet custom replays and fault/reset
 recovery. Normal/full-range mean round trips were **16.813 / 16.902 ms**.
 The saved summary is in `gowin/manual_270/evidence/board-summary.json`.
 
-The separate [PLL experiment](gowin/pll270/README.md), generated with
+The separate [PLL experiment](../../gowin/pll270/README.md), generated with
 `competition-pll`, runs the same algorithm at **81 MHz** and measures
 **272 Logic / 88 Registers / 3 BSRAM / 1 PLL**, with zero setup/hold violations.
 It passes full serial simulation and lock/reset tests; board validation is
 pending. Its extra logic currently loses the resource-first comparison to 270,
 and the expected internal processing saving is only about 0.4 microseconds.
 
-The original [BSRAM competition candidate](docs/bsram-register-optimization.md) measures
+The original [BSRAM competition candidate](../bsram-register-optimization.md) measures
 **302 Gowin Logic / 109 Registers / 3 BSRAM**, including the unchanged heartbeat,
 with zero reported setup/hold violations. Generate it with
 `opam exec --switch=5.2.0+ox -- dune exec bin/generate.exe -- competition-bsram`.
 Its RTL is `rtl/gqh_competition_bsram_top.v`; board acceptance remains pending.
 The existing `competition` target retains the exact 363/235 fallback.
 
-For handoff, open [the selected Gowin project](gowin/bsram_candidate/gqh_competition.gprj).
-The [build/board instructions](gowin/bsram_candidate/README.md),
-[matching vendor bitstream](bitstream/gqh_competition_bsram.fs),
-[input hashes](gowin/bsram_candidate/manifest.json), and
-[resource/timing evidence](gowin/bsram_candidate/evidence) are included in this branch.
+For handoff, open [the selected Gowin project](../../gowin/bsram_candidate/gqh_competition.gprj).
+The [build/board instructions](../../gowin/bsram_candidate/README.md),
+[matching vendor bitstream](../../bitstream/gqh_competition_bsram.fs),
+[input hashes](../../gowin/bsram_candidate/manifest.json), and
+[resource/timing evidence](../../gowin/bsram_candidate/evidence) are included in this branch.
 Run `opam exec --switch=5.2.0+ox -- dune runtest` for regressions and
 `opam exec --switch=5.2.0+ox -- dune build @test/integration/runtest-bsram`
 for the selected production-divisor serial test. HDL prerequisites are documented
-in [tools/HOPT_TOOLCHAIN.md](tools/HOPT_TOOLCHAIN.md).
+in [tools/HOPT_TOOLCHAIN.md](../../tools/HOPT_TOOLCHAIN.md).
 
 ## Start here
 
 - **[PLAN.md](PLAN.md)** — the active implementation plan, exact protocol and
   algorithm, priorities, work assignments, and delivery gates. Update this when
   decisions change.
-- **[October 3 placement supplement](docs/placement-supplement-20261003.md)** —
+- **[October 3 placement supplement](../placement-supplement-20261003.md)** —
   qualification, resource-first ranking, judge rebuild rules and full-range script.
-- **[Competition guide](gqh_hw_guide.pdf)** — organizer requirements, scoring,
+- **[Competition guide](../gqh_hw_guide.pdf)** — organizer requirements, scoring,
   board setup, and submission rules.
 - **[Organizer resource checkout](../GQH-Hardware-Track-Submission/)** — official
   constraints, quick/robust UART tests, and submission templates, downloaded to
   `~/devel/jane/GQH-Hardware-Track-Submission/`. Exact paths and test coverage are
   recorded in [PLAN.md](PLAN.md#organizer-repository-available-locally).
-- **[Existing Gowin bring-up project](viv25_proj/test_proj1/)** — LED blinky
+- **[Existing Gowin bring-up project](../../archive/bringup/viv25_proj/test_proj1/)** — LED blinky
   source and saved build artifacts for the correct device.
-- **[Archive](archive/README.md)** — superseded Tickweave proposals and the
+- **[Archive](../../archive/README.md)** — superseded Tickweave proposals and the
   architecture discussion that led to the current plan.
-- **[Data streamer documentation](DATAFACTORY_README.md)** — build, test, and
+- **[Data streamer documentation](../DATAFACTORY.md)** — build, test, and
   operation instructions for the imported datafactory workstream.
-- **[Replay runner](test/runner/README.md)** — Python replay-and-measure runner
+- **[Replay runner](../../test/runner/README.md)** — Python replay-and-measure runner
   imported from the runner feature branch.
-- **[270 MHz PLL project](Hackathon/)** — Gowin project and generated PLL
+- **[270 MHz PLL project](../../archive/bringup/Hackathon/)** — Gowin project and generated PLL
   artifacts imported from the Nano20k PLL branch.
-- **[Root-level Gowin projects](gowin/README.md#root-level-project-files)** —
+- **[Root-level Gowin projects](../../gowin/README.md#root-level-project-files)** —
   separate competition, engine, UART diagnostic, and PLL test projects with canonical paths.
-- **[BSRAM/register optimization](docs/bsram-register-optimization.md)** — current
+- **[BSRAM/register optimization](../bsram-register-optimization.md)** — current
   302/109 candidate, qualification, reproduction and register/resource comparisons.
-- **[H2–H5 optimization history](docs/h2-h5-optimization.md)** — preceding search,
+- **[H2–H5 optimization history](../h2-h5-optimization.md)** — preceding search,
   rejected experiments, reproducible builds, and preserved fallback identities.
 
 ## Current status
@@ -170,7 +170,7 @@ Select **GW2AR-LV18QN88C8/I7**, top **gqh_top**, and add:
 - `constraints/19_tang_nano_20k.cst`
 - `constraints/tang_nano_20k.sdc`
 
-Follow [gowin/README.md](gowin/README.md) for manual synthesis, P&R, and board
+Follow [gowin/README.md](../../gowin/README.md) for manual synthesis, P&R, and board
 checks. Regeneration updates the same RTL path before resynthesis. IDE import,
 synthesis/P&R and programming are the user's steps.
 
@@ -231,7 +231,7 @@ synchronize RX at the board boundary. LED0 remains heartbeat; LED1 lights on a
 sticky protocol fault. Reset cancels partial requests and transmission and clears
 that fault. Arbitrary host pauses between bytes are legal.
 
-Use [gowin/README.md](gowin/README.md#diagnostic-transport-handoff) for manual board
+Use [gowin/README.md](../../gowin/README.md#diagnostic-transport-handoff) for manual board
 steps. Run only the custom checker against this target:
 
 ```sh
@@ -251,16 +251,16 @@ opam exec --switch=5.2.0+ox -- dune build @test/transport/runtest
 ```
 
 Full regressions: `dune runtest` in the same switch.
-See [test/transport/README.md](test/transport/README.md) for exact coverage and
+See [test/transport/README.md](../../test/transport/README.md) for exact coverage and
 tested baud mismatch. Emitted RTL passes Icarus and Yosys checks; Gowin mapping,
 timing closure and board behavior remain unverified.
 
 
 ## Competition candidate
 
-`generate.exe competition` emits [rtl/gqh_competition_top.v](rtl/gqh_competition_top.v),
+`generate.exe competition` emits [rtl/gqh_competition_top.v](../../rtl/gqh_competition_top.v),
 top **gqh_competition_top**, with the same six scalar board ports. Open the separate
-[gqh_competition.gprj](gqh_competition.gprj) for **GW2AR-LV18QN88C8/I7**; its only
+[gqh_competition.gprj](../../gowin/projects/gqh_competition.gprj) for **GW2AR-LV18QN88C8/I7**; its only
 inputs are that self-contained RTL and the pristine board CST/27 MHz SDC.
 
 The wiring is UART RX → decoder → G1 controller ↔ F engine → sequencer → UART TX.
@@ -272,8 +272,8 @@ resynchronization: framing/busy-input faults latch LED1 until button reset.
 UART remains 234 clocks/bit, 115384.615 baud (+0.1603% against 115200), 8N1 and zero
 extra gap; every stop bit is full length. All logic runs directly on `sys_clk`.
 
-See [test/integration/README.md](test/integration/README.md) for serial verification
-and [G2 candidate handoff](results/phase-g2-20261003-candidate1/HANDOFF.md) for
+See [test/integration/README.md](../../test/integration/README.md) for serial verification
+and [G2 candidate handoff](../../results/phase-g2-20261003-candidate1/HANDOFF.md) for
 source/RTL identity, measured core latency, commands and manual acceptance.
 F–G status is **COMPLETE under the user-authorized closure**. The candidate
 handoff retains its historical local-only status; subsequent board evidence and
