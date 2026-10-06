@@ -223,8 +223,7 @@ and a clean-location rebuild is documented in [`submission/REBUILD.md`](submissi
 
 ## Team
 
-Built by **[@LeEmperor](https://github.com/LeEmperor)**, **[@srijankumbam](https://github.com/srijankumbam)**,
-**[@shome9806](https://github.com/shome9806)** and **[@vishal-naveen](https://github.com/vishal-naveen)**.
+Built by **[@LeEmperor](https://github.com/LeEmperor)**, **[@shome9806](https://github.com/shome9806)**, **[@srijankumbam](https://github.com/srijankumbam)**, and **[@vishal-naveen](https://github.com/vishal-naveen)**.
 
 ## Acknowledgements
 
